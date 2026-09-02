@@ -65,16 +65,16 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:02:05Z` |
+| Updated UTC | `2026-09-02T23:06:25Z` |
 | Expected base branch | `main` |
 | Base SHA | `e1e1b735116b94d73fa87559da8759c5f58d243c` — verified local/`origin/main` after PR #5 merge and successful exact-merge CI |
 | Working branch | `codex/epic-03-live-state-quality` |
-| Last verified revision | `8d93537fe9ab9273a58c3d888a226c2f720e844a` — assembled EPIC-03 code/tests covered by focused local tests and full format/analyzer verification; containing documentation is intentionally not self-referenced |
+| Last verified revision | `e5a28157a6f73c08b8624cb211c9c5a7112ebf92` — assembled EPIC-03 code, tests and documentation covered by full local CI-equivalent validation; containing checkpoint update is intentionally not self-referenced |
 | Initial worktree state | Clean EPIC-03 branch created from synchronized local/`origin/main`; merged fix branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | EPIC-03 runtime/test commits complete; README, architecture and readiness reconciliation are uncommitted at this checkpoint |
-| Completed work | Eight-stage domain contract; typed backend progress; bounded monotonic live tracker and ETA estimator; independent concurrent request state; protocol-observed Gateway prompt/generation/terminal lifecycle; safe sink failure isolation; 250 ms Avalonia snapshot projection with explicit quality; focused live domain/tracker unit tests `16/16`, integration `19/19`, Windows `17/17`, privacy `3/3`; full format/analyzer gate successful |
-| Current step | Commit synchronized documentation, then run full CI-equivalent validation of the assembled EPIC-03 PR candidate |
-| Next exact action | Commit README/architecture/readiness updates, then run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke and bounded runtime launch |
+| Current worktree state | EPIC-03 runtime, tests and documentation committed; worktree clean before this checkpoint update; branch remains local and unpushed |
+| Completed work | Eight-stage domain contract; typed backend progress; bounded monotonic live tracker and ETA estimator; independent concurrent request state; protocol-observed Gateway prompt/generation/terminal lifecycle; safe sink failure isolation; 250 ms Avalonia snapshot projection with explicit quality; locked restore and format successful; Release build `0` warnings/errors; full suite `80/80`, `0` failed/skipped; locked win-x64 restore, self-contained publish and smoke successful; normal desktop composition remained alive on exact loopback after a safe tracked backend-failure request |
+| Current step | Perform the EPIC-03 branch's single initial push and open its separate Pull Request |
+| Next exact action | Push `codex/epic-03-live-state-quality` once and create the EPIC-03 Pull Request with exact local Evidence |
 | PR / CI | EPIC-02 PR #5 merged as `e1e1b735116b94d73fa87559da8759c5f58d243c`; PR run `33691566607` and `main` run `33691761413` success. EPIC-03 branch is local/unpushed; PR/CI absent |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | No current EPIC-03 blocker. `E09-AC06` still requires the later EPIC-08 persistent schema |
