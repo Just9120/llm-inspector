@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/epic02/v1/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures/openai-chat/v2/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

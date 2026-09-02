@@ -114,6 +114,7 @@ public sealed class ProxyPrivacyTests
             nameof(ProxyObservation.Outcome),
             nameof(ProxyObservation.RequestId),
             nameof(ProxyObservation.StartedAt),
+            nameof(ProxyObservation.TimeToFirstToken),
         ];
         string[] actualProperties = typeof(ProxyObservation)
             .GetProperties()

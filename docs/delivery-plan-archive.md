@@ -8,6 +8,18 @@
 - `2026-09-02T21:43:13Z`: initial release `13/139 = 9.4%`, full roadmap `13/164 = 7.9%`; only EPIC-09 core AC were complete after PR #3. Archived when EPIC-02 terminal CI produced a newer snapshot without changing its already credited AC.
 - `2026-09-02T22:15:32Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 product AC were complete but terminal CI Evidence was not. Archived after EPIC-03 produced a newer independent readiness calculation.
 - `2026-09-02T22:48:15Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 was `READY` before EPIC-03 implementation. Archived after initial PR #6 CI produced a newer Evidence snapshot.
+- `2026-09-02T23:02:05Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 had local code/test Evidence and pending CI. Archived after terminal EPIC-03 delivery Evidence.
+- `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
+- `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
+
+## GOAL-004 / EPIC-03 — Live state, quality и deterministic abort fixture
+
+- **Product outcome:** `READY 13/13`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Product PR:** [#6](https://github.com/Just9120/llm-inspector/pull/6), initial head `d1e8f313b6652cfe1656f1de0c4fac99bd852103`.
+- **Detected gate failure:** PR CI `33693671440` failed the inherited `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure` fixture because the backend could abort before the proxy had observed response headers; required downstream steps correctly did not supply success Evidence.
+- **Grouped fix:** fixture now releases backend abort only after the client receives exact `200` and the partial body through the proxy; validated head `eb83e98df4fb130257e7f1cc298af1e2b9b99c8c` passed follow-up PR CI `33694308639`.
+- **Terminal CI:** merged as `ba63d0b219e61527d3d81994638dee39a11c14bf`; exact-merge `main` run `33694559218` succeeded with all required steps.
+- **Cleanup:** merged branch had zero unique commits and was removed locally/remotely; local `main` was fast-forwarded before EPIC-04 branch creation.
 
 ## GOAL-004 / EPIC-02 — Backend/client adapters и CI stabilization
 

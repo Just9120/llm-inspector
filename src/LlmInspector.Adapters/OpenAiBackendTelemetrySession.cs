@@ -30,6 +30,9 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
         _isEventStream = isEventStream;
     }
 
+    public bool HasObservedOutputContent =>
+        _isEventStream && _accumulator.HasObservedOutputContent;
+
     public void Observe(ReadOnlySpan<byte> responseBytes)
     {
         ObjectDisposedException.ThrowIf(_completed, this);
@@ -163,6 +166,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
     {
         MetricValue promptTokens = CreateCommonTokenMetric(_accumulator.PromptTokens);
         MetricValue completionTokens = CreateCommonTokenMetric(_accumulator.CompletionTokens);
+        MetricValue cachedPromptTokens = CreateCachedPromptTokenMetric();
+        MetricValue reasoningTokens = CreateCommonTokenMetric(_accumulator.ReasoningTokens);
         MetricValue totalTokens;
         if (_accumulator.TotalTokens is decimal exactTotal)
         {
@@ -193,6 +198,16 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
             promptTokens,
             completionTokens,
             totalTokens,
+            cachedPromptTokens,
+            reasoningTokens,
+            promptTokens,
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
+            CreateLlamaCppCommonMetric("prompt_per_second", MetricUnit.TokensPerSecond),
+            CreateLlamaCppCommonMetric("predicted_per_second", MetricUnit.TokensPerSecond),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, _fixtureVersion),
             backendMetrics);
     }
 
@@ -200,6 +215,33 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
         value is decimal exact && exact == decimal.Truncate(exact)
         ? MetricValue.Exact(exact, MetricUnit.TokenCount, MetricSource.OpenAiUsage, _fixtureVersion)
         : MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, _fixtureVersion);
+
+    private MetricValue CreateCachedPromptTokenMetric()
+    {
+        if (_accumulator.CachedPromptTokens is decimal openAiCachedTokens &&
+            openAiCachedTokens == decimal.Truncate(openAiCachedTokens))
+        {
+            return MetricValue.Exact(
+                openAiCachedTokens,
+                MetricUnit.TokenCount,
+                MetricSource.OpenAiUsage,
+                _fixtureVersion);
+        }
+
+        return CreateLlamaCppCommonMetric("cache_n", MetricUnit.TokenCount);
+    }
+
+    private MetricValue CreateLlamaCppCommonMetric(string sourceName, MetricUnit unit)
+    {
+        if (_backend == BackendKind.LlamaCpp &&
+            _accumulator.BackendMetrics.TryGetValue(sourceName, out decimal value) &&
+            (unit != MetricUnit.TokenCount || value == decimal.Truncate(value)))
+        {
+            return MetricValue.Exact(value, unit, MetricSource.BackendExtension, _fixtureVersion);
+        }
+
+        return MetricValue.Unavailable(unit, MetricSource.BackendExtension, _fixtureVersion);
+    }
 
     private System.Collections.ObjectModel.ReadOnlyCollection<BackendMetric> CreateLlamaCppMetrics()
     {
@@ -249,7 +291,13 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
 
         public decimal? TotalTokens { get; private set; }
 
+        public decimal? CachedPromptTokens { get; private set; }
+
+        public decimal? ReasoningTokens { get; private set; }
+
         public Dictionary<string, decimal> BackendMetrics { get; } = new(StringComparer.Ordinal);
+
+        public bool HasObservedOutputContent { get; private set; }
 
         public void Merge(ExtractedTelemetry telemetry)
         {
@@ -257,6 +305,9 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
             PromptTokens = telemetry.PromptTokens ?? PromptTokens;
             CompletionTokens = telemetry.CompletionTokens ?? CompletionTokens;
             TotalTokens = telemetry.TotalTokens ?? TotalTokens;
+            CachedPromptTokens = telemetry.CachedPromptTokens ?? CachedPromptTokens;
+            ReasoningTokens = telemetry.ReasoningTokens ?? ReasoningTokens;
+            HasObservedOutputContent |= telemetry.HasObservedOutputContent;
             foreach ((string name, decimal value) in telemetry.BackendMetrics)
             {
                 BackendMetrics[name] = value;
@@ -284,6 +335,9 @@ internal sealed class StreamingJsonTelemetryExtractor
     private decimal? _promptTokens;
     private decimal? _completionTokens;
     private decimal? _totalTokens;
+    private decimal? _cachedPromptTokens;
+    private decimal? _reasoningTokens;
+    private bool _hasObservedOutputContent;
 
     public void Observe(ReadOnlySpan<byte> bytes)
     {
@@ -363,6 +417,9 @@ internal sealed class StreamingJsonTelemetryExtractor
             _promptTokens,
             _completionTokens,
             _totalTokens,
+            _cachedPromptTokens,
+            _reasoningTokens,
+            _hasObservedOutputContent,
             new Dictionary<string, decimal>(_backendMetrics, StringComparer.Ordinal));
     }
 
@@ -553,7 +610,6 @@ internal sealed class StreamingJsonTelemetryExtractor
 
     private void EmitString()
     {
-        string? value = DecodeStringToken();
         _lexerState = LexerState.Normal;
 
         if (_frames.Count == 0)
@@ -565,7 +621,7 @@ internal sealed class StreamingJsonTelemetryExtractor
         ContainerFrame frame = _frames.Peek();
         if (frame.Kind == ContainerKind.Object && frame.State == ContainerState.ExpectKeyOrEnd)
         {
-            frame.CurrentProperty = value ?? DiscardedProperty;
+            frame.CurrentProperty = DecodeStringToken() ?? DiscardedProperty;
             frame.State = ContainerState.ExpectColon;
             frame.CanEnd = false;
             return;
@@ -576,9 +632,15 @@ internal sealed class StreamingJsonTelemetryExtractor
             return;
         }
 
-        if (value is not null && path is ["model"])
+        if (path is ["model"])
         {
-            _model = value;
+            _model = DecodeStringToken();
+        }
+
+        // Non-allowlisted string values are never decoded into managed strings.
+        if (_token.Count > 0 && path is ["choices", "delta", "content"])
+        {
+            _hasObservedOutputContent = true;
         }
     }
 
@@ -626,6 +688,26 @@ internal sealed class StreamingJsonTelemetryExtractor
             }
 
             _totalTokens = value;
+        }
+        else if (path is ["usage", "prompt_tokens_details", "cached_tokens"])
+        {
+            if (value != decimal.Truncate(value))
+            {
+                _invalid = true;
+                return;
+            }
+
+            _cachedPromptTokens = value;
+        }
+        else if (path is ["usage", "completion_tokens_details", "reasoning_tokens"])
+        {
+            if (value != decimal.Truncate(value))
+            {
+                _invalid = true;
+                return;
+            }
+
+            _reasoningTokens = value;
         }
         else if (path is ["timings", string timingName] && IsAllowedTimingName(timingName))
         {
@@ -826,4 +908,7 @@ internal sealed record ExtractedTelemetry(
     decimal? PromptTokens,
     decimal? CompletionTokens,
     decimal? TotalTokens,
+    decimal? CachedPromptTokens,
+    decimal? ReasoningTokens,
+    bool HasObservedOutputContent,
     IReadOnlyDictionary<string, decimal> BackendMetrics);

@@ -521,6 +521,47 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual(string.Concat(events), actual);
         Assert.AreEqual(ClientKind.Cline, observation.Client);
         Assert.AreEqual(6, observation.BackendTelemetry.TotalTokens.Value);
+        Assert.AreEqual(MetricQuality.Unavailable, observation.TimeToFirstToken.Quality);
+    }
+
+    [TestMethod]
+    public async Task StreamingContentDeltaProducesCalculatedTtftWithoutChangingEvents()
+    {
+        string[] events =
+        [
+            "data: {\"model\":\"fixture\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n",
+            "data: {\"model\":\"fixture\",\"choices\":[{\"delta\":{\"content\":\"synthetic\"}}]}\n\n",
+            "data: [DONE]\n\n",
+        ];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "text/event-stream";
+            foreach (string item in events)
+            {
+                await context.Response.WriteAsync(item, context.RequestAborted);
+                await context.Response.Body.FlushAsync(context.RequestAborted);
+            }
+        });
+        CollectingObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            sink,
+            BackendTelemetryAdapters.Create(BackendKind.Ollama));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{\"stream\":true}", Encoding.UTF8, "application/json"));
+        string actual = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(string.Concat(events), actual);
+        Assert.IsNotNull(observation.TimeToFirstToken.Value);
+        Assert.AreEqual(MetricUnit.Milliseconds, observation.TimeToFirstToken.Unit);
+        Assert.AreEqual(MetricQuality.Calculated, observation.TimeToFirstToken.Quality);
+        Assert.AreEqual("first-nonempty-chat-content-delta-v1", observation.TimeToFirstToken.DerivationVersion);
     }
 
     [TestMethod]
@@ -711,6 +752,8 @@ public sealed class ProxyGatewayIntegrationTests
 
         private sealed class ThrowingSession : IBackendTelemetrySession
         {
+            public bool HasObservedOutputContent => false;
+
             public void Observe(ReadOnlySpan<byte> responseBytes) =>
                 throw new InvalidOperationException("Synthetic parser failure.");
 

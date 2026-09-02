@@ -8,19 +8,22 @@ namespace LlmInspector.App;
 public partial class MainWindow : Window
 {
     private readonly ILiveRequestSnapshotSource? _liveRequestState;
+    private readonly IProxyObservationSnapshotSource? _observationSource;
     private readonly DispatcherTimer? _liveRefreshTimer;
 
     public MainWindow()
-        : this(AppRuntimeStatus.NotStarted, null)
+        : this(AppRuntimeStatus.NotStarted, null, null)
     {
     }
 
     public MainWindow(
         AppRuntimeStatus runtimeStatus,
-        ILiveRequestSnapshotSource? liveRequestState = null)
+        ILiveRequestSnapshotSource? liveRequestState = null,
+        IProxyObservationSnapshotSource? observationSource = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
+        _observationSource = observationSource;
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -34,14 +37,19 @@ public partial class MainWindow : Window
         PersistentDataText.Text = TechnicalDataDisclosure.PersistentDataStatement;
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
         RefreshLiveRequests();
+        RefreshRequestDetail();
 
-        if (_liveRequestState is not null)
+        if (_liveRequestState is not null || _observationSource is not null)
         {
             _liveRefreshTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(250),
             };
-            _liveRefreshTimer.Tick += (_, _) => RefreshLiveRequests();
+            _liveRefreshTimer.Tick += (_, _) =>
+            {
+                RefreshLiveRequests();
+                RefreshRequestDetail();
+            };
             _liveRefreshTimer.Start();
             Closed += (_, _) => _liveRefreshTimer.Stop();
         }
@@ -52,6 +60,11 @@ public partial class MainWindow : Window
         LiveRequestsText.Text = _liveRequestState is null
             ? "Active requests: unavailable while live tracking is not composed."
             : LiveRequestTextPresenter.Format(_liveRequestState.GetSnapshot());
+    }
+
+    private void RefreshRequestDetail()
+    {
+        RequestDetailText.Text = RequestDetailTextPresenter.Format(_observationSource?.Latest);
     }
 
     private static string CreateClientEndpointText(AppRuntimeStatus runtimeStatus)

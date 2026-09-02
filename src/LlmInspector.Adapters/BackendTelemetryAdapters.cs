@@ -8,13 +8,13 @@ public static class BackendTelemetryAdapters
     {
         BackendKind.Ollama => new OpenAiBackendTelemetryAdapter(
             backend,
-            "epic02-fixtures-v1/ollama-openai"),
+            "openai-chat-fixtures-v2/ollama"),
         BackendKind.LlamaCpp => new OpenAiBackendTelemetryAdapter(
             backend,
-            "epic02-fixtures-v1/llama-cpp-openai"),
+            "openai-chat-fixtures-v2/llama-cpp"),
         BackendKind.LmStudio => new OpenAiBackendTelemetryAdapter(
             backend,
-            "epic02-fixtures-v1/lm-studio-openai"),
+            "openai-chat-fixtures-v2/lm-studio"),
         _ => throw new ArgumentOutOfRangeException(nameof(backend)),
     };
 }
