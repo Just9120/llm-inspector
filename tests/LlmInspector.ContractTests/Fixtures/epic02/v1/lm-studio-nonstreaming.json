@@ -1,0 +1,8 @@
+{
+  "id": "chatcmpl-fixture-lm-studio",
+  "object": "chat.completion",
+  "model": "lmstudio-community/qwen2.5",
+  "system_fingerprint": "lmstudio-community/qwen2.5",
+  "choices": [{ "index": 0, "message": { "role": "assistant", "content": null, "tool_calls": [{ "id": "fixture-call", "type": "function", "function": { "name": "fixture_tool", "arguments": "{\"fixture\":1}" } }] }, "finish_reason": "tool_calls" }],
+  "usage": { "prompt_tokens": 223, "completion_tokens": 24, "total_tokens": 247 }
+}

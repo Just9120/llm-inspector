@@ -1,0 +1,18 @@
+{
+  "id": "chatcmpl-fixture-llama-cpp",
+  "object": "chat.completion",
+  "model": "ggml-org/gemma-3",
+  "choices": [{ "index": 0, "message": { "role": "assistant", "content": "synthetic-fixture" }, "finish_reason": "stop" }],
+  "usage": { "prompt_tokens": 44, "completion_tokens": 48, "total_tokens": 92 },
+  "timings": {
+    "cache_n": 236,
+    "prompt_n": 1,
+    "prompt_ms": 30.958,
+    "prompt_per_token_ms": 30.958,
+    "prompt_per_second": 32.301828283480845,
+    "predicted_n": 35,
+    "predicted_ms": 661.064,
+    "predicted_per_token_ms": 18.887542857142858,
+    "predicted_per_second": 52.94494935437416
+  }
+}

@@ -1,0 +1,6 @@
+data: {"id":"lmstudio-1","object":"chat.completion.chunk","model":"lmstudio-community/qwen2.5","choices":[{"index":0,"delta":{"content":"synthetic"}}]}
+
+data: {"id":"lmstudio-1","object":"chat.completion.chunk","model":"lmstudio-community/qwen2.5","choices":[],"usage":{"prompt_tokens":31,"completion_tokens":9,"total_tokens":40}}
+
+data: [DONE]
+
