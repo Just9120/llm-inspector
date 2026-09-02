@@ -10,6 +10,7 @@
 - `2026-09-02T22:48:15Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 was `READY` before EPIC-03 implementation. Archived after initial PR #6 CI produced a newer Evidence snapshot.
 - `2026-09-02T23:02:05Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 had local code/test Evidence and pending CI. Archived after terminal EPIC-03 delivery Evidence.
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
+- `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 
 ## GOAL-004 / EPIC-03 — Live state, quality и deterministic abort fixture
 

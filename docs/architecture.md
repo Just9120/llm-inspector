@@ -194,6 +194,8 @@ History default retention — `30 days`; user options точно соответ�
 
 Elapsed time вычисляется monotonic clock как `calculated`. Progress percentage принимает только typed exact backend signal `0..100`; при отсутствии такого signal UI показывает `unavailable` без percentage. Bounded linear ETA estimator использует до четырёх samples и выдаёт `estimated` только после минимум трёх strictly increasing samples одного source со span не меньше `5` percentage points; regression или source-version change сбрасывает estimator evidence. Terminal request не показывает ETA. Tracker хранит active set и только последний terminal snapshot в volatile memory; UI получает immutable snapshot каждые `250 ms`, а его failure не участвует в request relay.
 
+Latest-request projection использует versioned OpenAI Chat Completions fixture v2: input/output/cached/reasoning token counts принимаются только как non-negative whole exact values; llama.cpp `cache_n`, `prompt_per_second` и `predicted_per_second` одновременно сохраняют native metric и получают common mapping с backend provenance. Current context usage равен exact `prompt_tokens`; limit/history/tools и load/queue остаются typed `unavailable`, пока adapter не получает совместимый exact source. Streaming TTFT — `calculated` monotonic interval до первого непустого `choices[].delta.content`; role-only, tool-only и non-streaming response не выдают TTFB за TTFT. Total duration — monotonic calculated metric для каждого terminal observation. Non-allowlisted string values, включая response и reasoning content, parser не декодирует в managed telemetry strings.
+
 Correlation использует generated request ID, connection metadata и exact protocol IDs. Time proximity само по себе не доказывает session/tool/process association; ambiguous membership получает `unavailable`.
 
 ## 10. Backend capability matrix
@@ -203,10 +205,10 @@ Correlation использует generated request ID, connection metadata и ex
 | Capability | Ollama | llama.cpp `llama-server` | LM Studio | Normalized behavior |
 |---|---|---|---|---|
 | OpenAI Chat Completions | `/v1/chat/completions` documented | `/v1/chat/completions` documented; project предупреждает, что full OpenAI compatibility не гарантируется | `/v1/chat/completions` documented | Unknown field проходит transparently; adapter parses only tested subset |
-| Non-streaming / streaming | Оба documented | Оба documented | Оба documented | Local total duration/TTFT may be `calculated`; event order contract-tested |
+| Non-streaming / streaming | Оба documented | Оба documented | Оба documented | Total duration `calculated`; TTFT `calculated` только по first non-empty streaming content delta, иначе `unavailable`; event order contract-tested |
 | Tool calls | Documented input support; model dependent | Требует `--jinja`/compatible chat template; parallel calls model/template dependent | Documented; streamed name/arguments fragmented across chunks | Persist tool name/count/status/timing only; arguments/results never persist |
 | Token usage | `stream_options.include_usage` accepted; native `/api/chat` exposes token counters | Standard `usage` plus backend `timings` documented | OpenAI flow must be established by versioned fixtures; richer native APIs expose stats | Exact only when present and semantics mapped; otherwise unavailable, not retokenized silently |
-| Prompt/generation timing | Native `/api/chat` has prompt/eval durations, but initial OpenAI path cannot assume them | Response `timings` exposes prompt/prediction counts/rates | Native REST v1 events/stats expose TTFT/rate, but OpenAI path cannot assume them | Use backend exact fields only if present in observed flow; local elapsed/TTFT marked calculated |
+| Prompt/generation timing | Native `/api/chat` has prompt/eval durations, but initial OpenAI path cannot assume them | Response `timings` exposes prompt/prediction counts/rates | Native REST v1 events/stats expose TTFT/rate, but OpenAI path cannot assume them | llama.cpp fixture maps exact prompt/generation rates; streaming TTFT is calculated; load/queue stay unavailable without exact source |
 | Stage/progress | OpenAI flow has no guaranteed load/queue percentages | Optional `/metrics` is aggregate and enabled only by `--metrics`; not per-request proof | Native v1 has load/prompt/tool events; OpenAI flow has less detail | Stage from exact event where available; otherwise protocol-observed stage without percentage |
 | Optional probes | Read-only capability/version probes only; no duplicate generation | `/metrics` only when explicitly enabled; aggregate provenance | Native read-only capability/version endpoints only | Probe failure never blocks request and never upgrades per-request attribution |
 
@@ -303,7 +305,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Локальная validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 26 tests без skips, self-contained publish, combined Avalonia/gateway smoke и трёхсекундный UI-process observation с единственным owning-PID listener `127.0.0.1:5117`. Integration suite покрывает non-streaming/SSE/tool payload pass-through, first-fragment streaming, redirects, cancellation, concurrency, backend/sink failures и hostile hosting configuration; privacy suite использует runtime-generated canaries.
+Последняя локальная EPIC-04 validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 86 tests без skips, self-contained publish и combined Avalonia/gateway smoke. Integration suite покрывает non-streaming/SSE/tool payload pass-through, first-fragment/TTFT streaming, redirects, cancellation, concurrency, backend/sink failures и hostile hosting configuration; privacy suite использует runtime-generated canaries. Отдельный bounded UI-process/listener observation был подтверждён foundation increment и остаётся частью smoke evidence.
 
 Configured CI foundation:
 
@@ -351,5 +353,6 @@ Production signing identity and distribution channel remain external gates: Micr
 - [.NET publishing](https://learn.microsoft.com/en-us/dotnet/core/deploying/) — self-contained and RID-specific output.
 - [MSIX signing](https://learn.microsoft.com/en-us/windows/msix/package/signing-package-overview) and [Windows distribution paths](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/choose-distribution-path) — signature/trust/timestamp and distribution trade-offs.
 - [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) and [native chat fields](https://docs.ollama.com/api/chat) — streaming/tools/usage request support and native timing counters.
+- [OpenAI Chat Completions API reference](https://developers.openai.com/api/reference/resources/chat) — canonical `usage`, streaming `choices[].delta.content` и technical token-detail semantics для compatible wire contract.
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) — OpenAI-compatible flow, tools, timings and optional metrics.
 - [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls and richer native stage/stat signals.
