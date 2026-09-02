@@ -4,7 +4,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09` и локально завершённый кандидат `EPIC-02`:
+Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09` и merged product increment `EPIC-02`; для последнего выполняется отдельный CI-stabilization fix:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
@@ -14,7 +14,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- для EPIC-09 подтверждены PR/main CI, а EPIC-02 проходит focused unit/contract/integration/privacy/Windows checks; итоговый exact-revision CI будет Evidence текущего PR;
+- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local и PR CI, но exact-merge `main` CI выявил transport-dependent assertion в abort integration test, исправление проверено 11 последовательными focused runs и готовится отдельным fix PR;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
@@ -99,4 +99,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core merged через [PR #3](https://github.com/Just9120/llm-inspector/pull/3) в commit `cd1e3716f465d716627b6df173e18cf3f94fb612`; текущий EPIC-02 increment развивается отдельной PR-веткой от этого verified base.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через [PR #3](https://github.com/Just9120/llm-inspector/pull/3); EPIC-02 — через [PR #4](https://github.com/Just9120/llm-inspector/pull/4) в commit `275b7407a015f6a98361f87b74b5dc444f0a8355`. Exact-merge CI failure `33690756965` устраняется в отдельной fix-ветке от этого verified base.
