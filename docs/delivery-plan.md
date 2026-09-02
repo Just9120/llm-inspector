@@ -1,13 +1,13 @@
 # Delivery plan
 
-> Dashboard status: `GOAL-002 IN_PROGRESS`
-> Updated: `2026-09-02T18:45:10Z`
+> Dashboard status: `GOAL-002 PENDING_EXTERNAL_GATE`
+> Updated: `2026-09-02T18:49:21Z`
 
 ## Current Goal
 
 ### `GOAL-002 — Утвердить architecture baseline и executable delivery foundation design`
 
-- **State:** `IN_PROGRESS`.
+- **State:** `PENDING_EXTERNAL_GATE` — local DoD complete; PR/checks/merge pending.
 - **Authorization source:** explicit user approval от `2026-09-02`: «Да, вот теперь идем через ПРы по инструкции» в ответ на proposal `GOAL-002`.
 
 **Scope**
@@ -44,6 +44,8 @@
 
 **Required Evidence:** `SPEC: ✅`; `CODE: N/A`; `TEST: ✅` (structural/link/count validation); `CI: N/A`; `DEPLOY: N/A`; `LIVE: N/A`.
 
+**Current Goal verification:** `10/10` Goal AC complete. Evidence: `SPEC: ✅`; `CODE: N/A`; `TEST: ✅`; `CI: N/A`; `DEPLOY: N/A`; `LIVE: N/A`. Structural validation: `164/164` unique atomic AC (`139` initial + `25` backlog), `74` unique upstream IDs, `10` internal links including `1` anchor, CD profile consistency, changed-file scope and `git diff --check` — PASS.
+
 **Known blockers/dependencies**
 
 - Numeric performance/idle/throughput budgets отсутствуют в ратифицированном source; в этой Goal определяется protocol, а значения остаются owner blocker.
@@ -55,17 +57,17 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T18:45:10Z` |
+| Updated UTC | `2026-09-02T18:49:21Z` |
 | Expected base branch | `main` |
 | Base SHA | `581e18097a6e9e13098f510fc1f82d3e45f849f7` — verified `origin/main` at Goal start |
 | Working branch | `codex/architecture-baseline` |
-| Last verified revision | `d589fb5af762661b2964a5141c97f5d4efd03c81` — architecture decision commit; current documentation sync is uncommitted |
+| Last verified revision | `45eb889d29b70ce43a4b4d7ece42490ebea32802` — canonical/operational sync commit; final evidence-source correction and checkpoint are uncommitted |
 | Initial worktree state | Clean; local `main`, `origin/main` и GitHub `main` synchronized at base SHA |
-| Current worktree state | Architecture commit complete; README, product operational fields и CI/CD project profile edited for consistency |
-| Completed work | Stack/boundaries/data flow/privacy/storage/capability matrix/test strategy/support matrix/performance protocol/release design fixed in `docs/architecture.md` |
-| Current step | Canonical/operational documentation synchronization and structural validation |
-| Next exact action | Обновить этот checkpoint, выполнить full local documentation validation и создать final local documentation commit |
-| PR / CI | PR не создан; workflows отсутствуют и находятся вне scope этой Goal |
+| Current worktree state | Local DoD and full structural validation complete; final evidence/checkpoint commit pending |
+| Completed work | All `10/10` Goal AC represented; support matrix, project/profile/readiness sync and bounded `GOAL-003` proposal complete |
+| Current step | Create final local commit, revalidate, then one initial push and Pull Request |
+| Next exact action | Зафиксировать final evidence/checkpoint commit, проверить unchanged `origin/main`, выполнить единый initial push и создать PR |
+| PR / CI | PR не создан; repository workflows отсутствуют, поэтому CI Evidence для этой docs-only Goal — `N/A` |
 | Deployment | Server/runtime CD explicitly disabled; self-contained `win-x64` + signed MSIX release design выбран, но pipeline/signing/channel не настроены |
 | Blockers | Numeric performance budgets и external signing identity/channel отсутствуют; они не блокируют DoD `GOAL-002` |
 | Unverified assumptions | Design не подтверждён source code/runtime; concrete package versions, commands и backend fixture versions должны быть проверены в следующих Goals |

@@ -194,7 +194,7 @@ Correlation использует generated request ID, connection metadata и ex
 | OpenAI Chat Completions | `/v1/chat/completions` documented | `/v1/chat/completions` documented; project предупреждает, что full OpenAI compatibility не гарантируется | `/v1/chat/completions` documented | Unknown field проходит transparently; adapter parses only tested subset |
 | Non-streaming / streaming | Оба documented | Оба documented | Оба documented | Local total duration/TTFT may be `calculated`; event order contract-tested |
 | Tool calls | Documented input support; model dependent | Требует `--jinja`/compatible chat template; parallel calls model/template dependent | Documented; streamed name/arguments fragmented across chunks | Persist tool name/count/status/timing only; arguments/results never persist |
-| Token usage | `stream_options.include_usage` accepted; native `/api/chat` exposes token counters | Standard `usage` plus backend `timings` documented | OpenAI flow capability fixture-tested; richer native APIs expose stats | Exact only when present and semantics mapped; otherwise unavailable, not retokenized silently |
+| Token usage | `stream_options.include_usage` accepted; native `/api/chat` exposes token counters | Standard `usage` plus backend `timings` documented | OpenAI flow must be established by versioned fixtures; richer native APIs expose stats | Exact only when present and semantics mapped; otherwise unavailable, not retokenized silently |
 | Prompt/generation timing | Native `/api/chat` has prompt/eval durations, but initial OpenAI path cannot assume them | Response `timings` exposes prompt/prediction counts/rates | Native REST v1 events/stats expose TTFT/rate, but OpenAI path cannot assume them | Use backend exact fields only if present in observed flow; local elapsed/TTFT marked calculated |
 | Stage/progress | OpenAI flow has no guaranteed load/queue percentages | Optional `/metrics` is aggregate and enabled only by `--metrics`; not per-request proof | Native v1 has load/prompt/tool events; OpenAI flow has less detail | Stage from exact event where available; otherwise protocol-observed stage without percentage |
 | Optional probes | Read-only capability/version probes only; no duplicate generation | `/metrics` only when explicitly enabled; aggregate provenance | Native read-only capability/version endpoints only | Probe failure never blocks request and never upgrades per-request attribution |
@@ -303,7 +303,7 @@ CI design:
 
 Release design:
 
-1. Trusted tag/release flow rebuilds or promotes an exact validated self-contained `win-x64` publish unit under build-once rules defined in the future workflow.
+1. Trusted tag/release flow performs locked restore, build, tests и один self-contained `win-x64` publish; subsequent packaging consumes that exact hashed publish output without rebuilding it.
 2. Package into MSIX; package identity/version are derived from release metadata, not branch name.
 3. Sign with a trusted code-signing identity and trusted timestamp. Signing secret is available only to the trusted release job/environment, never PR jobs.
 4. Verify signature, package manifest, clean install, upgrade, launch, proxy smoke and uninstall on the supported Windows matrix.
@@ -326,7 +326,7 @@ Production signing identity and distribution channel remain external gates: Micr
 
 ## 18. Primary evidence sources
 
-- [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) — `.NET 10` LTS lifecycle and patching responsibility.
+- [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) and [.NET on supported Windows versions](https://learn.microsoft.com/en-us/dotnet/core/install/windows#supported-versions) — `.NET 10` lifecycle, patching responsibility and Windows 11 `25H2`/`x64` support.
 - [Avalonia on Windows](https://docs.avaloniaui.net/docs/platform-specific-guides/windows/) and [TrayIcon](https://docs.avaloniaui.net/docs/reference/controls/tray-icon/) — Win32 runtime model and tray capability.
 - [Kestrel endpoint configuration](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-10.0) — loopback bindings and endpoint configuration.
 - [NuGet Central Package Management](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management) and [dependency lock files](https://learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#locking-dependencies) — centralized versions and locked restore.

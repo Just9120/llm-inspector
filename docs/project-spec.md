@@ -444,4 +444,4 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Code/tests/runtime: отсутствуют.
 - Initial release readiness: `0/139 = 0%`.
 - Full agreed roadmap readiness: `0/164 = 0%`.
-- Active approved Goal: `GOAL-002 IN_PROGRESS`; product code implementation не входит в scope.
+- Active approved Goal: `GOAL-002 PENDING_EXTERNAL_GATE`; local architecture DoD complete, PR/merge pending; product code implementation не входит в scope.
