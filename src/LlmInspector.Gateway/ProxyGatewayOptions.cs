@@ -10,6 +10,10 @@ public sealed class ProxyGatewayOptions
 
     public static Uri DefaultBackendBaseAddress { get; } = new("http://127.0.0.1:11434/");
 
+    public static Uri DefaultLlamaCppBaseAddress { get; } = new("http://127.0.0.1:8080/");
+
+    public static Uri DefaultLmStudioBaseAddress { get; } = new("http://127.0.0.1:1234/");
+
     private ProxyGatewayOptions(int listenerPort, Uri backendBaseAddress, BackendKind backend)
     {
         ListenerPort = listenerPort;
@@ -24,7 +28,18 @@ public sealed class ProxyGatewayOptions
     public BackendKind Backend { get; }
 
     public static ProxyGatewayOptions CreateDefault() =>
-        Create(DefaultListenerPort, DefaultBackendBaseAddress);
+        CreateDefault(BackendKind.Ollama);
+
+    public static ProxyGatewayOptions CreateDefault(BackendKind backend) =>
+        Create(DefaultListenerPort, GetDefaultBackendBaseAddress(backend), backend);
+
+    public static Uri GetDefaultBackendBaseAddress(BackendKind backend) => backend switch
+    {
+        BackendKind.Ollama => DefaultBackendBaseAddress,
+        BackendKind.LlamaCpp => DefaultLlamaCppBaseAddress,
+        BackendKind.LmStudio => DefaultLmStudioBaseAddress,
+        _ => throw new InvalidEnumArgumentException(nameof(backend), (int)backend, typeof(BackendKind)),
+    };
 
     public static ProxyGatewayOptions Create(int listenerPort, Uri backendBaseAddress) =>
         Create(listenerPort, backendBaseAddress, BackendKind.Ollama);

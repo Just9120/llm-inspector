@@ -1,5 +1,6 @@
 using Avalonia;
 using LlmInspector.Adapters;
+using LlmInspector.Application;
 using LlmInspector.Gateway;
 
 namespace LlmInspector.App;
@@ -11,6 +12,8 @@ public static class Program
     private const string GatewaySmokeTestArgument = "--gateway-smoke-test";
 
     public static AppRuntimeStatus RuntimeStatus { get; private set; } = AppRuntimeStatus.NotStarted;
+
+    public static LatestProxyObservationStore ObservationStore { get; private set; } = new();
 
     [STAThread]
     public static int Main(string[] args)
@@ -32,16 +35,31 @@ public static class Program
             return Task.Run(RunGatewaySmoke).GetAwaiter().GetResult();
         }
 
-        ProxyGatewayOptions options = ProxyGatewayOptions.CreateDefault();
+        ProxyGatewayOptions options;
+        try
+        {
+            options = AppLaunchConfiguration.Parse(args).CreateProxyOptions();
+        }
+        catch (ArgumentException)
+        {
+            RuntimeStatus = AppRuntimeStatus.ConfigurationInvalid;
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime([]);
+        }
+
         ProxyGateway? gateway = null;
+        ObservationStore = new LatestProxyObservationStore();
 
         try
         {
             gateway = ProxyGateway.Create(
                 options,
+                ObservationStore,
                 telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend));
             gateway.Start();
-            RuntimeStatus = AppRuntimeStatus.Running(gateway.ListeningAddress!, options.BackendBaseAddress);
+            RuntimeStatus = AppRuntimeStatus.Running(
+                gateway.ListeningAddress!,
+                options.BackendBaseAddress,
+                options.Backend);
         }
         catch (Exception exception)
             when (gateway is not null && exception is IOException or InvalidOperationException)
@@ -50,12 +68,13 @@ public static class Program
             gateway = null;
             RuntimeStatus = AppRuntimeStatus.ListenerUnavailable(
                 options.BackendBaseAddress,
-                options.ListenerPort);
+                options.ListenerPort,
+                options.Backend);
         }
 
         try
         {
-            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime([]);
         }
         finally
         {

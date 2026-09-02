@@ -11,7 +11,7 @@ public static class TechnicalDataDisclosure
     [
         new(
             "Volatile proxy observation",
-            "Generated request ID, start time, duration, HTTP status and outcome",
+            "Generated request ID, start time, duration, HTTP status, outcome, configured backend, explicit client attribution, normalized model identity, token usage with quality/provenance, and allowlisted backend-specific metrics",
             "Process lifetime only"),
     ];
 

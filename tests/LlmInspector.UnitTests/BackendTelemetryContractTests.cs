@@ -77,4 +77,28 @@ public sealed class BackendTelemetryContractTests
             Assert.AreEqual(MetricQuality.Unavailable, telemetry.TotalTokens.Quality);
         }
     }
+
+    [TestMethod]
+    public async Task LatestObservationStoreRetainsOnlyTheLatestAllowlistedRecord()
+    {
+        LlmInspector.Application.LatestProxyObservationStore store = new();
+        BackendResponseTelemetry telemetry = BackendResponseTelemetry.Unavailable(
+            BackendKind.Ollama,
+            "fixture-v1");
+        ProxyObservation first = new(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromMilliseconds(1),
+            200,
+            ProxyOutcome.Completed,
+            ClientKind.GenericUnknown,
+            telemetry);
+        ProxyObservation second = first with { RequestId = Guid.NewGuid() };
+
+        await store.RecordAsync(first, CancellationToken.None);
+        await store.RecordAsync(second, CancellationToken.None);
+
+        Assert.AreEqual(2, store.AcceptedCount);
+        Assert.AreSame(second, store.Latest);
+    }
 }
