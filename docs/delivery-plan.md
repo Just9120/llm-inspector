@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-02T23:41:31Z`
+> Updated: `2026-09-02T23:44:27Z`
 
 ## Current Goal
 
@@ -65,16 +65,16 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:15:15Z` |
+| Updated UTC | `2026-09-02T23:44:27Z` |
 | Expected base branch | `main` |
 | Base SHA | `ba63d0b219e61527d3d81994638dee39a11c14bf` — verified local/`origin/main` after PR #6 merge and successful exact-merge CI |
 | Working branch | `codex/epic-04-tokens-context-timings` |
-| Last verified revision | `e1c7423cee718cf923dc058990449ba2e3339bfb` — all EPIC-04 code commits covered by the full local CI-equivalent pipeline; containing readiness/checkpoint update is intentionally not self-referenced |
+| Last verified revision | `473a6a5fd12c7e908cc6229771254175b2da36ac` — complete EPIC-04 candidate including readiness/Evidence docs covered by the full local CI-equivalent pipeline; containing final checkpoint update is intentionally not self-referenced |
 | Initial worktree state | Clean EPIC-04 branch created from synchronized local/`origin/main`; merged EPIC-03 branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | Six reviewable EPIC-04 commits plus the current readiness/documentation update; generated `artifacts/` is ignored; unrelated changes absent |
+| Current worktree state | Seven reviewable EPIC-04 commits; worktree was clean before this final checkpoint-only update; generated `artifacts/` is ignored; unrelated changes absent |
 | Completed work | Added OpenAI Chat fixture v2 nested cached/reasoning counters, normalized llama.cpp cache/prompt/generation rates, typed conditional context/load/queue values, latest-request UI with quality, privacy-safe streaming TTFT, monotonic total duration and content non-decoding. Full pipeline passed: exact SDK `10.0.400`, normal/RID locked restores, format, Release build `0` warnings/errors, `86/86` tests with zero skips, self-contained `win-x64` publish and smoke |
-| Current step | Finalize EPIC-04 partial readiness/evidence metadata before the one initial push |
-| Next exact action | Commit the evidence map, rerun the complete pipeline on the final local head, then perform one initial push and open the EPIC-04 PR |
+| Current step | Perform the one initial push and open the EPIC-04 partial PR |
+| Next exact action | Push `codex/epic-04-tokens-context-timings` once, create PR against `main`, and inspect the exact-head CI without speculative rerun |
 | PR / CI | EPIC-04 PR not created; no remote branch or CI run exists yet |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | No delivery gate blocker. `E09-AC06` still requires the later EPIC-08 persistent schema. EPIC-04 `E04-AC03` and `E04-AC12` lack trustworthy session/model-load correlation; per increment policy they remain open but do not block a safe partial epic PR/merge |
