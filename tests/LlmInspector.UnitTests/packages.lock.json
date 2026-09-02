@@ -109,6 +109,13 @@
       },
       "llminspector.domain": {
         "type": "Project"
+      },
+      "llminspector.telemetry": {
+        "type": "Project",
+        "dependencies": {
+          "LlmInspector.Application": "[1.0.0, )",
+          "LlmInspector.Domain": "[1.0.0, )"
+        }
       }
     }
   }

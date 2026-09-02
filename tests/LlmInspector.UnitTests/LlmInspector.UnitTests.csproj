@@ -14,5 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Application/LlmInspector.Application.csproj" />
+    <ProjectReference Include="../../src/LlmInspector.Telemetry/LlmInspector.Telemetry.csproj" />
   </ItemGroup>
 </Project>
