@@ -2,6 +2,18 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-002 — Утвердить architecture baseline и executable delivery foundation design
+
+- **State:** `DONE`.
+- **Authorization:** explicit user approval от `2026-09-02`: «Да, вот теперь идем через ПРы по инструкции» в ответ на proposal `GOAL-002`.
+- **Scope:** Windows desktop/runtime stack, module/data/privacy boundaries, backend capability matrix, supported Windows matrix, test strategy, performance protocol и Windows build/release design без product implementation.
+- **Outcome:** утверждены C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy, SQLite WAL, modular-monolith boundaries, NuGet CPM/lock files, self-contained `win-x64` validation build и signed MSIX release design; server/runtime CD оставлен отключённым.
+- **Evidence:** SPEC ✅; CODE N/A; TEST ✅ (structural/link/count/profile validation); CI N/A; DEPLOY N/A; LIVE N/A.
+- **Pull Request:** [#1](https://github.com/Just9120/llm-inspector/pull/1), merged `2026-09-02T18:52:30Z`.
+- **Merge commit:** `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
+- **Closed after recovery verification:** `2026-09-02T20:11:52Z`; local `main`, `origin/main` и GitHub default branch совпали на merge commit.
+- **Limitations:** numeric performance budgets, signing identity и distribution channel остаются внешними решениями для будущих Goals.
+
 ## GOAL-001 — Ратифицировать product contract и CD applicability
 
 - **State:** `DONE`.

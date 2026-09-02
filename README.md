@@ -4,18 +4,51 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект прошёл documentation bootstrap и имеет выбранную architecture baseline:
+Проект имеет реализованную repository/CI foundation поверх выбранной architecture baseline:
 
-- product source code и runtime пока отсутствуют;
-- `main` создан и был синхронизирован с `origin/main` на base SHA `581e18097a6e9e13098f510fc1f82d3e45f849f7`; дальнейшие изменения выполняются через отдельные PR-ветки;
+- solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
+- минимальный Avalonia shell компилируется и запускается, но proxy, telemetry, storage и product UI ещё не реализованы;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
-- команды установки, запуска, тестирования и сборки не определены;
+- SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
+- локально подтверждены locked restore, formatting, Release build, 10 foundation/policy tests, self-contained `win-x64` publish и shell smoke;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
-- CI/build/release pipeline не настроены;
+- PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Поэтому сейчас проект запустить нельзя. Не следует придумывать команды до появления и проверки фактического toolchain.
+Foundation не засчитывается как выполнение product acceptance criteria: текущая product readiness остаётся `0/139 = 0%` для initial release и `0/164 = 0%` для полного roadmap.
+
+## Быстрый старт
+
+Prerequisite: Windows x64 и exact [.NET SDK `10.0.400`](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). `global.json` запрещает автоматический roll-forward на другой SDK.
+
+Проверить SDK и восстановить dependency graph:
+
+```powershell
+dotnet --version
+dotnet restore LlmInspector.slnx --locked-mode
+```
+
+Первая команда должна вывести `10.0.400`. Запустить пустой development shell:
+
+```powershell
+dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore
+```
+
+Shell показывает только честный placeholder. Он не открывает proxy port, не создаёт database и не собирает telemetry.
+
+## Проверки и сборка
+
+```powershell
+dotnet format LlmInspector.slnx --verify-no-changes --no-restore
+dotnet build LlmInspector.slnx -c Release --no-restore
+dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"
+dotnet restore src/LlmInspector.App/LlmInspector.App.csproj --locked-mode -r win-x64
+dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/win-x64
+.\artifacts\win-x64\LlmInspector.App.exe --smoke-test
+```
+
+`artifacts/` — локальный disposable output и не коммитится. CI выполняет ту же последовательность в [`.github/workflows/ci.yml`](.github/workflows/ci.yml), не публикует artifacts и не содержит deployment steps.
 
 ## Навигация
 
@@ -42,4 +75,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Initial documentation base commits: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`, затем checkpoint `581e18097a6e9e13098f510fc1f82d3e45f849f7`.
+- Architecture baseline merged через [PR #1](https://github.com/Just9120/llm-inspector/pull/1) в commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`; текущая foundation развивается отдельной PR-веткой от этого base.

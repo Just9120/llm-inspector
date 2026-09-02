@@ -392,7 +392,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля: repository не содержит implementation, tests или CI.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Repository содержит только module/toolchain/CI foundation и empty Avalonia development shell; ни один product AC ещё не выполнен, поэтому foundation tests и workflow не переводятся в feature Evidence.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
@@ -438,10 +438,11 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Last recalculation: `2026-09-02`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
-- Verified `GOAL-002` base SHA: `581e18097a6e9e13098f510fc1f82d3e45f849f7`.
-- Architecture decision commit: `d589fb5` on `codex/architecture-baseline`; merge Evidence pending.
-- GitHub Actions workflows/rulesets: отсутствуют на bootstrap checkpoint.
-- Code/tests/runtime: отсутствуют.
+- Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
+- Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
+- Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
+- GitHub Actions: PR/`main` workflow определён в working branch; first remote run Evidence pending. Repository rulesets/branch protection отсутствуют на checkpoint `2026-09-02`.
+- Code/tests/runtime: 9 compile-only production boundaries, 6 test projects, 10 foundation/policy tests и empty Avalonia shell; proxy/storage/telemetry/product UI не реализованы.
 - Initial release readiness: `0/139 = 0%`.
 - Full agreed roadmap readiness: `0/164 = 0%`.
-- Active approved Goal: `GOAL-002 PENDING_EXTERNAL_GATE`; local architecture DoD complete, PR/merge pending; product code implementation не входит в scope.
+- Active approved Goal: `GOAL-003 IN_PROGRESS`; local foundation and documentation validation complete, PR/CI/merge gates pending; product feature implementation не входит в scope.

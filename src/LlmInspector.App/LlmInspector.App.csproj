@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../LlmInspector.Application/LlmInspector.Application.csproj" />
+    <ProjectReference Include="../LlmInspector.Gateway/LlmInspector.Gateway.csproj" />
+    <ProjectReference Include="../LlmInspector.Adapters/LlmInspector.Adapters.csproj" />
+    <ProjectReference Include="../LlmInspector.Telemetry/LlmInspector.Telemetry.csproj" />
+    <ProjectReference Include="../LlmInspector.Storage.Sqlite/LlmInspector.Storage.Sqlite.csproj" />
+    <ProjectReference Include="../LlmInspector.Resources.Windows/LlmInspector.Resources.Windows.csproj" />
+    <ProjectReference Include="../LlmInspector.Diagnostics/LlmInspector.Diagnostics.csproj" />
+  </ItemGroup>
+</Project>
