@@ -117,6 +117,13 @@
       "llminspector.domain": {
         "type": "Project"
       },
+      "llminspector.gateway": {
+        "type": "Project",
+        "dependencies": {
+          "LlmInspector.Application": "[1.0.0, )",
+          "LlmInspector.Domain": "[1.0.0, )"
+        }
+      },
       "llminspector.storage.sqlite": {
         "type": "Project",
         "dependencies": {

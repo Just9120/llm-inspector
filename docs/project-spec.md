@@ -236,7 +236,7 @@ Definition of Done: `18/18` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-09 — Privacy, locality и transparent proxying
 
-**Status:** ⬜ BACKLOG  
+**Status:** 🟦 IN PROGRESS
 **Goal:** доказуемо исключить user content из data surfaces и сохранить API semantics.
 
 Acceptance criteria:
@@ -392,7 +392,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Repository содержит только module/toolchain/CI foundation и empty Avalonia development shell; ни один product AC ещё не выполнен, поэтому foundation tests и workflow не переводятся в feature Evidence.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-09 core выполняет `E09-AC01..05` и `E09-AC07..14`; `E09-AC06` остаётся невыполненным до появления реальной history/analytics schema в EPIC-08. Другие product AC не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
@@ -404,18 +404,18 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 | ⬜ BACKLOG | 0/14 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release total** | **⬜ BACKLOG** | **0/139** | **0%** | **◐** | **—** | **—** | **—** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **13/139** | **9.4%** | **◐** | **◐** | **◐** | **—** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full agreed roadmap total** | **⬜ BACKLOG** | **0/164** | **0%** | **◐** | **—** | **—** | **—** | **—*** | **—*** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **13/164** | **7.9%** | **◐** | **◐** | **◐** | **—** | **—*** | **—*** |
 
 `*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
 
@@ -435,14 +435,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-02`.
+- Last recalculation: `2026-09-03`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: PR/`main` workflow определён в working branch; first remote run Evidence pending. Repository rulesets/branch protection отсутствуют на checkpoint `2026-09-02`.
-- Code/tests/runtime: 9 compile-only production boundaries, 6 test projects, 10 foundation/policy tests и empty Avalonia shell; proxy/storage/telemetry/product UI не реализованы.
-- Initial release readiness: `0/139 = 0%`.
-- Full agreed roadmap readiness: `0/164 = 0%`.
-- Active approved Goal: `GOAL-003 IN_PROGRESS`; local foundation and documentation validation complete, PR/CI/merge gates pending; product feature implementation не входит в scope.
+- GitHub Actions: PR/`main` workflow proven green by GOAL-003 PR/main runs; EPIC-09 exact PR CI pending. Repository rulesets/branch protection отсутствуют на last verified settings check.
+- Code/tests/runtime: loopback streaming gateway, privacy-safe observation contract, disclosure UI и 26 tests; SQLite/adapters/rich telemetry не реализованы.
+- EPIC-09 local completion candidate: `13/14`; `E09-AC06` deferred to selected EPIC-08 PR because a real history/analytics schema does not yet exist.
+- Initial release readiness: `13/139 = 9.4%`.
+- Full agreed roadmap readiness: `13/164 = 7.9%`.
+- GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
+- Active approved Goal: `GOAL-004 IN_PROGRESS`; `13/72` selected AC complete locally, EPIC-09 PR/CI Evidence pending; branch `codex/epic-09-privacy-proxy` from verified base `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`.

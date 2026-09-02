@@ -4,19 +4,21 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет реализованную repository/CI foundation поверх выбранной architecture baseline:
+Проект имеет repository/CI foundation и первый product increment `EPIC-09`:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
-- минимальный Avalonia shell компилируется и запускается, но proxy, telemetry, storage и product UI ещё не реализованы;
+- Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`, направленный по умолчанию на local backend `http://127.0.0.1:11434`;
+- proxy поддерживает transparent streaming relay для `POST /v1/chat/completions`, не следует redirects, propagates cancellation и принимает backend destination только на literal loopback;
+- UI показывает gateway state, текущие категории technical data и retention; persistence, adapters и rich telemetry ещё не реализованы;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- локально подтверждены locked restore, formatting, Release build, 10 foundation/policy tests, self-contained `win-x64` publish и shell smoke;
+- локально подтверждены locked restore, formatting, Release build, 26 foundation/unit/integration/privacy/Windows tests, self-contained `win-x64` publish и combined Avalonia/gateway smoke;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Foundation не засчитывается как выполнение product acceptance criteria: текущая product readiness остаётся `0/139 = 0%` для initial release и `0/164 = 0%` для полного roadmap.
+Текущая readiness: `13/139 = 9.4%` initial release и `13/164 = 7.9%` full roadmap. `EPIC-09` имеет `13/14`: persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`.
 
 ## Быстрый старт
 
@@ -29,13 +31,13 @@ dotnet --version
 dotnet restore LlmInspector.slnx --locked-mode
 ```
 
-Первая команда должна вывести `10.0.400`. Запустить пустой development shell:
+Первая команда должна вывести `10.0.400`. Запустить development build:
 
 ```powershell
 dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore
 ```
 
-Shell показывает только честный placeholder. Он не открывает proxy port, не создаёт database и не собирает telemetry.
+После запуска client можно направить на `http://127.0.0.1:5117/v1`. Сейчас реализован только `POST /v1/chat/completions`; default backend — `http://127.0.0.1:11434`. Техническое наблюдение остаётся только в памяти процесса, database не создаётся, raw request/response/tool content не сохраняется и не логируется.
 
 ## Проверки и сборка
 
@@ -75,4 +77,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Architecture baseline merged через [PR #1](https://github.com/Just9120/llm-inspector/pull/1) в commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`; текущая foundation развивается отдельной PR-веткой от этого base.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2) в commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; текущий EPIC-09 increment развивается отдельной PR-веткой от этого base.

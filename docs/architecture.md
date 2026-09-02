@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION IMPLEMENTED; PRODUCT RUNTIME NOT IMPLEMENTED`
-> Decision scope: `GOAL-002`; foundation implementation scope: `GOAL-003`
-> Evidence reviewed: `2026-09-02`
+> Status: `DECIDED — FOUNDATION IMPLEMENTED; EPIC-09 PARTIALLY IMPLEMENTED`
+> Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`
+> Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но не является product runtime Evidence. `GOAL-003` реализовала только repository foundation: module graph, exact toolchain/dependency locks, empty Avalonia development shell, foundation/policy tests и PR CI. Proxy, adapters, telemetry, persistence, diagnostics logic, system collectors и product UI пока представлены только boundaries/markers; это не выполняет product AC.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. Первый PR `GOAL-004` реализует EPIC-09 core: explicit IPv4-loopback Kestrel listener, literal-loopback backend validation/normalization, streaming Chat Completions relay, cancellation/failure isolation, privacy-safe observation DTO и disclosure UI. Adapters, rich telemetry и persistence остаются следующими PR этой Goal.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -84,7 +84,7 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-На foundation revision каждый non-UI module содержит только marker type, а dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary не является implementation Evidence соответствующей product feature.
+`Gateway`, `Domain`, `Application` и `App` теперь содержат первый product increment; остальные non-UI modules по-прежнему представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
 ## 5. Runtime/process model
 
@@ -104,6 +104,8 @@ Collectors, retention и diagnostics работают как independently super
 ## 6. Network boundary и request flow
 
 Inspector — explicit reverse proxy, не system-wide MITM и не backend lifecycle manager.
+
+Текущий EPIC-09 increment использует fixed listener `127.0.0.1:5117`, default backend `127.0.0.1:11434` и поддерживает только `POST /v1/chat/completions`. Dynamic listener port разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
 
 ```text
 OpenAI-compatible client
@@ -137,7 +139,7 @@ Kestrel loopback gateway
 
 Inspector неизбежно видит proxied content в process memory, чтобы переслать его. Privacy promise означает zero persistence/index/log/analytics/snapshot occurrence, а не end-to-end encryption от самого process.
 
-Enforcement выполняется в трёх независимых слоях:
+Enforcement выполняется в трёх независимых слоях; первые два частично реализованы в EPIC-09 increment, третий проверяется в EPIC-08:
 
 1. `Gateway`: raw body/headers никогда не передаются structured logger; HTTP body logging и framework request logging disabled.
 2. `Telemetry`: schema-first allowlist projection создаёт новый metadata record. Запрещённые значения не маскируются post hoc — они отсутствуют в output type.
@@ -294,7 +296,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Локальная validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 10 foundation/policy tests без skips, self-contained publish, Avalonia initialization smoke и трёхсекундный UI-process launch observation. Последний доказывает только жизнеспособность empty shell, не product behavior и не release/install compatibility.
+Локальная validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 26 tests без skips, self-contained publish, combined Avalonia/gateway smoke и трёхсекундный UI-process observation с единственным owning-PID listener `127.0.0.1:5117`. Integration suite покрывает non-streaming/SSE/tool payload pass-through, first-fragment streaming, redirects, cancellation, concurrency, backend/sink failures и hostile hosting configuration; privacy suite использует runtime-generated canaries.
 
 Configured CI foundation:
 
@@ -328,7 +330,8 @@ Production signing identity and distribution channel remain external gates: Micr
 | Distribution/update channel | `PENDING_EXTERNAL_GATE` for release | Explicit release Goal; no hidden external network behavior |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Remote/LAN listener/backend | `BACKLOG` | Threat model, authentication, encryption and DEPLOY/LIVE applicability decision |
-| Default port and concrete settings schema | `DEFER` | GOAL-004 implementation tests; loopback-only invariant is already fixed |
+| Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
+| Versioned settings schema и backend selection UI | `DEFER` | Следующие selected epic PR; текущий backend default `127.0.0.1:11434` immutable в runtime |
 
 ## 18. Primary evidence sources
 

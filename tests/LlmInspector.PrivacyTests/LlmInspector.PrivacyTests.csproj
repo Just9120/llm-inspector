@@ -12,6 +12,13 @@
     <PackageReference Include="MSTest.TestFramework" />
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="../TestInfrastructure/LoopbackStubServer.cs" Link="TestInfrastructure/LoopbackStubServer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LlmInspector.Application/LlmInspector.Application.csproj" />
+    <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
+    <ProjectReference Include="../../src/LlmInspector.Gateway/LlmInspector.Gateway.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Telemetry/LlmInspector.Telemetry.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Storage.Sqlite/LlmInspector.Storage.Sqlite.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Diagnostics/LlmInspector.Diagnostics.csproj" />
