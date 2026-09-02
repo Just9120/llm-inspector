@@ -46,7 +46,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `28/72 = 38.9%` selected product AC complete locally. EPIC-02 maps `15/15` AC to code and focused tests but remains `IN PROGRESS` until exact-revision CI. EPIC-09 remains `13/14`; PR [#3](https://github.com/Just9120/llm-inspector/pull/3), PR CI `33685945571` and exact-merge `main` CI `33686231092` are successful, while persistent-schema `E09-AC06` remains open. Other selected epics are authorized but not started.
+**Current Goal verification:** `28/72 = 38.9%` selected product AC complete. EPIC-02 maps `15/15` AC to code/tests and PR [#4](https://github.com/Just9120/llm-inspector/pull/4) CI `33690474686` succeeded on exact head, but exact-merge `main` CI `33690756965` failed one transport-dependent abort assertion; epic remains `IN PROGRESS` with `CI: ❌` until the fix PR proves the merge revision. EPIC-09 remains `13/14`; PR [#3](https://github.com/Just9120/llm-inspector/pull/3), PR CI `33685945571` and exact-merge `main` CI `33686231092` are successful, while persistent-schema `E09-AC06` remains open. Other selected epics are authorized but not started.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -65,20 +65,20 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T22:26:17Z` |
+| Updated UTC | `2026-09-02T22:35:50Z` |
 | Expected base branch | `main` |
-| Base SHA | `cd1e3716f465d716627b6df173e18cf3f94fb612` — verified local/`origin/main` after PR #3 merge and successful exact-merge CI |
-| Working branch | `codex/epic-02-backend-adapters` |
-| Last verified revision | `69f2507e8b9df006f85ba445d913b0b091c4f62c` — assembled EPIC-02 runtime, tests, documentation and dependency locks covered by full local CI-equivalent validation; containing checkpoint update is intentionally not self-referenced |
-| Initial worktree state | Clean branch created from synchronized local/`origin/main`; previous merged branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | EPIC-02 complete at `15/15` local AC mapping; worktree clean before this checkpoint update; branch remains local and unpushed |
-| Completed work | Allowlisted metric/quality/provenance model; bounded incremental JSON/SSE parser; three versioned backend fixture profiles; non-blocking Gateway telemetry; bounded latest-observation store; explicit known-client routes; generic fallback; `/models` handshake; versioned safe launch configuration; locked restore and format successful; Release build `0` warnings/errors; full suite `53/53`, `0` failed/skipped; locked win-x64 restore, self-contained publish and smoke successful; exact loopback listeners observed for Ollama, llama.cpp and LM Studio profiles |
-| Current step | Create the reviewed EPIC-02 commit boundary, perform the single initial push and open PR-02 |
-| Next exact action | Push `codex/epic-02-backend-adapters` once and create the EPIC-02 Pull Request with exact local Evidence |
-| PR / CI | PR-02 not created and branch not pushed. EPIC-02 exact-revision CI is absent until the single initial push after complete local validation |
+| Base SHA | `275b7407a015f6a98361f87b74b5dc444f0a8355` — PR #4 merge commit, verified local/`origin/main`; its exact-merge CI failed at one integration assertion |
+| Working branch | `codex/epic-02-backend-abort-fix` |
+| Last verified revision | `cf1cd3c1423b6a2d63b166fac0c58394212cfafa` — transport-safe abort assertion covered by one build+focused run and 10 additional sequential focused runs; containing documentation is intentionally not self-referenced |
+| Initial worktree state | Clean fix branch created from synchronized local/`origin/main` after PR #4 merge; merged feature branch had zero unique commits and was safely removed locally/remotely |
+| Current worktree state | One focused test-harness fix committed; documentation update is the only current worktree change |
+| Completed work | EPIC-02 product increment merged as PR #4; exact-head PR CI `33690474686` passed all steps; exact-merge `main` CI `33690756965` failed only `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure` and skipped downstream publish/smoke; failed assertion no longer assumes one platform-specific `HttpClient` truncation signal while still requiring `RelayFailed` and original status; focused test passed `11/11` sequential runs |
+| Current step | Complete full local CI-equivalent validation of the focused fix, then open one fix PR |
+| Next exact action | Commit synchronized failure/checkpoint metadata, then run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke |
+| PR / CI | PR #4 merged as `275b7407a015f6a98361f87b74b5dc444f0a8355`; PR run `33690474686` success; `main` run `33690756965` failure at tests. Fix branch is local and unpushed |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | No current PR blocker. `E09-AC06` requires the later EPIC-08 persistent schema and remains incomplete without blocking a truthful partial epic merge |
-| Unverified assumptions | GitHub-hosted exact-revision behavior remains pending. Compatibility is proven against `epic02-fixtures-v1`, not every future backend/client version; unknown fields still relay transparently but receive no telemetry credit |
+| Blockers | No confirmed fix-PR blocker. Failed `main` CI is an active gate and cannot be bypassed. `E09-AC06` still requires the later EPIC-08 persistent schema |
+| Unverified assumptions | Full-suite and GitHub-hosted behavior of the transport-safe assertion remain pending. Compatibility is proven against `epic02-fixtures-v1`, not every future backend/client version; unknown fields still relay transparently but receive no telemetry credit |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
@@ -94,7 +94,7 @@ Delta: `+10.7 п.п.` initial release и `+9.2 п.п.` full roadmap. Initial-rel
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-02 Backends/clients/API | 🟦 IN PROGRESS | 15/15 | 100% | ✅ | ✅ | ✅ | — | N/A | N/A |
+| EPIC-02 Backends/clients/API | 🟦 IN PROGRESS | 15/15 | 100% | ✅ | ✅ | ✅ | ❌ | N/A | N/A |
 | EPIC-03 Live state/quality | ⬜ BACKLOG | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-04 Tokens/context/timings | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 History/analytics/retention | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
@@ -119,7 +119,7 @@ Delta: `+10.7 п.п.` initial release и `+9.2 п.п.` full roadmap. Initial-rel
 | `E02-AC12` | Standard configurable base URLs plus transparent `GET /models` handshake for generic/known paths; primary client configuration sources recorded with fixture set |
 | `E02-AC13..15` | Non-streaming, fragmented SSE and fragmented tool-call flows are relayed byte-for-byte/order-preserving through stub-backend integration tests; telemetry/parser failure isolation is tested |
 
-Remote CI remains the only missing EPIC-02 Evidence dimension before `READY`.
+Exact-merge `main` CI is the only failed EPIC-02 Evidence dimension before `READY`; the current fix must pass both PR and post-merge runs.
 
 ## Current blockers и decisions
 
