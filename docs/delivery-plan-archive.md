@@ -2,6 +2,20 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-003 — Создать reproducible .NET repository skeleton и PR CI foundation
+
+- **State:** `DONE`.
+- **Authorization:** explicit user instruction от `2026-09-02`: «ставь цель и начинай» после согласования PR-based flow.
+- **Scope:** exact `.NET 10.0.400` toolchain, 9 production/6 test projects, empty Avalonia shell, normal/`win-x64` lock graphs, executable local commands и least-privilege PR/`main` CI без product behavior/CD.
+- **Outcome:** foundation реализована; product readiness намеренно осталась `0/139` initial и `0/164` full roadmap.
+- **Local Evidence:** locked restores, format, Release build `0 warnings / 0 errors`, `10/10` tests, self-contained `win-x64` publish, smoke и bounded UI launch.
+- **Pull Request:** [#2](https://github.com/Just9120/llm-inspector/pull/2), merged `2026-09-02T20:48:29Z`.
+- **Merge commit:** `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`.
+- **CI Evidence:** PR run [33681233301](https://github.com/Just9120/llm-inspector/actions/runs/33681233301) success на `acc0a39cc15e228268973883f916ecf7f0e1a2d8`; `main` run [33681476344](https://github.com/Just9120/llm-inspector/actions/runs/33681476344) success на merge commit; all steps terminal success.
+- **DEPLOY/LIVE:** N/A; runtime CD target отсутствует.
+- **Cleanup:** local/remote feature branch удалена после ancestor/unique-commit checks; local `main == origin/main`, worktree clean.
+- **Limitation:** approved post-merge metadata mechanism отсутствовал; terminal Evidence было также записано в merged PR comment, metadata-only follow-up PR/direct push не создавались.
+
 ## GOAL-002 — Утвердить architecture baseline и executable delivery foundation design
 
 - **State:** `DONE`.

@@ -236,7 +236,7 @@ Definition of Done: `18/18` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-09 — Privacy, locality и transparent proxying
 
-**Status:** ⬜ BACKLOG  
+**Status:** 🟦 IN PROGRESS
 **Goal:** доказуемо исключить user content из data surfaces и сохранить API semantics.
 
 Acceptance criteria:
@@ -404,18 +404,18 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 | ⬜ BACKLOG | 0/14 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release total** | **⬜ BACKLOG** | **0/139** | **0%** | **◐** | **—** | **—** | **—** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **0/139** | **0%** | **◐** | **—** | **—** | **—** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full agreed roadmap total** | **⬜ BACKLOG** | **0/164** | **0%** | **◐** | **—** | **—** | **—** | **—*** | **—*** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/164** | **0%** | **◐** | **—** | **—** | **—** | **—*** | **—*** |
 
 `*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
 
@@ -445,4 +445,5 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Code/tests/runtime: 9 compile-only production boundaries, 6 test projects, 10 foundation/policy tests и empty Avalonia shell; proxy/storage/telemetry/product UI не реализованы.
 - Initial release readiness: `0/139 = 0%`.
 - Full agreed roadmap readiness: `0/164 = 0%`.
-- Active approved Goal: `GOAL-003 IN_PROGRESS`; local foundation and documentation validation complete, PR/CI/merge gates pending; product feature implementation не входит в scope.
+- GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
+- Active approved Goal: `GOAL-004 IN_PROGRESS`; exact selected product denominator `72` AC across EPIC-09/02/03/04/08; first branch `codex/epic-09-privacy-proxy` from verified base `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`.
