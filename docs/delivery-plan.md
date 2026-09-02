@@ -46,7 +46,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `41/72 = 56.9%` selected product AC complete. EPIC-02 is `READY 15/15`. EPIC-03 maps `13/13` to local code/tests but remains `IN PROGRESS` until exact-revision CI. EPIC-09 remains `13/14`; PR [#3](https://github.com/Just9120/llm-inspector/pull/3), PR CI `33685945571` and exact-merge `main` CI `33686231092` are successful, while persistent-schema `E09-AC06` remains open. Other selected epics are authorized but not started.
+**Current Goal verification:** `41/72 = 56.9%` selected product AC complete. EPIC-02 is `READY 15/15`. EPIC-03 maps `13/13` to local code/tests, but PR [#6](https://github.com/Just9120/llm-inspector/pull/6) CI `33693671440` failed an inherited abort-fixture race; a deterministic handshake fix is local, so epic remains `IN PROGRESS` with `CI: ❌`. EPIC-09 remains `13/14`; PR [#3](https://github.com/Just9120/llm-inspector/pull/3), PR CI `33685945571` and exact-merge `main` CI `33686231092` are successful, while persistent-schema `E09-AC06` remains open. Other selected epics are authorized but not started.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -65,37 +65,37 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:06:25Z` |
+| Updated UTC | `2026-09-02T23:12:59Z` |
 | Expected base branch | `main` |
 | Base SHA | `e1e1b735116b94d73fa87559da8759c5f58d243c` — verified local/`origin/main` after PR #5 merge and successful exact-merge CI |
 | Working branch | `codex/epic-03-live-state-quality` |
-| Last verified revision | `e5a28157a6f73c08b8624cb211c9c5a7112ebf92` — assembled EPIC-03 code, tests and documentation covered by full local CI-equivalent validation; containing checkpoint update is intentionally not self-referenced |
+| Last verified revision | `a3cbe1ffb391fc16a8a92bce29f290476daa3e55` — deterministic abort handshake fix covered by 21 focused runs and the exact parallel CI test command `80/80`; containing documentation is intentionally not self-referenced |
 | Initial worktree state | Clean EPIC-03 branch created from synchronized local/`origin/main`; merged fix branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | EPIC-03 runtime, tests and documentation committed; worktree clean before this checkpoint update; branch remains local and unpushed |
-| Completed work | Eight-stage domain contract; typed backend progress; bounded monotonic live tracker and ETA estimator; independent concurrent request state; protocol-observed Gateway prompt/generation/terminal lifecycle; safe sink failure isolation; 250 ms Avalonia snapshot projection with explicit quality; locked restore and format successful; Release build `0` warnings/errors; full suite `80/80`, `0` failed/skipped; locked win-x64 restore, self-contained publish and smoke successful; normal desktop composition remained alive on exact loopback after a safe tracked backend-failure request |
-| Current step | Perform the EPIC-03 branch's single initial push and open its separate Pull Request |
-| Next exact action | Push `codex/epic-03-live-state-quality` once and create the EPIC-03 Pull Request with exact local Evidence |
-| PR / CI | EPIC-02 PR #5 merged as `e1e1b735116b94d73fa87559da8759c5f58d243c`; PR run `33691566607` and `main` run `33691761413` success. EPIC-03 branch is local/unpushed; PR/CI absent |
+| Current worktree state | Confirmed CI-failure fix committed; failure/readiness metadata update is the only current worktree change |
+| Completed work | EPIC-03 initial candidate passed full local validation and opened PR #6; CI `33693671440` passed restore/format/build but failed `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure`, skipping downstream publish/smoke; failed log proved backend could abort before proxy observed headers; fixture now waits until client has received exact `200` and partial body before abort; focused test `21/21` and exact parallel CI test command `80/80` passed |
+| Current step | Synchronize failed-CI metadata, then repeat full local validation of the grouped follow-up candidate |
+| Next exact action | Commit failure/checkpoint metadata, then run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke |
+| PR / CI | EPIC-03 PR #6 open; initial head `d1e8f313b6652cfe1656f1de0c4fac99bd852103`; run `33693671440` failed at tests. One grouped follow-up push is authorized after complete local validation |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | No current EPIC-03 blocker. `E09-AC06` still requires the later EPIC-08 persistent schema |
-| Unverified assumptions | GitHub-hosted exact-revision behavior remains pending. Supported OpenAI-compatible flows have no trustworthy per-request load/queue/progress percentage signal; current runtime therefore uses protocol-observed stages without percentage unless a future typed backend-reported signal exists |
+| Blockers | Failed PR CI is an active merge gate and cannot be bypassed; local deterministic fix is not remote Evidence yet. `E09-AC06` still requires the later EPIC-08 persistent schema |
+| Unverified assumptions | GitHub-hosted behavior of the handshake-fixed test remains pending. Supported OpenAI-compatible flows have no trustworthy per-request load/queue/progress percentage signal; current runtime therefore uses protocol-observed stages without percentage unless a future typed backend-reported signal exists |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-02T23:02:05Z` | `41/139 = 29.5%` | `41/164 = 25.0%` | `E03-AC01..13`, `E02-AC01..15`, `E09-AC01..05` and `E09-AC07..14` independently mapped to current code/tests; EPIC-03 CI and `E09-AC06` remain open |
-| Previous | `2026-09-02T22:48:15Z` | `28/139 = 20.1%` | `28/164 = 17.1%` | Same 28 product AC before EPIC-03 implementation; EPIC-02 had terminal Evidence and `READY` |
+| Current | `2026-09-02T23:12:59Z` | `41/139 = 29.5%` | `41/164 = 25.0%` | Same 41 product AC independently mapped; EPIC-03 PR CI failed an inherited fixture race and deterministic local fix is pending remote Evidence |
+| Previous | `2026-09-02T23:02:05Z` | `41/139 = 29.5%` | `41/164 = 25.0%` | Same completed AC before initial PR #6 CI; EPIC-03 CI was absent rather than failed |
 
-Delta: `+9.4 п.п.` initial release и `+7.9 п.п.` full roadmap. Denominators unchanged; delta is exactly the 13 newly implemented EPIC-03 AC, not a re-estimate of previous criteria.
+Delta: `0.0 п.п.` for initial release and full roadmap. Product denominators and completed AC did not change; this snapshot records failed CI Evidence and its local deterministic fix.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-02 Backends/clients/API | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-03 Live state/quality | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | — | N/A | N/A |
+| EPIC-03 Live state/quality | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | ❌ | N/A | N/A |
 | EPIC-04 Tokens/context/timings | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 History/analytics/retention | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
@@ -132,7 +132,7 @@ EPIC-02 terminal Evidence: PR #5 run `33691566607` and exact-merge `main` run `3
 | `E03-AC11..12` | Percentage originates only from `BackendProgressSignal` as exact backend metric; absent/regressed/changed-source evidence yields stage plus `unavailable` without percentage |
 | `E03-AC13` | Presenter emits `[exact]`, `[calculated]`, `[estimated]` or `[unavailable]` on every displayed numeric metric; Windows tests cover all branches |
 
-Remote CI remains the only missing EPIC-03 Evidence dimension before `READY`.
+PR CI `33693671440` failed the inherited abort fixture; the deterministic handshake fix must pass PR and post-merge CI before EPIC-03 can become `READY`.
 
 ## Current blockers и decisions
 

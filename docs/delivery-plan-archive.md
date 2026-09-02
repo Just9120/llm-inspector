@@ -7,6 +7,7 @@
 - `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
 - `2026-09-02T21:43:13Z`: initial release `13/139 = 9.4%`, full roadmap `13/164 = 7.9%`; only EPIC-09 core AC were complete after PR #3. Archived when EPIC-02 terminal CI produced a newer snapshot without changing its already credited AC.
 - `2026-09-02T22:15:32Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 product AC were complete but terminal CI Evidence was not. Archived after EPIC-03 produced a newer independent readiness calculation.
+- `2026-09-02T22:48:15Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 was `READY` before EPIC-03 implementation. Archived after initial PR #6 CI produced a newer Evidence snapshot.
 
 ## GOAL-004 / EPIC-02 — Backend/client adapters и CI stabilization
 

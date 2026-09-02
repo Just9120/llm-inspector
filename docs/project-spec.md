@@ -393,13 +393,13 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15` и имеет terminal CI Evidence. EPIC-03 локально выполняет `E03-AC01..13` на typed stage/progress contract, bounded live tracker/ETA estimator, Gateway lifecycle integration и qualified Avalonia projection; exact-revision CI ещё отсутствует, поэтому epic остаётся `IN PROGRESS`. EPIC-09 core выполняет `E09-AC01..05` и `E09-AC07..14`; `E09-AC06` остаётся невыполненным до появления реальной history/analytics schema в EPIC-08. Другие product AC не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15` и имеет terminal CI Evidence. EPIC-03 локально выполняет `E03-AC01..13` на typed stage/progress contract, bounded live tracker/ETA estimator, Gateway lifecycle integration и qualified Avalonia projection; PR CI `33693671440` не прошёл унаследованный nondeterministic abort fixture, deterministic handshake fix ожидает follow-up Evidence, поэтому epic остаётся `IN PROGRESS` с `CI: ❌`. EPIC-09 core выполняет `E09-AC01..05` и `E09-AC07..14`; `E09-AC06` остаётся невыполненным до появления реальной history/analytics schema в EPIC-08. Другие product AC не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | — | N/A | N/A |
+| EPIC-03 | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | ❌ | N/A | N/A |
 | EPIC-04 | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |

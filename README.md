@@ -14,7 +14,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local, PR и exact-merge CI после отдельного transport-safe test fix; EPIC-03 имеет локальный кандидат `13/13`, но останется `IN PROGRESS` до exact-revision CI;
+- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local, PR и exact-merge CI после отдельного transport-safe test fix; EPIC-03 имеет локальный кандидат `13/13`, а failed PR #6 run выявил унаследованную race в abort fixture, для которой подготовлен deterministic handshake fix;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
