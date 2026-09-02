@@ -231,7 +231,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 startedAt,
                 Stopwatch.GetElapsedTime(startedTimestamp),
                 statusCode,
-                outcome);
+                outcome,
+                ClientKind.GenericUnknown,
+                BackendResponseTelemetry.Unavailable(_options.Backend, "gateway-no-adapter-v1"));
             await RecordSafelyAsync(observation).ConfigureAwait(false);
         }
     }

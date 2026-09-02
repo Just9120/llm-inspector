@@ -13,4 +13,6 @@ public sealed record ProxyObservation(
     DateTimeOffset StartedAt,
     TimeSpan Duration,
     int? HttpStatusCode,
-    ProxyOutcome Outcome);
+    ProxyOutcome Outcome,
+    ClientKind Client,
+    BackendResponseTelemetry BackendTelemetry);

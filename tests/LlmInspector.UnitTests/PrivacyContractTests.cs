@@ -13,6 +13,8 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.Duration),
         nameof(ProxyObservation.HttpStatusCode),
         nameof(ProxyObservation.Outcome),
+        nameof(ProxyObservation.Client),
+        nameof(ProxyObservation.BackendTelemetry),
     ];
 
     [TestMethod]
@@ -31,6 +33,34 @@ public sealed class PrivacyContractTests
         Assert.IsFalse(
             typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)),
             "A free-form string would allow request or response content to enter the observation contract.");
+
+        string[] telemetryPropertyNames = typeof(BackendResponseTelemetry)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Concat(typeof(MetricValue).GetProperties().Select(property => property.Name))
+            .Concat(typeof(BackendMetric).GetProperties().Select(property => property.Name))
+            .Concat(typeof(TechnicalIdentifier).GetProperties().Select(property => property.Name))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        string[] allowedTelemetryPropertyNames =
+        [
+            "Backend",
+            "BackendSpecificMetrics",
+            "CompletionTokens",
+            "DerivationVersion",
+            "Key",
+            "Metric",
+            "Model",
+            "PromptTokens",
+            "Quality",
+            "Source",
+            "SourceVersion",
+            "TotalTokens",
+            "Unit",
+            "Value",
+        ];
+        CollectionAssert.AreEqual(allowedTelemetryPropertyNames, telemetryPropertyNames);
     }
 
     [TestMethod]
