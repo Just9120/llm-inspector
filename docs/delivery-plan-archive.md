@@ -11,4 +11,14 @@
 - **Outcome:** 12 initial-release epics / 139 AC; 6 backlog epics / 25 AC; full roadmap 164 AC; server/runtime CD disabled.
 - **Evidence:** SPEC ✅; CODE N/A; TEST ✅ (local structural/count/link/reference checks); CI N/A; DEPLOY N/A; LIVE N/A.
 - **Closed:** `2026-09-02T18:01:24Z`.
-- **Limitations:** Windows support matrix и numeric performance budgets остаются SPEC gaps; documents остаются local/uncommitted из-за отсутствия base SHA и read-only `.git`.
+- **Git baseline:** ratified documentation сохранена в initial content commit `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
+- **Limitations:** Windows support matrix и numeric performance budgets остаются SPEC gaps.
+
+## BOOTSTRAP-001 — Initial `main` synchronization
+
+- **State:** `DONE` после обязательной final Git/GitHub verification этой task.
+- **Authorization:** explicit user instruction от `2026-09-02` выполнить one-time initial commit/push в `main`, затем остановиться перед выбором следующей Goal.
+- **Scope:** commit ratified documentation baseline, update checkpoint metadata, выполнить один initial push и доказать equality local/remote HEAD.
+- **Non-goals:** feature implementation, CI/repository settings, architecture work, новая Goal.
+- **Base content SHA:** `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
+- **Evidence:** local structural validation; final local `HEAD`/`origin/main`/GitHub default-branch verification. Containing metadata commit не self-referenced.

@@ -427,7 +427,8 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 - Last recalculation: `2026-09-02`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
-- Remote state: public, empty, zero branches/commits/workflows/rulesets.
+- Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
+- GitHub Actions workflows/rulesets: отсутствуют на bootstrap checkpoint.
 - Code/tests/runtime: отсутствуют.
 - Initial release readiness: `0/139 = 0%`.
 - Full agreed roadmap readiness: `0/164 = 0%`.

@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `NO APPROVED GOAL`  
-> Updated: `2026-09-02T18:01:24Z`
+> Updated: `2026-09-02T18:16:23Z`
 
 ## Current Goal
 
@@ -11,19 +11,19 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T18:01:24Z` |
+| Updated UTC | `2026-09-02T18:16:23Z` |
 | Expected base branch | `main` |
-| Base SHA | `NONE`: local и remote repository остаются unborn/empty |
-| Working branch | `main` (unborn) |
-| Last verified revision | `NONE` |
+| Base SHA | `e0860e4972e486e59fcf3a8499b5da0f2863b96c` — initial documentation snapshot |
+| Working branch | `main`; one-time empty-repository bootstrap explicitly authorized пользователем |
+| Last verified revision | `e0860e4972e486e59fcf3a8499b5da0f2863b96c`; содержащий этот checkpoint metadata commit намеренно не self-referenced |
 | Initial worktree state | Только `.git`; project files отсутствовали |
-| Current worktree state | Локальные uncommitted documentation files; remote не изменён |
-| Completed work | Empty-repository audit; canonical product ratification; 164 atomic AC; CD decision; documentation synchronization |
+| Current worktree state | Documentation content committed; checkpoint metadata подготовлена отдельным commit перед единым initial push |
+| Completed work | Empty-repository audit; canonical product ratification; 164 atomic AC; CD decision; initial `main` bootstrap |
 | Current step | Ожидание approval следующей bounded Goal |
 | Next exact action | Пользователь принимает, изменяет или отклоняет `GOAL-002`; до этого architecture/code implementation не начинать |
-| PR / CI | `N/A`: base commit и workflows отсутствуют |
+| PR / CI | `N/A`: initial empty-repository bootstrap cannot use PR without an existing base; workflows отсутствуют |
 | Deployment | Server/runtime CD explicitly disabled; Windows build/release pipeline не определён |
-| Blockers | Base SHA отсутствует; `.git` read-only в текущем sandbox; Windows support matrix и numeric performance budgets не утверждены |
+| Blockers | Windows support matrix и numeric performance budgets не утверждены |
 | Unverified assumptions | Desktop stack, process/data architecture, packaging/signing/update model |
 | Preserved pre-existing changes | До audit/bootstrap project files отсутствовали; unrelated changes не обнаружены |
 
@@ -68,8 +68,7 @@ Numeric delta с previous snapshot не вычисляется: предыдущ
 1. `SPEC`: supported Windows versions и minimum hardware/driver baseline не определены (`EPIC-01`).
 2. `SPEC`: numeric monitoring/idle/throughput budgets и reference workloads не определены (`EPIC-12`).
 3. `ARCH`: desktop stack, proxy boundary, storage, process model и packaging/update topology не выбраны.
-4. `GIT`: repository не имеет initial commit/base SHA; нормальный feature-branch/PR flow пока невозможен.
-5. `ENV`: текущий managed sandbox разрешает project file writes, но не запись в `.git`.
+4. `ENV`: Git mutations в managed sandbox требуют отдельного approved elevated command; это operational constraint, не product blocker.
 
 ## Roadmap
 
@@ -77,7 +76,7 @@ Roadmap — sequencing proposal, не implementation authorization.
 
 1. **R0 — Product contract:** завершён локально; 139 initial-release и 25 backlog AC.
 2. **R1 — Architecture baseline:** выбрать Windows stack, boundaries, data/privacy model, test seams, support matrix и performance measurement contract.
-3. **R2 — Repository/CI foundation:** initial base, feature branch, reproducible toolchain, lint/type/test/build CI без CD.
+3. **R2 — Repository/CI foundation:** initial base уже создан; далее feature branch, reproducible toolchain и lint/typecheck/test/build CI без CD.
 4. **R3 — Privacy-preserving OpenAI-compatible vertical slice:** один client/backend path, streaming, telemetry quality и negative privacy tests.
 5. **R4 — Required adapters и live telemetry:** Ollama, llama.cpp, LM Studio, known clients, timings/context.
 6. **R5 — Resources, diagnostics и analytics:** collectors, explainable rules, history/retention.
@@ -136,7 +135,7 @@ Roadmap — sequencing proposal, не implementation authorization.
 
 - Numeric performance budgets отсутствуют в ратифицированном source.
 - Windows support baseline и signing/distribution preferences не заданы.
-- Initial Git base и writable `.git` понадобятся только в следующей code/bootstrap Goal.
+- Initial Git base существует; будущие Git mutations должны выполняться в feature branch и могут требовать managed approval.
 
 **Stop condition**
 

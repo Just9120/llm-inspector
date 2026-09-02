@@ -39,4 +39,5 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
-- На baseline-аудите `2026-09-02` remote repository был пуст; base SHA отсутствовал.
+- На baseline-аудите `2026-09-02` remote repository был пуст.
+- Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
