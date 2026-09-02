@@ -349,11 +349,11 @@ Validation and rollback/stop criteria
 
 ## 16. Project CI/CD profile
 
-Профиль ниже частично заполнен подтверждёнными данными и explicit user decisions от `2026-09-02`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack и release model. Профиль остаётся `UNCONFIGURED`, пока planned toolchain, commands, workflow/check names и artifact flow не созданы и не проверены фактически. Поля `architecture_design` и `windows_release` описывают approved design, а не configured CI/release Evidence.
+Профиль ниже заполнен подтверждёнными данными и explicit user decisions от `2026-09-02`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack/release model, а `GOAL-003` реализовала reproducible repository и CI foundation. Windows release остаётся disabled до отдельной Goal, поэтому её operational поля имеют `N/A`, а не вымышленные значения. Фактический PR run/CI Evidence фиксируется в `docs/delivery-plan.md`.
 
 ```yaml
 profile_version: 1
-status: UNCONFIGURED # UNCONFIGURED | CONFIGURED
+status: CONFIGURED # current repository/CI profile; disabled release/CD fields are N/A
 
 architecture_design:
   runtime: .NET 10 LTS
@@ -367,36 +367,43 @@ architecture_design:
 repository:
   expected_repository: https://github.com/Just9120/llm-inspector
   production_branch: main
-  release_tag_policy: UNSET
+  release_tag_policy: N/A # windows_release.enabled is false
 
 ci:
-  events: UNSET
-  runner: UNSET
-  install_command: UNSET
-  lint_command: UNSET
-  typecheck_command: UNSET
-  test_command: UNSET
-  build_command: UNSET
-  required_checks: UNSET
-  lockfile: UNSET
-  untrusted_pr_policy: UNSET
+  workflow: .github/workflows/ci.yml
+  events: [pull_request, push:main]
+  runner: GitHub-hosted windows-2025 x64 ephemeral standard runner
+  install_command: dotnet restore LlmInspector.slnx --locked-mode
+  lint_command: dotnet format LlmInspector.slnx --verify-no-changes --no-restore
+  typecheck_command: dotnet build LlmInspector.slnx -c Release --no-restore
+  test_command: dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"
+  build_command: locked win-x64 restore + self-contained publish + Avalonia initialization smoke
+  workflow_check: CI / windows-dotnet
+  required_checks: NONE_ENFORCED # no branch protection/rulesets at 2026-09-02 checkpoint
+  lockfile: 15 normal packages.lock.json + 9 RID-specific packages.win-x64.lock.json files
+  package_source: nuget.org only via NuGet.Config source mapping
+  untrusted_pr_policy: contents:read; no secrets, environments, write token, privileged runner or deploy
+  action_pinning: full immutable commit SHA; tag only in comments; enforced by unit policy test
+  concurrency: per workflow and PR/ref; stale runs cancel safely
+  timeout_minutes: 20
+  usage: standard runner in public repository; no billable Actions minutes
 
 artifacts:
   enabled: false
-  type: UNSET # planned: unsigned self-contained validation ZIP; signed MSIX release package
-  identity: UNSET # planned: repository + exact commit + RID + SDK/dependency lock hash
-  registry_or_storage: UNSET
-  provenance_required: true # once artifact publishing is enabled
+  type: N/A # publish output stays only in ephemeral CI workspace
+  identity: N/A
+  registry_or_storage: N/A
+  provenance_required: N/A # required if artifact publishing is enabled later
 
 windows_release:
   enabled: false
   installable_unit: signed and timestamped MSIX
   validated_build_unit: self-contained win-x64 publish output
-  trusted_trigger: UNSET
-  signing_identity: UNSET
-  distribution_channel: UNSET
+  trusted_trigger: N/A
+  signing_identity: N/A # external decision required before enabling release
+  distribution_channel: N/A # external decision required before enabling release
   update_channel: N/A # not a ratified initial-release feature
-  package_validation: UNSET
+  package_validation: N/A
   applicable_evidence: BUILD_PACKAGE_INSTALL # DEPLOY/LIVE remain N/A
 
 deployment:
@@ -419,13 +426,13 @@ deployment:
 
 credentials:
   model: N/A # CD credentials; application/runtime secrets are a separate future design concern
-  runtime_config_owner: UNSET
+  runtime_config_owner: N/A # no runtime config implemented in foundation
   required_secret_names: N/A # CD secret names only
 
 stateful:
-  services: UNSET
-  migration_class: UNSET
-  backup_recovery_contract: UNSET
+  services: N/A # SQLite is design-only and not implemented in foundation
+  migration_class: N/A
+  backup_recovery_contract: N/A
 
 recovery:
   rollback_or_forward_fix: N/A # server deployment recovery

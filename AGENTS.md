@@ -187,18 +187,21 @@ Post-deploy metadata write без отдельного PR допустим то�
 
 Не меняй CI/CD safety contract, credential model, deployment topology или production operations без explicit scope. Failed, skipped, cancelled, timed-out, unavailable и not-run required checks не являются success.
 
-`UNSET` означает «определить по repository configuration», а не «придумать».
+Команды ниже проверяются из repository root с exact SDK из `global.json`. `dotnet restore` должен оставаться в locked mode; изменение SDK/package versions требует reviewed lock-file update.
 
 | Назначение | Команда |
 |---|---|
-| Install | `UNSET` |
-| Format/lint | `UNSET` |
-| Typecheck | `UNSET` |
-| Focused tests | `UNSET` |
-| Full tests | `UNSET` |
-| Build | `UNSET` |
-| Run locally | `UNSET` |
-| CI-equivalent | `UNSET` |
+| Install / restore | `dotnet restore LlmInspector.slnx --locked-mode` |
+| Format/lint | `dotnet format LlmInspector.slnx --verify-no-changes --no-restore` |
+| Typecheck | `dotnet build LlmInspector.slnx -c Release --no-restore` |
+| Focused tests | `dotnet test tests/LlmInspector.UnitTests/LlmInspector.UnitTests.csproj -c Release --no-build` |
+| Full tests | `dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"` |
+| Build | `dotnet build LlmInspector.slnx -c Release --no-restore` |
+| Run locally | `dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore` |
+| RID restore | `dotnet restore src/LlmInspector.App/LlmInspector.App.csproj --locked-mode -r win-x64` |
+| Publish | `dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/win-x64` |
+| Publish smoke | `.\artifacts\win-x64\LlmInspector.App.exe --smoke-test` |
+| CI-equivalent | Выполнить команды restore → format → build → full tests → RID restore → publish → publish smoke в указанном порядке; canonical automation — `.github/workflows/ci.yml` |
 
 Не добавляй heavy testing infrastructure только ради заполнения таблицы.
 

@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-003 IN_PROGRESS`
-> Updated: `2026-09-02T20:11:52Z`
+> Updated: `2026-09-02T20:43:08Z`
 
 ## Current Goal
 
@@ -41,7 +41,7 @@
 
 **Required Evidence:** `SPEC: ✅`; `CODE: ✅`; `TEST: ✅`; `CI: ✅`; `DEPLOY: N/A`; `LIVE: N/A`.
 
-**Current Goal verification:** `0/8` Goal AC complete at start. Evidence: `SPEC: ✅`; `CODE: —`; `TEST: —`; `CI: —`; `DEPLOY: N/A`; `LIVE: N/A`.
+**Current Goal verification:** `7/8` Goal AC complete locally; PR CI/merge gate pending. Evidence: `SPEC: ✅`; `CODE: ✅`; `TEST: ✅`; `CI: ◐`; `DEPLOY: N/A`; `LIVE: N/A`. Product readiness не изменилась: foundation/placeholder не выполняют product AC.
 
 **Known blockers/dependencies**
 
@@ -55,30 +55,30 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T20:11:52Z` |
+| Updated UTC | `2026-09-02T20:43:08Z` |
 | Expected base branch | `main` |
 | Base SHA | `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4` — verified local/`origin/main`/GitHub `main` at Goal start |
 | Working branch | `codex/repository-ci-foundation` |
-| Last verified revision | `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4` — merged architecture baseline and Goal base |
+| Last verified revision | `dc1a9b6f1938307160872f8fe99044c5f56f0e3c` — separate normal/`win-x64` lock graphs and lock-coverage test on top of CI commit `5fd0b67213044b7b7318553d32195621fa488d3f` |
 | Initial worktree state | Clean; local `main`, `origin/main` и GitHub `main` synchronized at base SHA |
-| Current worktree state | Feature branch created; GOAL-002 recovery and GOAL-003 durable start metadata are being recorded |
-| Completed work | PR #1 merge recovered; absence of branch protection confirmed; GOAL-003 scope authorized and branch isolated |
-| Current step | Select and verify exact SDK/package/action versions, then create reproducible skeleton |
-| Next exact action | Проверить installed/current supported `.NET 10` SDK and package versions against authoritative sources |
-| PR / CI | PR не создан; Actions enabled, default workflow token read-only; `main` branch protection absent; workflow not yet present |
+| Current worktree state | Local implementation and full CI-equivalent flow verified; only final canonical/operational documentation commit remains. Its containing commit is intentionally not self-referenced |
+| Completed work | Exact SDK/package locks; 9 production + 6 test projects; dependency/policy tests; empty Avalonia shell; locked restore/format/Release build/10 tests/`win-x64` publish/smoke/UI launch; least-privilege SHA-pinned workflow; docs/profile sync |
+| Current step | Validate synchronized documentation, create final local commit, then reverify `origin/main` before the single initial push |
+| Next exact action | Зафиксировать documentation/evidence commit, выполнить `git fetch` и убедиться, что `origin/main` остался на recorded base SHA |
+| PR / CI | PR не создан; `CI / windows-dotnet` workflow authored but remote run absent. Actions enabled, default token read-only; `main` branch protection/rulesets absent |
 | Deployment | N/A — server/runtime CD explicitly disabled; this Goal only validates unsigned self-contained `win-x64` output locally/CI |
-| Blockers | None at start; unavailable supported SDK/package restore or Actions capacity may become evidence blockers |
-| Unverified assumptions | GitHub-hosted runner label/action SHAs, exact package versions and all planned commands still require verification |
+| Blockers | Нет для local DoD. Absence of enforced required check recorded; CI Evidence remains partial until exact PR revision reaches terminal success |
+| Unverified assumptions | First execution on GitHub-hosted `windows-2025`, GitHub-generated merge ref behavior and observed check identity pending PR run |
 | Preserved pre-existing changes | Goal начата на clean worktree; unrelated changes не обнаружены |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-02T18:45:10Z` | `0/139 = 0%` | `0/164 = 0%` | Все 164 atomic AC пересчитаны; architecture закрыла EPIC-01 SPEC gap, но ни один product AC ещё не имеет CODE/TEST/CI Evidence |
-| Previous | `2026-09-02T18:01:24Z` | `0/139 = 0%` | `0/164 = 0%` | 139 atomic AC в 12 initial-release epics; ещё 25 AC в 6 canonical backlog epics; code/tests отсутствовали |
+| Current | `2026-09-02T20:43:08Z` | `0/139 = 0%` | `0/164 = 0%` | Все 164 atomic product AC независимо сверены с current scope/code: foundation, placeholder shell и CI policy не выполняют feature behavior/DoD |
+| Previous | `2026-09-02T18:45:10Z` | `0/139 = 0%` | `0/164 = 0%` | Architecture закрыла EPIC-01 SPEC gap, но product implementation отсутствовала |
 
-Delta: `0 п.п.` для initial release и full roadmap. `EPIC-01 SPEC` изменён с `◐` на `✅` после утверждения support matrix, но completion остаётся `0/4`: architecture сама по себе не выполняет runtime acceptance criteria.
+Delta: `0 п.п.` для initial release и full roadmap. Repository foundation добавляет CODE/TEST/CI Evidence только для Goal DoD, а не для product epics; `E01-AC01` требует distribution и запуск на всей support matrix, чего empty local shell не доказывает.
 
 ## Epic readiness и Evidence
 
@@ -112,15 +112,15 @@ Delta: `0 п.п.` для initial release и full roadmap. `EPIC-01 SPEC` изм�
 1. `SPEC`: numeric monitoring/idle/throughput budgets и frozen reference hardware/workload fixtures не утверждены (`EPIC-12`); measurement protocol определён.
 2. `TECH`: trustworthy GPU/provider coverage, sampling interval и process attribution требуют focused Windows spike до `EPIC-06 READY`.
 3. `RELEASE`: production signing identity и distribution channel требуют owner/external decision до Windows release Goal; CD остаётся отключён.
-4. `EVIDENCE`: architecture decisions пока не подтверждены code/tests/runtime; это ожидаемое состояние до code Goals.
+4. `EVIDENCE`: foundation CODE/TEST подтверждены локально; exact PR CI revision ещё не подтверждена и не засчитывается до terminal GitHub check success.
 
 ## Roadmap
 
 Roadmap — sequencing proposal, не implementation authorization.
 
 1. **R0 — Product contract:** завершён локально; 139 initial-release и 25 backlog AC.
-2. **R1 — Architecture baseline:** decisions и support matrix завершены в working branch; merge Evidence pending.
-3. **R2 — Repository/CI foundation:** следующая proposal — reproducible `.NET 10` toolchain, compile-only module skeleton, tests и PR CI без CD.
+2. **R1 — Architecture baseline:** завершён и merged через PR #1 в `main` (`00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`).
+3. **R2 — Repository/CI foundation:** local implementation/validation complete в GOAL-003; PR CI/merge Evidence pending.
 4. **R3 — Privacy-preserving OpenAI-compatible vertical slice:** один client/backend path, streaming, telemetry quality и negative privacy tests.
 5. **R4 — Required adapters и live telemetry:** Ollama, llama.cpp, LM Studio, known clients, timings/context.
 6. **R5 — Resources, diagnostics и analytics:** collectors, explainable rules, history/retention.

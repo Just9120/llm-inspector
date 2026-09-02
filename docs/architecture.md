@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — NOT IMPLEMENTED`
-> Decision scope: `GOAL-002`
+> Status: `DECIDED — FOUNDATION IMPLEMENTED; PRODUCT RUNTIME NOT IMPLEMENTED`
+> Decision scope: `GOAL-002`; foundation implementation scope: `GOAL-003`
 > Evidence reviewed: `2026-09-02`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но не является runtime Evidence. На revision, с которой начата `GOAL-002`, source code, dependency manifests, executable commands, tests, workflows, packages и runtime observations отсутствуют. Поэтому принятые ниже решения имеют `SPEC`-силу; `CODE`, `TEST`, `CI` и release Evidence появятся только в отдельно согласованных Goals.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но не является product runtime Evidence. `GOAL-003` реализовала только repository foundation: module graph, exact toolchain/dependency locks, empty Avalonia development shell, foundation/policy tests и PR CI. Proxy, adapters, telemetry, persistence, diagnostics logic, system collectors и product UI пока представлены только boundaries/markers; это не выполняет product AC.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -43,7 +43,7 @@ Matrix пересматривается перед каждой release Goal. Н
 
 ## 4. Logical components и repository layout
 
-Планируемая solution boundary:
+Фактическая solution boundary, созданная как compile-only foundation:
 
 ```text
 src/
@@ -83,6 +83,8 @@ App (composition/UI)
 ```
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
+
+На foundation revision каждый non-UI module содержит только marker type, а dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary не является implementation Evidence соответствующей product feature.
 
 ## 5. Runtime/process model
 
@@ -271,35 +273,39 @@ Owner должен отдельно утвердить budgets для CPU, RAM, 
 
 ## 16. Build, CI и Windows release design
 
-Planned toolchain files для следующей authorized Goal:
+Реализованный toolchain foundation:
 
-- `global.json`: exact current `.NET 10` SDK, `rollForward: disable`, no prerelease;
-- `Directory.Build.props`: nullable, analyzers, deterministic build, warnings-as-errors policy;
-- `Directory.Packages.props`: Central Package Management, exact package versions;
-- `packages.lock.json`: committed executable-app dependency closure;
-- `LlmInspector.slnx`: explicit production/test projects.
+- `global.json`: exact `.NET SDK 10.0.400`, `rollForward: disable`, prerelease disabled;
+- `Directory.Build.props`: `net10.0`, C# 14, nullable, SDK analyzers, warnings-as-errors, deterministic/CI builds, NuGet audit и lock-file generation;
+- `Directory.Packages.props`: Central Package Management с Avalonia `12.1.2`, MSTest `4.3.3` и Microsoft.NET.Test.Sdk `18.9.0`;
+- 15 per-project `packages.lock.json` для normal solution graph и 9 `packages.win-x64.lock.json` для RID-specific application/project-reference graph; оба режима подтверждаются отдельными locked restore;
+- `LlmInspector.slnx`: 9 production и 6 test projects;
+- `NuGet.Config`: единственный configured source `nuget.org` с explicit source mapping.
 
-Planned command contract (сейчас команды **не executable**, потому что files отсутствуют):
+Executable command contract из repository root:
 
 ```powershell
 dotnet restore LlmInspector.slnx --locked-mode
 dotnet format LlmInspector.slnx --verify-no-changes --no-restore
 dotnet build LlmInspector.slnx -c Release --no-restore
-dotnet test LlmInspector.slnx -c Release --no-build
+dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"
 dotnet restore src/LlmInspector.App/LlmInspector.App.csproj --locked-mode -r win-x64
-dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore
+dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/win-x64
+.\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-GOAL-003 должна создать минимальный skeleton и доказать/скорректировать команды; до этого repository `AGENTS.md` и CI/CD profile обязаны показывать `UNSET`, а не выдавать plan за working command.
+Локальная validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 10 foundation/policy tests без skips, self-contained publish, Avalonia initialization smoke и трёхсекундный UI-process launch observation. Последний доказывает только жизнеспособность empty shell, не product behavior и не release/install compatibility.
 
-CI design:
+Configured CI foundation:
 
 - events: `pull_request` и `push` в `main`;
-- ephemeral GitHub-hosted Windows runner; explicit `contents: read`, no secrets for PR code;
+- ephemeral standard GitHub-hosted `windows-2025` x64 runner; explicit `contents: read`, no secrets for PR code;
 - restore locked → format → build → tests → self-contained publish smoke;
-- required check именуется стабильно только после фактического workflow/ruleset configuration;
-- test results и unsigned self-contained publish ZIP могут быть short-retention CI artifacts, identified by repository + exact commit + RID + SDK/dependency lock hash;
-- external actions pinned by full commit SHA per [`ci-cd-rules.md`](ci-cd-rules.md).
+- workflow/job names: `CI` / `windows-dotnet`; фактический run ID/SHA фиксируется только после PR execution;
+- repository branch protection/rulesets отсутствовали на `2026-09-02`, поэтому workflow check пока не заявляется как enforced required check;
+- external actions pinned by full commit SHA per [`ci-cd-rules.md`](ci-cd-rules.md); policy tests проверяют pins, read-only permissions и отсутствие privileged triggers/secrets/environments;
+- artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
+- standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
 Release design:
 
@@ -322,7 +328,7 @@ Production signing identity and distribution channel remain external gates: Micr
 | Distribution/update channel | `PENDING_EXTERNAL_GATE` for release | Explicit release Goal; no hidden external network behavior |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Remote/LAN listener/backend | `BACKLOG` | Threat model, authentication, encryption and DEPLOY/LIVE applicability decision |
-| Default port and concrete settings schema | `DEFER` | GOAL-003 implementation tests; loopback-only invariant is already fixed |
+| Default port and concrete settings schema | `DEFER` | GOAL-004 implementation tests; loopback-only invariant is already fixed |
 
 ## 18. Primary evidence sources
 
