@@ -2,6 +2,7 @@ using Avalonia;
 using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Gateway;
+using LlmInspector.Telemetry;
 
 namespace LlmInspector.App;
 
@@ -14,6 +15,8 @@ public static class Program
     public static AppRuntimeStatus RuntimeStatus { get; private set; } = AppRuntimeStatus.NotStarted;
 
     public static LatestProxyObservationStore ObservationStore { get; private set; } = new();
+
+    public static LiveRequestTracker LiveStateTracker { get; private set; } = new();
 
     [STAThread]
     public static int Main(string[] args)
@@ -48,13 +51,15 @@ public static class Program
 
         ProxyGateway? gateway = null;
         ObservationStore = new LatestProxyObservationStore();
+        LiveStateTracker = new LiveRequestTracker();
 
         try
         {
             gateway = ProxyGateway.Create(
                 options,
                 ObservationStore,
-                telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend));
+                telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend),
+                liveRequestStateSink: LiveStateTracker);
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(
                 gateway.ListeningAddress!,
