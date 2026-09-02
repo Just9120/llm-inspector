@@ -604,7 +604,6 @@ internal sealed class StreamingJsonTelemetryExtractor
 
     private void EmitString()
     {
-        string? value = DecodeStringToken();
         _lexerState = LexerState.Normal;
 
         if (_frames.Count == 0)
@@ -616,7 +615,7 @@ internal sealed class StreamingJsonTelemetryExtractor
         ContainerFrame frame = _frames.Peek();
         if (frame.Kind == ContainerKind.Object && frame.State == ContainerState.ExpectKeyOrEnd)
         {
-            frame.CurrentProperty = value ?? DiscardedProperty;
+            frame.CurrentProperty = DecodeStringToken() ?? DiscardedProperty;
             frame.State = ContainerState.ExpectColon;
             frame.CanEnd = false;
             return;
@@ -627,11 +626,12 @@ internal sealed class StreamingJsonTelemetryExtractor
             return;
         }
 
-        if (value is not null && path is ["model"])
+        if (path is ["model"])
         {
-            _model = value;
+            _model = DecodeStringToken();
         }
 
+        // Non-allowlisted string values are never decoded into managed strings.
         if (_token.Count > 0 && path is ["choices", "delta", "content"])
         {
             _hasObservedOutputContent = true;
