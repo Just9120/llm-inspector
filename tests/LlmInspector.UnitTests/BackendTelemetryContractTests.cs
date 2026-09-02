@@ -33,6 +33,11 @@ public sealed class BackendTelemetryContractTests
             MetricQuality.Exact,
             MetricSource.OpenAiUsage,
             "fixture-v1"));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => MetricValue.Exact(
+            1.5m,
+            MetricUnit.TokenCount,
+            MetricSource.OpenAiUsage,
+            "fixture-v1"));
         _ = Assert.ThrowsExactly<ArgumentException>(() => new MetricValue(
             1,
             MetricUnit.TokenCount,

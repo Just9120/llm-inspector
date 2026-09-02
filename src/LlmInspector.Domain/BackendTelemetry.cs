@@ -115,6 +115,11 @@ public sealed record MetricValue
             throw new ArgumentOutOfRangeException(nameof(value), "Telemetry metrics cannot be negative.");
         }
 
+        if (unit == MetricUnit.TokenCount && value is decimal tokenValue && tokenValue != decimal.Truncate(tokenValue))
+        {
+            throw new ArgumentException("Token counts must be whole numbers.", nameof(value));
+        }
+
         if (quality is MetricQuality.Calculated or MetricQuality.Estimated &&
             string.IsNullOrWhiteSpace(derivationVersion))
         {
@@ -164,6 +169,14 @@ public sealed record MetricValue
         string sourceVersion,
         string derivationVersion) =>
         new(value, unit, MetricQuality.Calculated, source, sourceVersion, derivationVersion);
+
+    public static MetricValue Estimated(
+        decimal value,
+        MetricUnit unit,
+        MetricSource source,
+        string sourceVersion,
+        string derivationVersion) =>
+        new(value, unit, MetricQuality.Estimated, source, sourceVersion, derivationVersion);
 
     public static MetricValue Unavailable(
         MetricUnit unit,

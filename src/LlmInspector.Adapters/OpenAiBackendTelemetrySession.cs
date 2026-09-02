@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using LlmInspector.Domain;
@@ -197,7 +196,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
             backendMetrics);
     }
 
-    private MetricValue CreateCommonTokenMetric(decimal? value) => value is decimal exact
+    private MetricValue CreateCommonTokenMetric(decimal? value) =>
+        value is decimal exact && exact == decimal.Truncate(exact)
         ? MetricValue.Exact(exact, MetricUnit.TokenCount, MetricSource.OpenAiUsage, _fixtureVersion)
         : MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, _fixtureVersion);
 
@@ -228,7 +228,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
         BackendMetricKey key,
         MetricUnit unit)
     {
-        if (_accumulator.BackendMetrics.TryGetValue(sourceName, out decimal value))
+        if (_accumulator.BackendMetrics.TryGetValue(sourceName, out decimal value) &&
+            (unit != MetricUnit.TokenCount || value == decimal.Truncate(value)))
         {
             destination.Add(new BackendMetric(
                 key,
@@ -265,6 +266,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
 internal sealed class StreamingJsonTelemetryExtractor
 {
     private const int MaximumTokenBytes = 256;
+    private const int MaximumContainerDepth = 64;
+    private const string DiscardedProperty = "#discarded-property#";
 
     private readonly Stack<ContainerFrame> _frames = new();
     private readonly List<byte> _token = new(MaximumTokenBytes);
@@ -467,6 +470,12 @@ internal sealed class StreamingJsonTelemetryExtractor
     private void BeginContainer(ContainerKind kind)
     {
         string[] path;
+        if (_frames.Count >= MaximumContainerDepth)
+        {
+            _invalid = true;
+            return;
+        }
+
         if (_frames.Count == 0)
         {
             if (_rootSeen || kind != ContainerKind.Object)
@@ -495,9 +504,9 @@ internal sealed class StreamingJsonTelemetryExtractor
         }
 
         ContainerFrame frame = _frames.Peek();
-        bool complete = kind == ContainerKind.Object
+        bool complete = frame.CanEnd && (kind == ContainerKind.Object
             ? frame.State is ContainerState.ExpectKeyOrEnd or ContainerState.ExpectCommaOrEnd
-            : frame.State is ContainerState.ExpectValueOrEnd or ContainerState.ExpectCommaOrEnd;
+            : frame.State is ContainerState.ExpectValueOrEnd or ContainerState.ExpectCommaOrEnd);
         if (!complete)
         {
             _invalid = true;
@@ -537,6 +546,7 @@ internal sealed class StreamingJsonTelemetryExtractor
             ? ContainerState.ExpectKeyOrEnd
             : ContainerState.ExpectValueOrEnd;
         frame.CurrentProperty = null;
+        frame.CanEnd = false;
     }
 
     private void EmitString()
@@ -553,8 +563,9 @@ internal sealed class StreamingJsonTelemetryExtractor
         ContainerFrame frame = _frames.Peek();
         if (frame.Kind == ContainerKind.Object && frame.State == ContainerState.ExpectKeyOrEnd)
         {
-            frame.CurrentProperty = value;
+            frame.CurrentProperty = value ?? DiscardedProperty;
             frame.State = ContainerState.ExpectColon;
+            frame.CanEnd = false;
             return;
         }
 
@@ -578,23 +589,40 @@ internal sealed class StreamingJsonTelemetryExtractor
             return;
         }
 
-        if (token is null ||
-            !decimal.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ||
-            value < 0)
+        if (token is null || !TryParseJsonDecimal(token, out decimal value) || value < 0)
         {
+            _invalid = true;
             return;
         }
 
         if (path is ["usage", "prompt_tokens"])
         {
+            if (value != decimal.Truncate(value))
+            {
+                _invalid = true;
+                return;
+            }
+
             _promptTokens = value;
         }
         else if (path is ["usage", "completion_tokens"])
         {
+            if (value != decimal.Truncate(value))
+            {
+                _invalid = true;
+                return;
+            }
+
             _completionTokens = value;
         }
         else if (path is ["usage", "total_tokens"])
         {
+            if (value != decimal.Truncate(value))
+            {
+                _invalid = true;
+                return;
+            }
+
             _totalTokens = value;
         }
         else if (path is ["timings", string timingName] && IsAllowedTimingName(timingName))
@@ -657,6 +685,7 @@ internal sealed class StreamingJsonTelemetryExtractor
         }
 
         parent.State = ContainerState.ExpectCommaOrEnd;
+        parent.CanEnd = true;
         return true;
     }
 
@@ -719,6 +748,16 @@ internal sealed class StreamingJsonTelemetryExtractor
         "prompt_per_second" or
         "predicted_per_second";
 
+    private static bool TryParseJsonDecimal(string token, out decimal value)
+    {
+        value = default;
+        Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(token));
+        return reader.Read() &&
+            reader.TokenType == JsonTokenType.Number &&
+            reader.BytesConsumed == token.Length &&
+            reader.TryGetDecimal(out value);
+    }
+
     private static bool IsWhitespace(byte value) =>
         value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n';
 
@@ -774,6 +813,8 @@ internal sealed class StreamingJsonTelemetryExtractor
         public ContainerState State { get; set; }
 
         public string? CurrentProperty { get; set; }
+
+        public bool CanEnd { get; set; } = true;
     }
 }
 

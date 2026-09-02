@@ -118,6 +118,33 @@ public sealed class BackendAdapterContractTests
         AssertCommonTokenMetric(telemetry.TotalTokens, 5);
     }
 
+    [TestMethod]
+    public void MalformedOrMisplacedMetricsCannotBecomeExactTelemetry()
+    {
+        string oversizedProperty = new('a', 300);
+        string[] invalidDocuments =
+        [
+            $"{{\"{oversizedProperty}\":{{\"usage\":{{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}}}}}",
+            "{\"usage\":{\"prompt_tokens\":1.5,\"completion_tokens\":2,\"total_tokens\":3.5}}",
+            "{\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,}}",
+            "{\"a\":" + new string('[', 65) + new string(']', 65) + "}",
+        ];
+
+        foreach (string document in invalidDocuments)
+        {
+            IBackendTelemetrySession session = BackendTelemetryAdapters
+                .Create(BackendKind.Ollama)
+                .CreateSession("application/json");
+            session.Observe(Encoding.UTF8.GetBytes(document));
+
+            BackendResponseTelemetry telemetry = session.Complete();
+
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokens.Quality, document[..Math.Min(40, document.Length)]);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.CompletionTokens.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.TotalTokens.Quality);
+        }
+    }
+
     private static BackendResponseTelemetry ParseFixture(
         BackendKind backend,
         string fixtureName,
