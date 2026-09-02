@@ -32,6 +32,7 @@ public enum MetricUnit
     Nanoseconds,
     Milliseconds,
     TokensPerSecond,
+    Percent,
 }
 
 public enum MetricSource
@@ -118,6 +119,11 @@ public sealed record MetricValue
         if (unit == MetricUnit.TokenCount && value is decimal tokenValue && tokenValue != decimal.Truncate(tokenValue))
         {
             throw new ArgumentException("Token counts must be whole numbers.", nameof(value));
+        }
+
+        if (unit == MetricUnit.Percent && value is > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), "Percent metrics cannot exceed 100.");
         }
 
         if (quality is MetricQuality.Calculated or MetricQuality.Estimated &&
