@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="LlmInspector.App.MainWindow"
+        mc:Ignorable="d"
+        d:DesignWidth="720"
+        d:DesignHeight="420"
+        Width="720"
+        Height="420"
+        MinWidth="480"
+        MinHeight="300"
+        Title="LLM Inspector — development shell">
+  <Grid Margin="32" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+    <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
+    <TextBlock Grid.Row="1"
+               MaxWidth="560"
+               TextWrapping="Wrap"
+               Text="Development shell: product monitoring, proxy, storage and telemetry features are not implemented yet." />
+    <Border Grid.Row="2"
+            Margin="0,20,0,0"
+            Padding="20"
+            VerticalAlignment="Top"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="8">
+      <TextBlock Text="GOAL-003 validates the application composition boundary only." />
+    </Border>
+  </Grid>
+</Window>
