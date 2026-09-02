@@ -42,6 +42,15 @@ public sealed class ProxyGatewayIntegrationTests
             () => ProxyGatewayOptions.Create(ushort.MaxValue + 1, ProxyGatewayOptions.DefaultBackendBaseAddress));
 
         Assert.AreEqual(IPAddress.Loopback.ToString(), ProxyGatewayOptions.DefaultBackendBaseAddress.Host);
+
+        ProxyGatewayOptions normalizedLocalhost = ProxyGatewayOptions.Create(
+            ProxyGatewayOptions.DefaultListenerPort,
+            new Uri("http://localhost:11434/"));
+        ProxyGatewayOptions normalizedIpv6 = ProxyGatewayOptions.Create(
+            ProxyGatewayOptions.DefaultListenerPort,
+            new Uri("http://[::1]:11434/"));
+        Assert.AreEqual(IPAddress.Loopback.ToString(), normalizedLocalhost.BackendBaseAddress.Host);
+        Assert.AreEqual(IPAddress.IPv6Loopback.ToString(), normalizedIpv6.BackendBaseAddress.Host.Trim('[', ']'));
     }
 
     [TestMethod]
@@ -361,6 +370,41 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual("{\"error\":{\"type\":\"inspector_backend_unavailable\"}}", body);
         Assert.DoesNotContain(unavailablePort.ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
         Assert.AreEqual(ProxyOutcome.BackendUnavailable, observation.Outcome);
+    }
+
+    [TestMethod]
+    public async Task BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure()
+    {
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            context.Response.ContentLength = 1024;
+            await context.Response.WriteAsync("partial", context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
+            context.Abort();
+        });
+        CollectingObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        try
+        {
+            using HttpResponseMessage response = await client.PostAsync(
+                ProxyGateway.ChatCompletionsPath,
+                new StringContent("{}", Encoding.UTF8, "application/json"));
+            _ = await response.Content.ReadAsStringAsync();
+            Assert.Fail("A truncated backend response unexpectedly completed successfully.");
+        }
+        catch (HttpRequestException)
+        {
+        }
+
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
+        Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
     }
 
     private static HttpClient CreateProxyClient(Uri address)

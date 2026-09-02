@@ -59,24 +59,36 @@ public sealed class ProxyGatewayOptions
                 nameof(backendBaseAddress));
         }
 
-        if (!IsExplicitLoopbackHost(backendBaseAddress.Host))
+        if (!TryNormalizeLoopbackHost(backendBaseAddress.Host, out string? normalizedHost))
         {
             throw new ArgumentException(
                 "Initial-release backend destination must use localhost, 127.0.0.1 or ::1.",
                 nameof(backendBaseAddress));
         }
 
-        return new ProxyGatewayOptions(listenerPort, backendBaseAddress);
+        UriBuilder normalizedBackend = new(backendBaseAddress)
+        {
+            Host = normalizedHost,
+        };
+        return new ProxyGatewayOptions(listenerPort, normalizedBackend.Uri);
     }
 
-    private static bool IsExplicitLoopbackHost(string host)
+    private static bool TryNormalizeLoopbackHost(string host, out string? normalizedHost)
     {
         if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
         {
+            normalizedHost = IPAddress.Loopback.ToString();
             return true;
         }
 
         string unbracketedHost = host.Trim('[', ']');
-        return IPAddress.TryParse(unbracketedHost, out IPAddress? address) && IPAddress.IsLoopback(address);
+        if (IPAddress.TryParse(unbracketedHost, out IPAddress? address) && IPAddress.IsLoopback(address))
+        {
+            normalizedHost = address.ToString();
+            return true;
+        }
+
+        normalizedHost = null;
+        return false;
     }
 }

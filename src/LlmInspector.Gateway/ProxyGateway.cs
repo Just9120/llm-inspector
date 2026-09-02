@@ -206,13 +206,22 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
         catch (HttpRequestException)
         {
-            outcome = ProxyOutcome.BackendUnavailable;
-            statusCode = StatusCodes.Status502BadGateway;
-            await WriteSafeGatewayFailureAsync(context, statusCode.Value).ConfigureAwait(false);
+            if (context.Response.HasStarted)
+            {
+                outcome = ProxyOutcome.RelayFailed;
+                context.Abort();
+            }
+            else
+            {
+                outcome = ProxyOutcome.BackendUnavailable;
+                statusCode = StatusCodes.Status502BadGateway;
+                await WriteSafeGatewayFailureAsync(context, statusCode.Value).ConfigureAwait(false);
+            }
         }
         catch (IOException)
         {
             outcome = ProxyOutcome.RelayFailed;
+            statusCode ??= StatusCodes.Status502BadGateway;
             await AbortOrWriteSafeGatewayFailureAsync(context).ConfigureAwait(false);
         }
         finally
