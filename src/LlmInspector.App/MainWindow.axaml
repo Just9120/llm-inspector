@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -37,13 +37,23 @@
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
         <StackPanel Spacing="8">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Live requests" />
+          <TextBlock x:Name="LiveRequestsText" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="3"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="8">
           <TextBlock FontSize="18" FontWeight="SemiBold" Text="Technical data and retention" />
           <TextBlock x:Name="TechnicalDataText" TextWrapping="Wrap" />
           <TextBlock x:Name="PersistentDataText" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
-      <Border Grid.Row="3"
+      <Border Grid.Row="4"
               Padding="20"
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">

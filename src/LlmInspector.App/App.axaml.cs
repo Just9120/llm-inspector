@@ -15,7 +15,7 @@ public partial class App : Avalonia.Application
     {
         if (this.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(Program.RuntimeStatus);
+            desktop.MainWindow = new MainWindow(Program.RuntimeStatus, Program.LiveStateTracker);
         }
 
         base.OnFrameworkInitializationCompleted();

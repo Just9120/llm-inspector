@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 using LlmInspector.Application;
 using LlmInspector.Gateway;
 
@@ -6,14 +7,20 @@ namespace LlmInspector.App;
 
 public partial class MainWindow : Window
 {
+    private readonly ILiveRequestSnapshotSource? _liveRequestState;
+    private readonly DispatcherTimer? _liveRefreshTimer;
+
     public MainWindow()
-        : this(AppRuntimeStatus.NotStarted)
+        : this(AppRuntimeStatus.NotStarted, null)
     {
     }
 
-    public MainWindow(AppRuntimeStatus runtimeStatus)
+    public MainWindow(
+        AppRuntimeStatus runtimeStatus,
+        ILiveRequestSnapshotSource? liveRequestState = null)
     {
         InitializeComponent();
+        _liveRequestState = liveRequestState;
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -26,6 +33,25 @@ public partial class MainWindow : Window
                 category => $"{category.Name}: {category.Fields}. Retention: {category.Retention}."));
         PersistentDataText.Text = TechnicalDataDisclosure.PersistentDataStatement;
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
+        RefreshLiveRequests();
+
+        if (_liveRequestState is not null)
+        {
+            _liveRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(250),
+            };
+            _liveRefreshTimer.Tick += (_, _) => RefreshLiveRequests();
+            _liveRefreshTimer.Start();
+            Closed += (_, _) => _liveRefreshTimer.Stop();
+        }
+    }
+
+    private void RefreshLiveRequests()
+    {
+        LiveRequestsText.Text = _liveRequestState is null
+            ? "Active requests: unavailable while live tracking is not composed."
+            : LiveRequestTextPresenter.Format(_liveRequestState.GetSnapshot());
     }
 
     private static string CreateClientEndpointText(AppRuntimeStatus runtimeStatus)

@@ -5,6 +5,18 @@
 ## Replaced readiness snapshots
 
 - `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
+- `2026-09-02T21:43:13Z`: initial release `13/139 = 9.4%`, full roadmap `13/164 = 7.9%`; only EPIC-09 core AC were complete after PR #3. Archived when EPIC-02 terminal CI produced a newer snapshot without changing its already credited AC.
+- `2026-09-02T22:15:32Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 product AC were complete but terminal CI Evidence was not. Archived after EPIC-03 produced a newer independent readiness calculation.
+- `2026-09-02T22:48:15Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 was `READY` before EPIC-03 implementation. Archived after initial PR #6 CI produced a newer Evidence snapshot.
+
+## GOAL-004 / EPIC-02 — Backend/client adapters и CI stabilization
+
+- **Product outcome:** `READY 15/15`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Product PR:** [#4](https://github.com/Just9120/llm-inspector/pull/4), head `f10db376aeb5cf7a039719ae20ea22ce237e283b`, PR CI `33690474686` success, merge `275b7407a015f6a98361f87b74b5dc444f0a8355`.
+- **Detected gate failure:** exact-merge `main` CI `33690756965` failed one transport-dependent abort assertion; downstream publish/smoke correctly skipped, so CI Evidence remained failed.
+- **Fix PR:** [#5](https://github.com/Just9120/llm-inspector/pull/5), head `521b91c5960196f3effa048f4071bf3b2858f58a`, PR CI `33691566607` success, merge `e1e1b735116b94d73fa87559da8759c5f58d243c`.
+- **Terminal CI:** exact-merge `main` run `33691761413` success; all required steps completed without required skips.
+- **Cleanup:** both merged feature/fix branches had zero unique commits and were removed locally/remotely; local `main` was fast-forwarded before EPIC-03 branch creation.
 
 ## GOAL-003 — Создать reproducible .NET repository skeleton и PR CI foundation
 

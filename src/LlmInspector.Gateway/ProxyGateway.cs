@@ -36,6 +36,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
     private readonly ProxyGatewayOptions _options;
     private readonly IProxyObservationSink _observationSink;
+    private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly HttpClient _httpClient;
     private readonly WebApplication _application;
@@ -45,12 +46,14 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private ProxyGateway(
         ProxyGatewayOptions options,
         IProxyObservationSink observationSink,
+        ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
         HttpClient httpClient,
         WebApplication application)
     {
         _options = options;
         _observationSink = observationSink;
+        _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
         _httpClient = httpClient;
         _application = application;
@@ -61,7 +64,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     public static ProxyGateway Create(
         ProxyGatewayOptions options,
         IProxyObservationSink? observationSink = null,
-        IBackendTelemetryAdapter? telemetryAdapter = null)
+        IBackendTelemetryAdapter? telemetryAdapter = null,
+        ILiveRequestStateSink? liveRequestStateSink = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -109,6 +113,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyGateway gateway = new(
             options,
             observationSink ?? NullProxyObservationSink.Instance,
+            liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
             httpClient,
             application);
@@ -214,9 +219,15 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         int? statusCode = null;
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
         BackendResponseTelemetry backendTelemetry = _telemetryAdapter.CreateUnavailable();
+        NotifyLiveStateSafely(sink => sink.RequestStarted(requestId, startedAt, client));
 
         try
         {
+            NotifyLiveStateSafely(sink => sink.StageChanged(
+                requestId,
+                RequestStageValue.ProtocolObserved(
+                    RequestStage.PromptProcessing,
+                    "gateway-openai-lifecycle-v1")));
             using HttpRequestMessage outboundRequest = CreateOutboundRequest(
                 context,
                 HttpMethod.Post,
@@ -235,6 +246,11 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             backendTelemetry = await RelayResponseBodyAsync(
                 backendResponse.Content,
                 context.Response.Body,
+                () => NotifyLiveStateSafely(sink => sink.StageChanged(
+                    requestId,
+                    RequestStageValue.ProtocolObserved(
+                        RequestStage.ReasoningGeneration,
+                        "gateway-openai-lifecycle-v1"))),
                 context.RequestAborted).ConfigureAwait(false);
 
             outcome = ProxyOutcome.Completed;
@@ -266,6 +282,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
         finally
         {
+            NotifyLiveStateSafely(sink => sink.RequestFinished(requestId, outcome));
             ProxyObservation observation = new(
                 requestId,
                 startedAt,
@@ -318,6 +335,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private async Task<BackendResponseTelemetry> RelayResponseBodyAsync(
         HttpContent backendContent,
         Stream clientBody,
+        Action responseBodyObserved,
         CancellationToken cancellationToken)
     {
         IBackendTelemetrySession? telemetrySession;
@@ -331,6 +349,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
 
         byte[] buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
+        bool responseBodyStageObserved = false;
         try
         {
             using Stream backendBody = await backendContent
@@ -344,6 +363,12 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 if (bytesRead == 0)
                 {
                     break;
+                }
+
+                if (!responseBodyStageObserved)
+                {
+                    responseBodyObserved();
+                    responseBodyStageObserved = true;
                 }
 
                 if (telemetrySession is not null)
@@ -505,6 +530,18 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         catch (Exception)
         {
             // Observation is best-effort. A telemetry sink must never break request forwarding.
+        }
+    }
+
+    private void NotifyLiveStateSafely(Action<ILiveRequestStateSink> notification)
+    {
+        try
+        {
+            notification(_liveRequestStateSink);
+        }
+        catch (Exception)
+        {
+            // Live UI state is best-effort and must never affect request forwarding.
         }
     }
 

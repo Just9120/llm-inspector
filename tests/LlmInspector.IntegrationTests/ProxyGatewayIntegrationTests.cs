@@ -5,6 +5,7 @@ using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
+using LlmInspector.Telemetry;
 using LlmInspector.TestInfrastructure;
 using Microsoft.AspNetCore.Http;
 
@@ -190,8 +191,10 @@ public sealed class ProxyGatewayIntegrationTests
             await releaseBackend.Task.WaitAsync(context.RequestAborted);
             await context.Response.WriteAsync(finalFragment, context.RequestAborted);
         });
+        LiveRequestTracker liveState = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
-            ProxyGatewayOptions.CreateForTesting(0, backend.Address));
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            liveRequestStateSink: liveState);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
         using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
@@ -217,10 +220,21 @@ public sealed class ProxyGatewayIntegrationTests
 
             Assert.AreEqual(firstBytes.Length, bytesRead);
             Assert.AreEqual(firstFragment, Encoding.UTF8.GetString(firstBytes));
+            LiveRequestSnapshot active = liveState.GetSnapshot().ActiveRequests.Single();
+            Assert.AreEqual(RequestStage.ReasoningGeneration, active.Stage.Stage);
+            Assert.AreEqual(RequestStageEvidence.ProtocolObserved, active.Stage.Evidence);
+            Assert.AreEqual(MetricQuality.Unavailable, active.Progress.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, active.Eta.Quality);
 
             releaseBackend.TrySetResult(true);
             using StreamReader remainderReader = new(stream, Encoding.UTF8);
             Assert.AreEqual(finalFragment, await remainderReader.ReadToEndAsync());
+
+            LiveRequestCollectionSnapshot completed = await WaitForLiveStateAsync(
+                liveState,
+                snapshot => snapshot.ActiveRequests.Count == 0 &&
+                    snapshot.LatestTerminalRequest?.Stage.Stage == RequestStage.Completed);
+            Assert.AreEqual(RequestStage.Completed, completed.LatestTerminalRequest?.Stage.Stage);
         }
         finally
         {
@@ -268,8 +282,10 @@ public sealed class ProxyGatewayIntegrationTests
                 backendCancelled.TrySetResult(true);
             }
         });
+        LiveRequestTracker liveState = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
-            ProxyGatewayOptions.CreateForTesting(0, backend.Address));
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            liveRequestStateSink: liveState);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
         using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(10));
@@ -279,6 +295,10 @@ public sealed class ProxyGatewayIntegrationTests
             new StringContent("{}", Encoding.UTF8, "application/json"),
             cancellation.Token);
         await backendStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        LiveRequestSnapshot waiting = liveState.GetSnapshot().ActiveRequests.Single();
+        Assert.AreEqual(RequestStage.PromptProcessing, waiting.Stage.Stage);
+        Assert.AreEqual(RequestStageEvidence.ProtocolObserved, waiting.Stage.Evidence);
+        Assert.AreEqual(MetricQuality.Unavailable, waiting.Progress.Quality);
         cancellation.Cancel();
 
         try
@@ -291,6 +311,10 @@ public sealed class ProxyGatewayIntegrationTests
         }
 
         Assert.IsTrue(await backendCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        LiveRequestCollectionSnapshot cancelled = await WaitForLiveStateAsync(
+            liveState,
+            snapshot => snapshot.LatestTerminalRequest?.Stage.Stage == RequestStage.Cancelled);
+        Assert.AreEqual(RequestStage.Cancelled, cancelled.LatestTerminalRequest?.Stage.Stage);
     }
 
     [TestMethod]
@@ -331,7 +355,8 @@ public sealed class ProxyGatewayIntegrationTests
             context => context.Response.WriteAsync("{\"ok\":true}"));
         await using ProxyGateway gateway = ProxyGateway.Create(
             ProxyGatewayOptions.CreateForTesting(0, backend.Address),
-            new ThrowingObservationSink());
+            new ThrowingObservationSink(),
+            liveRequestStateSink: new ThrowingLiveStateSink());
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
 
@@ -535,9 +560,11 @@ public sealed class ProxyGatewayIntegrationTests
 
         Uri unavailableBackend = new($"http://127.0.0.1:{unavailablePort}/");
         CollectingObservationSink sink = new();
+        LiveRequestTracker liveState = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
             ProxyGatewayOptions.CreateForTesting(0, unavailableBackend),
-            sink);
+            sink,
+            liveRequestStateSink: liveState);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
 
@@ -551,17 +578,22 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual("{\"error\":{\"type\":\"inspector_backend_unavailable\"}}", body);
         Assert.DoesNotContain(unavailablePort.ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
         Assert.AreEqual(ProxyOutcome.BackendUnavailable, observation.Outcome);
+        Assert.AreEqual(
+            RequestStage.Error,
+            liveState.GetSnapshot().LatestTerminalRequest?.Stage.Stage);
     }
 
     [TestMethod]
     public async Task BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure()
     {
+        TaskCompletionSource<bool> releaseBackendAbort = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
         {
             context.Response.StatusCode = StatusCodes.Status200OK;
             context.Response.ContentLength = 1024;
             await context.Response.WriteAsync("partial", context.RequestAborted);
             await context.Response.Body.FlushAsync(context.RequestAborted);
+            await releaseBackendAbort.Task.WaitAsync(context.RequestAborted);
             context.Abort();
         });
         CollectingObservationSink sink = new();
@@ -571,27 +603,36 @@ public sealed class ProxyGatewayIntegrationTests
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
 
-        HttpStatusCode? clientVisibleStatus = null;
         try
         {
-            using HttpResponseMessage response = await client.PostAsync(
-                ProxyGateway.ChatCompletionsPath,
-                new StringContent("{}", Encoding.UTF8, "application/json"));
-            clientVisibleStatus = response.StatusCode;
-        }
-        catch (HttpRequestException)
-        {
-            // A truncated HTTP/1.1 response may surface as a client exception. On some Windows
-            // transports the already-started status is returned instead; the durable invariant is
-            // the gateway observation below, not which transport-level signal HttpClient chooses.
-        }
+            using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+            {
+                Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+            };
+            using HttpResponseMessage response = await client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead);
+            await using Stream body = await response.Content.ReadAsStreamAsync();
+            byte[] partial = new byte["partial".Length];
+            using CancellationTokenSource readTimeout = new(TimeSpan.FromSeconds(5));
+            int bytesRead = await body.ReadAtLeastAsync(
+                partial,
+                partial.Length,
+                throwOnEndOfStream: true,
+                readTimeout.Token);
 
-        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
-        Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
-        if (clientVisibleStatus.HasValue)
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(partial.Length, bytesRead);
+            Assert.AreEqual("partial", Encoding.UTF8.GetString(partial));
+
+            releaseBackendAbort.TrySetResult(true);
+            ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
+            Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
+        }
+        finally
         {
-            Assert.AreEqual(HttpStatusCode.OK, clientVisibleStatus.Value);
+            releaseBackendAbort.TrySetResult(true);
         }
     }
 
@@ -607,6 +648,23 @@ public sealed class ProxyGatewayIntegrationTests
             BaseAddress = address,
             Timeout = TimeSpan.FromSeconds(15),
         };
+    }
+
+    private static async Task<LiveRequestCollectionSnapshot> WaitForLiveStateAsync(
+        LiveRequestTracker tracker,
+        Func<LiveRequestCollectionSnapshot, bool> predicate)
+    {
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(5));
+        while (true)
+        {
+            LiveRequestCollectionSnapshot snapshot = tracker.GetSnapshot();
+            if (predicate(snapshot))
+            {
+                return snapshot;
+            }
+
+            await Task.Delay(10, timeout.Token);
+        }
     }
 
     private sealed class CollectingObservationSink : IProxyObservationSink
@@ -625,6 +683,19 @@ public sealed class ProxyGatewayIntegrationTests
     {
         public ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken) =>
             ValueTask.FromException(new InvalidOperationException("Synthetic sink failure."));
+    }
+
+    private sealed class ThrowingLiveStateSink : ILiveRequestStateSink
+    {
+        public void RequestStarted(Guid requestId, DateTimeOffset startedAt, ClientKind client) => Throw();
+
+        public void StageChanged(Guid requestId, RequestStageValue stage) => Throw();
+
+        public void BackendProgressChanged(Guid requestId, BackendProgressSignal progress) => Throw();
+
+        public void RequestFinished(Guid requestId, ProxyOutcome outcome) => Throw();
+
+        private static void Throw() => throw new InvalidOperationException("Synthetic live-state sink failure.");
     }
 
     private sealed class ThrowingTelemetryAdapter : IBackendTelemetryAdapter

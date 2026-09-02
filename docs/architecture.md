@@ -84,7 +84,7 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-`Gateway`, `Domain`, `Application`, `Adapters` и `App` содержат product code; `Telemetry`, `Storage.Sqlite`, `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
+`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry` и `App` содержат product code; `Storage.Sqlite`, `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
 ## 5. Runtime/process model
 
@@ -117,8 +117,8 @@ Kestrel loopback gateway
   ├─ relay model discovery or chat status/headers/body/SSE in original semantic order
   └─ for chat only, inspect one bounded token window while relaying each chunk
             │
-            ▼
-  adapter + allowlist normalizer
+            ├─> adapter + allowlist normalizer
+            └─> bounded volatile live-request tracker ─> Avalonia snapshot projection
             │ non-blocking metadata events only
             ▼
   latest allowlisted observation (bounded process memory)
@@ -190,6 +190,10 @@ History default retention — `30 days`; user options точно соответ�
 
 `calculated` и `estimated` остаются различимыми в storage, даже если UI объединяет их визуально. Common units: duration `ns` internally with documented display conversion, rates `tokens/s`, bytes as integer bytes, utilization `0..100 percent`, temperature `°C`, power `W`. Backend-native field сохраняется в namespaced extension только вместе с provenance и не переименовывается в common metric без semantic mapping.
 
+Текущий live-state contract хранит для каждого active request ровно одну stage: `model loading`, `queue/waiting`, `prompt processing`, `reasoning/generation` или `tool wait`; terminal outcome отображается как `completed`, `cancelled` или `error`. Gateway публикует только protocol-observed lifecycle stages и не объявляет их backend-exact. `model loading`, `tool wait` и другие richer stages становятся current только через typed backend-reported signal; supported OpenAI-compatible flow их не угадывает.
+
+Elapsed time вычисляется monotonic clock как `calculated`. Progress percentage принимает только typed exact backend signal `0..100`; при отсутствии такого signal UI показывает `unavailable` без percentage. Bounded linear ETA estimator использует до четырёх samples и выдаёт `estimated` только после минимум трёх strictly increasing samples одного source со span не меньше `5` percentage points; regression или source-version change сбрасывает estimator evidence. Terminal request не показывает ETA. Tracker хранит active set и только последний terminal snapshot в volatile memory; UI получает immutable snapshot каждые `250 ms`, а его failure не участвует в request relay.
+
 Correlation использует generated request ID, connection metadata и exact protocol IDs. Time proximity само по себе не доказывает session/tool/process association; ambiguous membership получает `unavailable`.
 
 ## 10. Backend capability matrix
@@ -241,7 +245,7 @@ Lifecycle events use a higher-priority bounded queue than resource samples. If e
 |---|---|---|
 | Pure unit/property tests | units, quality/provenance, stage machine, correlation, diagnostics thresholds, retention cutoff | `E02-AC04..06`, `E03-*`, `E04-*`, `E05-AC06..08`, `E07-*`, `E08-AC07..10` |
 | Backend contract fixtures | sync/SSE, fragmented JSON, tools, errors, missing fields, backend-version fixtures for all three adapters | `E02-*`, `E04-*`, `E05-*`, `E12-AC09` |
-| Proxy integration with stub backend | headers/body/status, cancellation, disconnect, concurrency, slow consumer, malformed SSE, parser failure | `E02-AC12..15`, `E09-AC09..12`, `E12-AC07..09` |
+| Proxy integration with stub backend | headers/body/status, live stages/outcomes, cancellation, disconnect, concurrency, slow consumer, malformed SSE, parser/UI-sink failure | `E02-AC12..15`, `E03-*`, `E09-AC09..12`, `E12-AC07..09` |
 | Automated privacy negative corpus | canary prompt/response/reasoning/tool args/results/code across DB/WAL/logs/snapshot/crash artifacts | `E09-AC01..07`, `E11-AC06`, `E11-AC10` |
 | SQLite integration/fault injection | migration, WAL checkpoint, concurrent readers, cutoff boundaries, manual clear, disk-full/locked/corrupt/restart | `E08-AC16..18`, `E12-AC10..12` |
 | Windows integration | actual OS collectors, unavailable semantics, install/upgrade/uninstall, tray/background/autostart/notifications | `E01-AC01`, `E06-*`, `E10-*` |
