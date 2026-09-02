@@ -20,10 +20,6 @@ public static class RequestDetailTextPresenter
             MetricUnit.TokenCount,
             MetricSource.Inspector,
             ProjectionVersion);
-        MetricValue unavailableTimeMetric = MetricValue.Unavailable(
-            MetricUnit.Milliseconds,
-            MetricSource.Inspector,
-            ProjectionVersion);
         MetricValue totalDuration = MetricValue.Calculated(
             (decimal)observation.Duration.TotalMilliseconds,
             MetricUnit.Milliseconds,
@@ -51,17 +47,17 @@ public static class RequestDetailTextPresenter
 
         text.AppendLine();
         text.Append("Context | Usage: ");
-        text.Append(FormatMetric(telemetry.PromptTokens));
+        text.Append(FormatMetric(telemetry.ContextUsageTokens));
         text.Append(" | Limit: ");
-        text.Append(FormatMetric(unavailableTokenMetric));
+        text.Append(FormatMetric(telemetry.ContextLimitTokens));
         text.Append(" | Change vs previous session turn: ");
         text.Append(FormatMetric(unavailableTokenMetric));
 
         text.AppendLine();
         text.Append("Context breakdown | History: ");
-        text.Append(FormatMetric(unavailableTokenMetric));
+        text.Append(FormatMetric(telemetry.ContextHistoryTokens));
         text.Append(" | Tools: ");
-        text.Append(FormatMetric(unavailableTokenMetric));
+        text.Append(FormatMetric(telemetry.ContextToolTokens));
         text.Append(" | Cache: ");
         text.Append(FormatMetric(telemetry.CachedPromptTokens));
 
@@ -73,9 +69,9 @@ public static class RequestDetailTextPresenter
         text.Append(" | TTFT: ");
         text.Append(FormatMetric(observation.TimeToFirstToken));
         text.Append(" | Model load: ");
-        text.Append(FormatMetric(unavailableTimeMetric));
+        text.Append(FormatMetric(telemetry.ModelLoadTime));
         text.Append(" | Queue: ");
-        text.Append(FormatMetric(unavailableTimeMetric));
+        text.Append(FormatMetric(telemetry.QueueTime));
         text.Append(" | Total: ");
         text.Append(FormatMetric(totalDuration));
 

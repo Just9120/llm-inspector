@@ -204,8 +204,14 @@ public sealed record BackendResponseTelemetry(
     MetricValue TotalTokens,
     MetricValue CachedPromptTokens,
     MetricValue ReasoningTokens,
+    MetricValue ContextUsageTokens,
+    MetricValue ContextLimitTokens,
+    MetricValue ContextHistoryTokens,
+    MetricValue ContextToolTokens,
     MetricValue PromptTokensPerSecond,
     MetricValue CompletionTokensPerSecond,
+    MetricValue ModelLoadTime,
+    MetricValue QueueTime,
     IReadOnlyList<BackendMetric> BackendSpecificMetrics)
 {
     public static BackendResponseTelemetry Unavailable(BackendKind backend, string sourceVersion) =>
@@ -217,8 +223,14 @@ public sealed record BackendResponseTelemetry(
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokensPerSecond, MetricSource.BackendExtension, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokensPerSecond, MetricSource.BackendExtension, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, sourceVersion),
             Array.Empty<BackendMetric>());
 }
 

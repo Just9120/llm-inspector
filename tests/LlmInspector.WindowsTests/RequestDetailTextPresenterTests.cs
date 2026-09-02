@@ -17,8 +17,14 @@ public sealed class RequestDetailTextPresenterTests
             CompletionTokens = Exact(30, MetricUnit.TokenCount, MetricSource.OpenAiUsage),
             CachedPromptTokens = Exact(80, MetricUnit.TokenCount, MetricSource.OpenAiUsage),
             ReasoningTokens = Exact(12, MetricUnit.TokenCount, MetricSource.OpenAiUsage),
+            ContextUsageTokens = Exact(120, MetricUnit.TokenCount, MetricSource.OpenAiUsage),
+            ContextLimitTokens = Exact(4096, MetricUnit.TokenCount, MetricSource.BackendExtension),
+            ContextHistoryTokens = Exact(60, MetricUnit.TokenCount, MetricSource.BackendExtension),
+            ContextToolTokens = Exact(20, MetricUnit.TokenCount, MetricSource.BackendExtension),
             PromptTokensPerSecond = Exact(20, MetricUnit.TokensPerSecond, MetricSource.BackendExtension),
             CompletionTokensPerSecond = Exact(40, MetricUnit.TokensPerSecond, MetricSource.BackendExtension),
+            ModelLoadTime = Exact(200, MetricUnit.Milliseconds, MetricSource.BackendExtension),
+            QueueTime = Exact(10, MetricUnit.Milliseconds, MetricSource.BackendExtension),
         };
         ProxyObservation observation = new(
             Guid.Parse("01234567-89ab-cdef-0123-456789abcdef"),
@@ -42,13 +48,13 @@ public sealed class RequestDetailTextPresenterTests
         StringAssert.Contains(text, "Output: 30 tokens [exact]");
         StringAssert.Contains(text, "Cached input: 80 tokens [exact]");
         StringAssert.Contains(text, "Reasoning: 12 tokens [exact]");
-        StringAssert.Contains(text, "Context | Usage: 120 tokens [exact] | Limit: unavailable [unavailable]");
-        StringAssert.Contains(text, "History: unavailable [unavailable] | Tools: unavailable [unavailable] | Cache: 80 tokens [exact]");
+        StringAssert.Contains(text, "Context | Usage: 120 tokens [exact] | Limit: 4096 tokens [exact]");
+        StringAssert.Contains(text, "History: 60 tokens [exact] | Tools: 20 tokens [exact] | Cache: 80 tokens [exact]");
         StringAssert.Contains(text, "Prompt/prefill: 20 tokens/s [exact]");
         StringAssert.Contains(text, "Generation: 40 tokens/s [exact]");
         StringAssert.Contains(text, "TTFT: 250 ms [calculated]");
-        StringAssert.Contains(text, "Model load: unavailable [unavailable]");
-        StringAssert.Contains(text, "Queue: unavailable [unavailable]");
+        StringAssert.Contains(text, "Model load: 200 ms [exact]");
+        StringAssert.Contains(text, "Queue: 10 ms [exact]");
         StringAssert.Contains(text, "Total: 1250 ms [calculated]");
         StringAssert.Contains(text, "Cold/warm classification: unavailable [unavailable]");
     }

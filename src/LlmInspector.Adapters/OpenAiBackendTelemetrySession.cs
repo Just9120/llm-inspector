@@ -200,8 +200,14 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
             totalTokens,
             cachedPromptTokens,
             reasoningTokens,
+            promptTokens,
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.BackendExtension, _fixtureVersion),
             CreateLlamaCppCommonMetric("prompt_per_second", MetricUnit.TokensPerSecond),
             CreateLlamaCppCommonMetric("predicted_per_second", MetricUnit.TokensPerSecond),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, _fixtureVersion),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.BackendExtension, _fixtureVersion),
             backendMetrics);
     }
 
