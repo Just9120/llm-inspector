@@ -4,10 +4,12 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект находится на этапе документационного bootstrap:
+Проект прошёл documentation bootstrap и имеет выбранную architecture baseline:
 
-- исходный код, выбранный stack и runtime отсутствуют;
-- commits и ветки на GitHub отсутствуют;
+- product source code и runtime пока отсутствуют;
+- `main` создан и был синхронизирован с `origin/main` на base SHA `581e18097a6e9e13098f510fc1f82d3e45f849f7`; дальнейшие изменения выполняются через отдельные PR-ветки;
+- выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
+- initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - команды установки, запуска, тестирования и сборки не определены;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - CI/build/release pipeline не настроены;
@@ -22,7 +24,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - [`docs/delivery-plan.md`](docs/delivery-plan.md) — текущий delivery dashboard, readiness snapshots, blockers и candidate next Goal.
 - [`docs/delivery-plan-archive.md`](docs/delivery-plan-archive.md) — исторический архив; не используется для текущей readiness.
 - [`docs/ci-cd-rules.md`](docs/ci-cd-rules.md) — обязательный CI/CD и production safety contract.
-- [`docs/architecture.md`](docs/architecture.md) — фактическая архитектурная baseline-карта и список ещё не принятых решений.
+- [`docs/architecture.md`](docs/architecture.md) — выбранный stack, runtime/data/privacy boundaries, backend capability matrix, test strategy и Windows release design.
 - [Upstream requirements](https://docs.google.com/document/d/1r4o0UiJohJf34j3nL56LWnOxGRi7WDC3jqoDIIjDTnA/edit) — provenance source ратифицированных требований; текущим source of truth остаётся `docs/project-spec.md`.
 
 Optional contracts для `Context Bundle Builder`, AI delivery infrastructure и runbooks не созданы: соответствующие workstreams и operations отсутствуют.
@@ -39,5 +41,5 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
-- На baseline-аудите `2026-09-02` remote repository был пуст.
-- Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
+- На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
+- Initial documentation base commits: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`, затем checkpoint `581e18097a6e9e13098f510fc1f82d3e45f849f7`.
