@@ -65,16 +65,16 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T22:15:32Z` |
+| Updated UTC | `2026-09-02T22:26:17Z` |
 | Expected base branch | `main` |
 | Base SHA | `cd1e3716f465d716627b6df173e18cf3f94fb612` — verified local/`origin/main` after PR #3 merge and successful exact-merge CI |
 | Working branch | `codex/epic-02-backend-adapters` |
-| Last verified revision | `e0cf26162ecfbd10e4e3021b4aad3c2317e4f14e` — adapter/parser/Gateway/runtime commits covered by focused local tests; containing documentation is intentionally not self-referenced |
+| Last verified revision | `69f2507e8b9df006f85ba445d913b0b091c4f62c` — assembled EPIC-02 runtime, tests, documentation and dependency locks covered by full local CI-equivalent validation; containing checkpoint update is intentionally not self-referenced |
 | Initial worktree state | Clean branch created from synchronized local/`origin/main`; previous merged branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | EPIC-02 code complete at `15/15` local AC mapping; documentation and final validation changes are uncommitted at this checkpoint |
-| Completed work | Allowlisted metric/quality/provenance model; bounded incremental JSON/SSE parser; three versioned backend fixture profiles; non-blocking Gateway telemetry; bounded latest-observation store; explicit known-client routes; generic fallback; `/models` handshake; versioned safe launch configuration; focused unit `12/12`, contract `12/12`, integration `19/19`, privacy `3/3`, Windows `6/6` runs |
-| Current step | Synchronize architecture/README/readiness and run full CI-equivalent validation on the assembled PR candidate |
-| Next exact action | Commit synchronized documentation, run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke, then perform final security/AC review |
+| Current worktree state | EPIC-02 complete at `15/15` local AC mapping; worktree clean before this checkpoint update; branch remains local and unpushed |
+| Completed work | Allowlisted metric/quality/provenance model; bounded incremental JSON/SSE parser; three versioned backend fixture profiles; non-blocking Gateway telemetry; bounded latest-observation store; explicit known-client routes; generic fallback; `/models` handshake; versioned safe launch configuration; locked restore and format successful; Release build `0` warnings/errors; full suite `53/53`, `0` failed/skipped; locked win-x64 restore, self-contained publish and smoke successful; exact loopback listeners observed for Ollama, llama.cpp and LM Studio profiles |
+| Current step | Create the reviewed EPIC-02 commit boundary, perform the single initial push and open PR-02 |
+| Next exact action | Push `codex/epic-02-backend-adapters` once and create the EPIC-02 Pull Request with exact local Evidence |
 | PR / CI | PR-02 not created and branch not pushed. EPIC-02 exact-revision CI is absent until the single initial push after complete local validation |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | No current PR blocker. `E09-AC06` requires the later EPIC-08 persistent schema and remains incomplete without blocking a truthful partial epic merge |
