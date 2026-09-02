@@ -21,6 +21,8 @@ public sealed class ProxyPrivacyTests
         string toolArgumentsCanary = $"tool-arguments-{Guid.NewGuid():N}";
         string toolResultCanary = $"tool-result-{Guid.NewGuid():N}";
         string credentialCanary = $"credential-{Guid.NewGuid():N}";
+        string queryCanary = $"query-{Guid.NewGuid():N}";
+        string headerCanary = $"header-{Guid.NewGuid():N}";
         string[] forbiddenCanaries =
         [
             promptCanary,
@@ -29,6 +31,8 @@ public sealed class ProxyPrivacyTests
             toolArgumentsCanary,
             toolResultCanary,
             credentialCanary,
+            queryCanary,
+            headerCanary,
         ];
         string requestBody =
             $"{{\"messages\":[{{\"content\":\"{promptCanary}\"}},{{\"reasoning\":\"{reasoningCanary}\"}}]," +
@@ -58,11 +62,14 @@ public sealed class ProxyPrivacyTests
                 BaseAddress = gateway.ListeningAddress,
                 Timeout = TimeSpan.FromSeconds(15),
             };
-            using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+            using HttpRequestMessage request = new(
+                HttpMethod.Post,
+                $"{ProxyGateway.ChatCompletionsPath}?opaque={queryCanary}")
             {
                 Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
             };
             request.Headers.Authorization = new("Bearer", credentialCanary);
+            request.Headers.TryAddWithoutValidation("X-Opaque-Fixture", headerCanary);
 
             using HttpResponseMessage response = await client.SendAsync(request);
             string relayedResponse = await response.Content.ReadAsStringAsync();

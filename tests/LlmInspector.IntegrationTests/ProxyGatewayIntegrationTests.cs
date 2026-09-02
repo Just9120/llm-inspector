@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using LlmInspector.Application;
 using LlmInspector.Domain;
@@ -163,6 +164,61 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task FirstSseFragmentReachesClientBeforeBackendCompletes()
+    {
+        const string firstFragment = "data: {\"delta\":\"first\"}\n\n";
+        const string finalFragment = "data: [DONE]\n\n";
+        TaskCompletionSource<bool> firstFragmentWritten = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> releaseBackend = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "text/event-stream";
+            await context.Response.WriteAsync(firstFragment, context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
+            firstFragmentWritten.TrySetResult(true);
+            await releaseBackend.Task.WaitAsync(context.RequestAborted);
+            await context.Response.WriteAsync(finalFragment, context.RequestAborted);
+        });
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+
+        try
+        {
+            Task<HttpResponseMessage> responseTask = client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead);
+            await firstFragmentWritten.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            using HttpResponseMessage response = await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            byte[] firstBytes = new byte[Encoding.UTF8.GetByteCount(firstFragment)];
+            using CancellationTokenSource readTimeout = new(TimeSpan.FromSeconds(5));
+            int bytesRead = await stream.ReadAtLeastAsync(
+                firstBytes,
+                firstBytes.Length,
+                throwOnEndOfStream: true,
+                readTimeout.Token);
+
+            Assert.AreEqual(firstBytes.Length, bytesRead);
+            Assert.AreEqual(firstFragment, Encoding.UTF8.GetString(firstBytes));
+
+            releaseBackend.TrySetResult(true);
+            using StreamReader remainderReader = new(stream, Encoding.UTF8);
+            Assert.AreEqual(finalFragment, await remainderReader.ReadToEndAsync());
+        }
+        finally
+        {
+            releaseBackend.TrySetResult(true);
+        }
+    }
+
+    [TestMethod]
     public async Task BackendRedirectIsRelayedWithoutFollowingExternalLocation()
     {
         Uri externalLocation = new("https://example.com/must-not-be-called");
@@ -276,6 +332,35 @@ public sealed class ProxyGatewayIntegrationTests
 
         response.EnsureSuccessStatusCode();
         Assert.AreEqual("{\"ok\":true}", body);
+    }
+
+    [TestMethod]
+    public async Task BackendConnectionFailureReturnsOnlySafeInspectorError()
+    {
+        int unavailablePort;
+        TcpListener reservation = new(IPAddress.Loopback, 0);
+        reservation.Start();
+        unavailablePort = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+
+        Uri unavailableBackend = new($"http://127.0.0.1:{unavailablePort}/");
+        CollectingObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, unavailableBackend),
+            sink);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        string body = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.AreEqual("{\"error\":{\"type\":\"inspector_backend_unavailable\"}}", body);
+        Assert.DoesNotContain(unavailablePort.ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
+        Assert.AreEqual(ProxyOutcome.BackendUnavailable, observation.Outcome);
     }
 
     private static HttpClient CreateProxyClient(Uri address)
