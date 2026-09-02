@@ -9,6 +9,8 @@ public sealed record AppLaunchConfiguration(
     Uri BackendBaseAddress,
     int ListenerPort)
 {
+    public const int SchemaVersion = 1;
+
     private const string BackendPrefix = "--backend=";
     private const string BackendUrlPrefix = "--backend-url=";
     private const string ListenerPortPrefix = "--listener-port=";
