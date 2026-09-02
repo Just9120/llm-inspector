@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-002 IN_PROGRESS`
-> Updated: `2026-09-02T18:32:32Z`
+> Updated: `2026-09-02T18:45:10Z`
 
 ## Current Goal
 
@@ -55,36 +55,36 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T18:32:32Z` |
+| Updated UTC | `2026-09-02T18:45:10Z` |
 | Expected base branch | `main` |
 | Base SHA | `581e18097a6e9e13098f510fc1f82d3e45f849f7` — verified `origin/main` at Goal start |
 | Working branch | `codex/architecture-baseline` |
-| Last verified revision | `581e18097a6e9e13098f510fc1f82d3e45f849f7` |
+| Last verified revision | `d589fb5af762661b2964a5141c97f5d4efd03c81` — architecture decision commit; current documentation sync is uncommitted |
 | Initial worktree state | Clean; local `main`, `origin/main` и GitHub `main` synchronized at base SHA |
-| Current worktree state | Goal checkpoint edited; architecture work not yet committed |
-| Completed work | `GOAL-002` authorized; remote fetched; clean feature branch created from verified base |
-| Current step | Evidence-backed architecture and delivery-foundation design |
-| Next exact action | Зафиксировать architecture decisions, capability matrix, privacy/data boundaries, test/release contracts и supporting operational documentation |
+| Current worktree state | Architecture commit complete; README, product operational fields и CI/CD project profile edited for consistency |
+| Completed work | Stack/boundaries/data flow/privacy/storage/capability matrix/test strategy/support matrix/performance protocol/release design fixed in `docs/architecture.md` |
+| Current step | Canonical/operational documentation synchronization and structural validation |
+| Next exact action | Обновить этот checkpoint, выполнить full local documentation validation и создать final local documentation commit |
 | PR / CI | PR не создан; workflows отсутствуют и находятся вне scope этой Goal |
-| Deployment | Server/runtime CD explicitly disabled; Windows build/release pipeline не определён |
-| Blockers | Numeric performance budgets и external signing identity/channel отсутствуют; architecture protocol/model можно завершить без invented values |
-| Unverified assumptions | Выбранные design decisions не являются runtime Evidence до будущей implementation/validation Goal |
+| Deployment | Server/runtime CD explicitly disabled; self-contained `win-x64` + signed MSIX release design выбран, но pipeline/signing/channel не настроены |
+| Blockers | Numeric performance budgets и external signing identity/channel отсутствуют; они не блокируют DoD `GOAL-002` |
+| Unverified assumptions | Design не подтверждён source code/runtime; concrete package versions, commands и backend fixture versions должны быть проверены в следующих Goals |
 | Preserved pre-existing changes | Goal начата на clean worktree; unrelated changes не обнаружены |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-02T18:01:24Z` | `0/139 = 0%` | `0/164 = 0%` | 139 atomic AC в 12 initial-release epics; ещё 25 AC в 6 canonical backlog epics; code/tests отсутствуют |
-| Previous | `2026-09-02T17:39:26Z` | `SPEC GAP` | `SPEC GAP` | Denominator был undefined до explicit ratification пользователя |
+| Current | `2026-09-02T18:45:10Z` | `0/139 = 0%` | `0/164 = 0%` | Все 164 atomic AC пересчитаны; architecture закрыла EPIC-01 SPEC gap, но ни один product AC ещё не имеет CODE/TEST/CI Evidence |
+| Previous | `2026-09-02T18:01:24Z` | `0/139 = 0%` | `0/164 = 0%` | 139 atomic AC в 12 initial-release epics; ещё 25 AC в 6 canonical backlog epics; code/tests отсутствовали |
 
-Numeric delta с previous snapshot не вычисляется: предыдущего процента не существовало. Появление `0%` — результат нового canonical denominator, а не регресс проекта.
+Delta: `0 п.п.` для initial release и full roadmap. `EPIC-01 SPEC` изменён с `◐` на `✅` после утверждения support matrix, но completion остаётся `0/4`: architecture сама по себе не выполняет runtime acceptance criteria.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 Windows application/boundary | ⬜ BACKLOG | 0/4 | 0% | ◐ | — | — | — | N/A | N/A |
+| EPIC-01 Windows application/boundary | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 Backends/clients/API | ⬜ BACKLOG | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-03 Live state/quality | ⬜ BACKLOG | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-04 Tokens/context/timings | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
@@ -109,18 +109,18 @@ Numeric delta с previous snapshot не вычисляется: предыдущ
 
 ## Current blockers и decisions
 
-1. `SPEC`: supported Windows versions и minimum hardware/driver baseline не определены (`EPIC-01`).
-2. `SPEC`: numeric monitoring/idle/throughput budgets и reference workloads не определены (`EPIC-12`).
-3. `ARCH`: desktop stack, proxy boundary, storage, process model и packaging/update topology не выбраны.
-4. `ENV`: Git mutations в managed sandbox требуют отдельного approved elevated command; это operational constraint, не product blocker.
+1. `SPEC`: numeric monitoring/idle/throughput budgets и frozen reference hardware/workload fixtures не утверждены (`EPIC-12`); measurement protocol определён.
+2. `TECH`: trustworthy GPU/provider coverage, sampling interval и process attribution требуют focused Windows spike до `EPIC-06 READY`.
+3. `RELEASE`: production signing identity и distribution channel требуют owner/external decision до Windows release Goal; CD остаётся отключён.
+4. `EVIDENCE`: architecture decisions пока не подтверждены code/tests/runtime; это ожидаемое состояние до code Goals.
 
 ## Roadmap
 
 Roadmap — sequencing proposal, не implementation authorization.
 
 1. **R0 — Product contract:** завершён локально; 139 initial-release и 25 backlog AC.
-2. **R1 — Architecture baseline:** выбрать Windows stack, boundaries, data/privacy model, test seams, support matrix и performance measurement contract.
-3. **R2 — Repository/CI foundation:** initial base уже создан; далее feature branch, reproducible toolchain и lint/typecheck/test/build CI без CD.
+2. **R1 — Architecture baseline:** decisions и support matrix завершены в working branch; merge Evidence pending.
+3. **R2 — Repository/CI foundation:** следующая proposal — reproducible `.NET 10` toolchain, compile-only module skeleton, tests и PR CI без CD.
 4. **R3 — Privacy-preserving OpenAI-compatible vertical slice:** один client/backend path, streaming, telemetry quality и negative privacy tests.
 5. **R4 — Required adapters и live telemetry:** Ollama, llama.cpp, LM Studio, known clients, timings/context.
 6. **R5 — Resources, diagnostics и analytics:** collectors, explainable rules, history/retention.
@@ -129,4 +129,41 @@ Roadmap — sequencing proposal, не implementation authorization.
 
 ## Candidate next Goal
 
-`GOAL-003` будет сформирована по результатам architecture baseline. До завершения `GOAL-002` этот раздел не авторизует code implementation.
+### `GOAL-003 — Создать reproducible .NET repository skeleton и PR CI foundation`
+
+- **State:** `PROPOSED`.
+- **Authorization needed:** отдельное explicit user approval после закрытия `GOAL-002`.
+
+**Scope**
+
+- Создать `.NET 10` solution/project skeleton по dependency direction из `docs/architecture.md` без product behavior.
+- Зафиксировать SDK, Central Package Management, executable-app lock files, deterministic build/analyzer policy и repository ignore/editor settings.
+- Создать минимальный Avalonia application shell/composition root, который компилируется и запускается как empty development shell без proxy listener, persistence или telemetry.
+- Создать test projects и architecture/dependency smoke tests, доказывающие intended module direction.
+- Сделать install/format/build/test и self-contained `win-x64` publish commands фактически executable; синхронизировать `AGENTS.md`, README и CI/CD profile.
+- Добавить least-privilege PR/`main` CI на ephemeral GitHub-hosted Windows runner с SHA-pinned actions и без secrets/deploy.
+- Проверить CI на Pull Request; server/runtime CD не добавлять.
+
+**Non-goals**
+
+- Functional reverse proxy, backend adapters или traffic parsing.
+- SQLite schema/history, resource collectors, analytics, diagnostics, tray/autostart/notifications.
+- MSIX packaging, code signing, release publication, automatic update или any CD.
+- Выполнение product feature AC только фактом scaffold/placeholder UI.
+
+**Acceptance criteria**
+
+1. Exact supported `.NET 10` SDK и dependency graph reproducibly restore-ятся в locked mode.
+2. Все planned production/test projects существуют, compile и соблюдают automatic dependency-boundary tests.
+3. Minimal Avalonia shell запускается локально; placeholder не заявляется как выполненный product UI.
+4. Documented format/build/test/`win-x64` publish commands выполняются с clean checkout-equivalent state.
+5. PR CI имеет explicit read-only permissions, pinned external actions, no secrets and no deployment steps.
+6. Required repository check фактически проходит на exact PR revision либо absence of enforceable ruleset фиксируется отдельно без fabricated enforcement claim.
+7. README, `AGENTS.md`, CI/CD profile и delivery checkpoint соответствуют реально проверенным commands/files/settings.
+8. Следующая vertical-slice Goal только proposed; proxy/storage/product implementation автоматически не начинается.
+
+**Required Evidence:** `SPEC: ✅`; `CODE: ✅`; `TEST: ✅`; `CI: ✅`; `DEPLOY: N/A`; `LIVE: N/A`.
+
+**Known blockers/dependencies:** package versions выбираются и проверяются только при authorization; GitHub Actions usage/settings надо проверить до workflow runs. Signing identity, MSIX и performance budgets не блокируют эту Goal.
+
+**Stop condition:** после green PR/merge и metadata synchronization остановиться; OpenAI-compatible vertical slice не начинать без следующего approval.

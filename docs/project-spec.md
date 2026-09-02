@@ -1,8 +1,9 @@
 # LLM Inspector — canonical product contract
 
 > Contract status: `RATIFIED`  
-> Contract version: `1.0`  
+> Contract version: `1.1`
 > Ratified by: explicit user instruction от `2026-09-02`  
+> Compatibility amendment: approved `GOAL-002` от `2026-09-02`
 > Source revision verified: `ANLCKQnzyDom5DeN3wi-2dxPnK0emPJPFJh5F8R-W-gdIOdgbB97DBs9sGlbKtyj4pIU-4jyzwSBurSlDjbO0NS94cy-90xjHspDIs7Vmtc`
 
 ## 1. Назначение и authority
@@ -21,6 +22,16 @@ Upstream документ остаётся provenance source, но после р
 - Пользовательский content не является telemetry: prompt, response, reasoning, tool arguments, tool results и user code не должны попадать в persistence, indexes, logs, analytics или diagnostic snapshot.
 - Initial release не требует server deployment. `DEPLOY` и `LIVE` имеют `N/A` в feature epic DoD; Windows package/release validation относится к отдельному будущему release Goal.
 - CD на runtime host отключён. CI и будущий build/release pipeline остаются отдельными concerns.
+
+### Утверждённая support matrix initial release
+
+- Supported platform: Windows 11 `25H2` Home/Pro с актуальным cumulative update, architecture `x64`.
+- Windows 11 `24H2` Home/Pro не входит в matrix: servicing заканчивается `2026-10-13`, до ожидаемого первого product release.
+- Windows 11 `26H1`/ARM64, Windows 10, Enterprise/Education/LTSC editions и другие OS/architectures не входят в initial release support matrix; их добавление требует отдельного scope decision и Evidence.
+- Inspector не требует dedicated GPU для запуска. Недоступный GPU/driver metric source даёт `unavailable`; hardware sizing самого LLM backend не принадлежит Inspector.
+- Release Evidence для supported matrix требует clean install, upgrade, launch, tray/background, proxy, SQLite recovery и critical end-to-end suite на соответствующей Windows installation.
+
+Основание compatibility decision: explicit approval `GOAL-002` от `2026-09-02`; подробная lifecycle rationale и evidence links находятся в [`architecture.md`](architecture.md#3-supported-platform-matrix).
 
 ## 3. Cross-cutting business rules
 
@@ -385,7 +396,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ◐ | — | — | — | N/A | N/A |
+| EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | ⬜ BACKLOG | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-03 | ⬜ BACKLOG | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-04 | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
@@ -412,10 +423,9 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 Scope согласован; gaps ниже не меняют перечень features, но блокируют READY соответствующих epics:
 
-1. `EPIC-01`: определить supported Windows version matrix и minimum hardware/driver baseline.
-2. `EPIC-12`: утвердить numeric CPU/RAM/GPU/disk/idle/throughput performance budgets и reference workloads.
-3. `BACKLOG-02`: определить remote topology, identity/authentication model и required DEPLOY/LIVE Evidence до начала реализации.
-4. `BACKLOG-03`: определить supported Linux distributions/macOS versions только после demand gate.
+1. `EPIC-12`: утвердить numeric CPU/RAM/GPU/disk/idle/throughput performance budgets и frozen reference hardware/workload fixtures; measurement protocol уже определён в `docs/architecture.md`.
+2. `BACKLOG-02`: определить remote topology, identity/authentication model и required DEPLOY/LIVE Evidence до начала реализации.
+3. `BACKLOG-03`: определить supported Linux distributions/macOS versions только после demand gate.
 
 Versioned diagnostic thresholds, minimum sample size и notification anti-spam policy являются implementation/configuration decisions, но должны быть explicit и boundary-tested до READY.
 
@@ -428,8 +438,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Last recalculation: `2026-09-02`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
+- Verified `GOAL-002` base SHA: `581e18097a6e9e13098f510fc1f82d3e45f849f7`.
+- Architecture decision commit: `d589fb5` on `codex/architecture-baseline`; merge Evidence pending.
 - GitHub Actions workflows/rulesets: отсутствуют на bootstrap checkpoint.
 - Code/tests/runtime: отсутствуют.
 - Initial release readiness: `0/139 = 0%`.
 - Full agreed roadmap readiness: `0/164 = 0%`.
-- Active approved implementation Goal: отсутствует после завершения documentation ratification.
+- Active approved Goal: `GOAL-002 IN_PROGRESS`; product code implementation не входит в scope.

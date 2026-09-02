@@ -349,11 +349,20 @@ Validation and rollback/stop criteria
 
 ## 16. Project CI/CD profile
 
-Профиль ниже частично заполнен подтверждёнными данными и explicit user decision от `2026-09-02`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён. Это решение не отменяет будущий CI и build/release pipeline для Windows package/signing/distribution. Профиль остаётся `UNCONFIGURED`, пока stack и release model не определены.
+Профиль ниже частично заполнен подтверждёнными данными и explicit user decisions от `2026-09-02`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack и release model. Профиль остаётся `UNCONFIGURED`, пока planned toolchain, commands, workflow/check names и artifact flow не созданы и не проверены фактически. Поля `architecture_design` и `windows_release` описывают approved design, а не configured CI/release Evidence.
 
 ```yaml
 profile_version: 1
 status: UNCONFIGURED # UNCONFIGURED | CONFIGURED
+
+architecture_design:
+  runtime: .NET 10 LTS
+  desktop_ui: Avalonia UI
+  package_manager: NuGet PackageReference with Central Package Management and lock files
+  solution_format: slnx
+  target_rid: win-x64
+  runtime_publish: self-contained
+  state_store: SQLite WAL, local per-user, single application writer
 
 repository:
   expected_repository: https://github.com/Just9120/llm-inspector
@@ -374,10 +383,21 @@ ci:
 
 artifacts:
   enabled: false
-  type: N/A
-  identity: N/A
-  registry_or_storage: N/A
-  provenance_required: false
+  type: UNSET # planned: unsigned self-contained validation ZIP; signed MSIX release package
+  identity: UNSET # planned: repository + exact commit + RID + SDK/dependency lock hash
+  registry_or_storage: UNSET
+  provenance_required: true # once artifact publishing is enabled
+
+windows_release:
+  enabled: false
+  installable_unit: signed and timestamped MSIX
+  validated_build_unit: self-contained win-x64 publish output
+  trusted_trigger: UNSET
+  signing_identity: UNSET
+  distribution_channel: UNSET
+  update_channel: N/A # not a ratified initial-release feature
+  package_validation: UNSET
+  applicable_evidence: BUILD_PACKAGE_INSTALL # DEPLOY/LIVE remain N/A
 
 deployment:
   cd_enabled: false
