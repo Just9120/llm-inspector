@@ -80,6 +80,10 @@ public sealed class BackendTelemetryContractTests
             Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokens.Quality);
             Assert.AreEqual(MetricQuality.Unavailable, telemetry.CompletionTokens.Quality);
             Assert.AreEqual(MetricQuality.Unavailable, telemetry.TotalTokens.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.CachedPromptTokens.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.ReasoningTokens.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokensPerSecond.Quality);
+            Assert.AreEqual(MetricQuality.Unavailable, telemetry.CompletionTokensPerSecond.Quality);
         }
     }
 

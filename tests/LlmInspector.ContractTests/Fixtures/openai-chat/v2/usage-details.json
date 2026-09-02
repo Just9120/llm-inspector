@@ -1,0 +1,13 @@
+{
+  "id": "chatcmpl-technical-fixture",
+  "object": "chat.completion",
+  "model": "fixture-model",
+  "choices": [{ "index": 0, "message": { "role": "assistant", "content": "synthetic", "reasoning": "FORBIDDEN_REASONING_SENTINEL" }, "finish_reason": "stop" }],
+  "usage": {
+    "prompt_tokens": 120,
+    "completion_tokens": 30,
+    "total_tokens": 150,
+    "prompt_tokens_details": { "cached_tokens": 80 },
+    "completion_tokens_details": { "reasoning_tokens": 12 }
+  }
+}

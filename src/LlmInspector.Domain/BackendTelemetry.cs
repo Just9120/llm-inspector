@@ -202,6 +202,10 @@ public sealed record BackendResponseTelemetry(
     MetricValue PromptTokens,
     MetricValue CompletionTokens,
     MetricValue TotalTokens,
+    MetricValue CachedPromptTokens,
+    MetricValue ReasoningTokens,
+    MetricValue PromptTokensPerSecond,
+    MetricValue CompletionTokensPerSecond,
     IReadOnlyList<BackendMetric> BackendSpecificMetrics)
 {
     public static BackendResponseTelemetry Unavailable(BackendKind backend, string sourceVersion) =>
@@ -211,6 +215,10 @@ public sealed record BackendResponseTelemetry(
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
             MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokenCount, MetricSource.OpenAiUsage, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokensPerSecond, MetricSource.BackendExtension, sourceVersion),
+            MetricValue.Unavailable(MetricUnit.TokensPerSecond, MetricSource.BackendExtension, sourceVersion),
             Array.Empty<BackendMetric>());
 }
 

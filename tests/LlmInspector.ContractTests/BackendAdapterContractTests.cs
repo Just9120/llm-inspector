@@ -74,6 +74,37 @@ public sealed class BackendAdapterContractTests
             MetricUnit.TokensPerSecond,
             metrics[BackendMetricKey.LlamaCppPredictedTokensPerSecond].Unit);
         Assert.IsTrue(metrics.Values.All(metric => metric.Source == MetricSource.BackendExtension));
+        AssertCommonBackendMetric(telemetry.CachedPromptTokens, 236, MetricUnit.TokenCount);
+        AssertCommonBackendMetric(
+            telemetry.PromptTokensPerSecond,
+            32.301828283480845m,
+            MetricUnit.TokensPerSecond);
+        AssertCommonBackendMetric(
+            telemetry.CompletionTokensPerSecond,
+            52.94494935437416m,
+            MetricUnit.TokensPerSecond);
+    }
+
+    [TestMethod]
+    public void OpenAiUsageDetailsExposeOnlyCachedAndReasoningTokenCounters()
+    {
+        byte[] fixture = File.ReadAllBytes(Path.Combine(
+            AppContext.BaseDirectory,
+            "Fixtures",
+            "openai-chat",
+            "v2",
+            "usage-details.json"));
+        IBackendTelemetrySession session = BackendTelemetryAdapters
+            .Create(BackendKind.Ollama)
+            .CreateSession("application/json");
+        session.Observe(fixture);
+
+        BackendResponseTelemetry telemetry = session.Complete();
+
+        AssertCommonTokenMetric(telemetry.CachedPromptTokens, 80);
+        AssertCommonTokenMetric(telemetry.ReasoningTokens, 12);
+        string serialized = System.Text.Json.JsonSerializer.Serialize(telemetry);
+        Assert.DoesNotContain("FORBIDDEN_REASONING_SENTINEL", serialized, StringComparison.Ordinal);
     }
 
     [TestMethod]
@@ -91,6 +122,10 @@ public sealed class BackendAdapterContractTests
         Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokens.Quality);
         Assert.AreEqual(MetricQuality.Unavailable, telemetry.CompletionTokens.Quality);
         Assert.AreEqual(MetricQuality.Unavailable, telemetry.TotalTokens.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.CachedPromptTokens.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.ReasoningTokens.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokensPerSecond.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.CompletionTokensPerSecond.Quality);
     }
 
     [TestMethod]
@@ -183,5 +218,16 @@ public sealed class BackendAdapterContractTests
         Assert.AreEqual(MetricUnit.TokenCount, metric.Unit);
         Assert.AreEqual(MetricQuality.Exact, metric.Quality);
         Assert.AreEqual(MetricSource.OpenAiUsage, metric.Source);
+    }
+
+    private static void AssertCommonBackendMetric(
+        MetricValue metric,
+        decimal expected,
+        MetricUnit unit)
+    {
+        Assert.AreEqual(expected, metric.Value);
+        Assert.AreEqual(unit, metric.Unit);
+        Assert.AreEqual(MetricQuality.Exact, metric.Quality);
+        Assert.AreEqual(MetricSource.BackendExtension, metric.Source);
     }
 }
