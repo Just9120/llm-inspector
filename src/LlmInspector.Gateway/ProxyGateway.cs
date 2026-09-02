@@ -219,6 +219,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         int? statusCode = null;
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
         BackendResponseTelemetry backendTelemetry = _telemetryAdapter.CreateUnavailable();
+        long? firstOutputTimestamp = null;
         NotifyLiveStateSafely(sink => sink.RequestStarted(requestId, startedAt, client));
 
         try
@@ -251,6 +252,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                     RequestStageValue.ProtocolObserved(
                         RequestStage.ReasoningGeneration,
                         "gateway-openai-lifecycle-v1"))),
+                () => firstOutputTimestamp ??= Stopwatch.GetTimestamp(),
                 context.RequestAborted).ConfigureAwait(false);
 
             outcome = ProxyOutcome.Completed;
@@ -290,7 +292,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 statusCode,
                 outcome,
                 client,
-                backendTelemetry);
+                backendTelemetry,
+                CreateTimeToFirstTokenMetric(startedTimestamp, firstOutputTimestamp));
             await RecordSafelyAsync(observation).ConfigureAwait(false);
         }
     }
@@ -336,6 +339,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         HttpContent backendContent,
         Stream clientBody,
         Action responseBodyObserved,
+        Action outputContentObserved,
         CancellationToken cancellationToken)
     {
         IBackendTelemetrySession? telemetrySession;
@@ -350,6 +354,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
         byte[] buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
         bool responseBodyStageObserved = false;
+        bool outputContentStageObserved = false;
         try
         {
             using Stream backendBody = await backendContent
@@ -376,6 +381,11 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                     try
                     {
                         telemetrySession.Observe(buffer.AsSpan(0, bytesRead));
+                        if (!outputContentStageObserved && telemetrySession.HasObservedOutputContent)
+                        {
+                            outputContentObserved();
+                            outputContentStageObserved = true;
+                        }
                     }
                     catch (Exception)
                     {
@@ -407,6 +417,21 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
         return _telemetryAdapter.CreateUnavailable();
     }
+
+    private static MetricValue CreateTimeToFirstTokenMetric(
+        long startedTimestamp,
+        long? firstOutputTimestamp) =>
+        firstOutputTimestamp is long observedTimestamp
+            ? MetricValue.Calculated(
+                (decimal)Stopwatch.GetElapsedTime(startedTimestamp, observedTimestamp).TotalMilliseconds,
+                MetricUnit.Milliseconds,
+                MetricSource.Inspector,
+                "gateway-streaming-ttft-v1",
+                "first-nonempty-chat-content-delta-v1")
+            : MetricValue.Unavailable(
+                MetricUnit.Milliseconds,
+                MetricSource.Inspector,
+                "gateway-streaming-ttft-v1");
 
     private HttpRequestMessage CreateOutboundRequest(
         HttpContext context,
@@ -562,6 +587,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
     private sealed class UnavailableBackendTelemetrySession(BackendResponseTelemetry telemetry) : IBackendTelemetrySession
     {
+        public bool HasObservedOutputContent => false;
+
         public void Observe(ReadOnlySpan<byte> responseBytes)
         {
         }

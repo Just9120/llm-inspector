@@ -10,6 +10,7 @@ public sealed class PrivacyContractTests
     [
         nameof(ProxyObservation.RequestId),
         nameof(ProxyObservation.StartedAt),
+        nameof(ProxyObservation.TimeToFirstToken),
         nameof(ProxyObservation.Duration),
         nameof(ProxyObservation.HttpStatusCode),
         nameof(ProxyObservation.Outcome),

@@ -27,7 +27,13 @@ public sealed class RequestDetailTextPresenterTests
             200,
             ProxyOutcome.Completed,
             ClientKind.Cline,
-            telemetry);
+            telemetry,
+            MetricValue.Calculated(
+                250,
+                MetricUnit.Milliseconds,
+                MetricSource.Inspector,
+                "gateway-streaming-ttft-v1",
+                "first-nonempty-chat-content-delta-v1"));
 
         string text = App.RequestDetailTextPresenter.Format(observation);
 
@@ -40,7 +46,7 @@ public sealed class RequestDetailTextPresenterTests
         StringAssert.Contains(text, "History: unavailable [unavailable] | Tools: unavailable [unavailable] | Cache: 80 tokens [exact]");
         StringAssert.Contains(text, "Prompt/prefill: 20 tokens/s [exact]");
         StringAssert.Contains(text, "Generation: 40 tokens/s [exact]");
-        StringAssert.Contains(text, "TTFT: unavailable [unavailable]");
+        StringAssert.Contains(text, "TTFT: 250 ms [calculated]");
         StringAssert.Contains(text, "Model load: unavailable [unavailable]");
         StringAssert.Contains(text, "Queue: unavailable [unavailable]");
         StringAssert.Contains(text, "Total: 1250 ms [calculated]");

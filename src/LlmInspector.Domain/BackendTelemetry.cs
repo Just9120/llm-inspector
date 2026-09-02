@@ -235,6 +235,8 @@ public interface IBackendTelemetryAdapter
 
 public interface IBackendTelemetrySession
 {
+    bool HasObservedOutputContent { get; }
+
     void Observe(ReadOnlySpan<byte> responseBytes);
 
     BackendResponseTelemetry Complete();

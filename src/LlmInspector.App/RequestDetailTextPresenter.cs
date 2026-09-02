@@ -71,7 +71,7 @@ public static class RequestDetailTextPresenter
         text.Append(" | Generation: ");
         text.Append(FormatMetric(telemetry.CompletionTokensPerSecond));
         text.Append(" | TTFT: ");
-        text.Append(FormatMetric(unavailableTimeMetric));
+        text.Append(FormatMetric(observation.TimeToFirstToken));
         text.Append(" | Model load: ");
         text.Append(FormatMetric(unavailableTimeMetric));
         text.Append(" | Queue: ");

@@ -47,6 +47,33 @@ public sealed class BackendAdapterContractTests
     }
 
     [TestMethod]
+    public void StreamingSessionSignalsOnlyTheFirstNonEmptyGeneratedContentDelta()
+    {
+        IBackendTelemetrySession session = BackendTelemetryAdapters
+            .Create(BackendKind.Ollama)
+            .CreateSession("text/event-stream");
+
+        session.Observe("data: {\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n"u8);
+        Assert.IsFalse(session.HasObservedOutputContent);
+
+        session.Observe("data: {\"choices\":[{\"delta\":{\"content\":\"synthetic\"}}]}\n\n"u8);
+        Assert.IsTrue(session.HasObservedOutputContent);
+    }
+
+    [TestMethod]
+    public void NonStreamingResponseCannotClaimTokenArrivalTiming()
+    {
+        IBackendTelemetrySession session = BackendTelemetryAdapters
+            .Create(BackendKind.Ollama)
+            .CreateSession("application/json");
+
+        session.Observe("{\"choices\":[{\"message\":{\"content\":\"synthetic\"}}]}"u8);
+        _ = session.Complete();
+
+        Assert.IsFalse(session.HasObservedOutputContent);
+    }
+
+    [TestMethod]
     public void LlamaCppFixturePreservesNativeTimingsWithoutRenamingThemAsCommonMetrics()
     {
         BackendResponseTelemetry telemetry = ParseFixture(

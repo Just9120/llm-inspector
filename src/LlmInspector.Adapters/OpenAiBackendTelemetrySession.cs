@@ -30,6 +30,9 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
         _isEventStream = isEventStream;
     }
 
+    public bool HasObservedOutputContent =>
+        _isEventStream && _accumulator.HasObservedOutputContent;
+
     public void Observe(ReadOnlySpan<byte> responseBytes)
     {
         ObjectDisposedException.ThrowIf(_completed, this);
@@ -288,6 +291,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
 
         public Dictionary<string, decimal> BackendMetrics { get; } = new(StringComparer.Ordinal);
 
+        public bool HasObservedOutputContent { get; private set; }
+
         public void Merge(ExtractedTelemetry telemetry)
         {
             Model = telemetry.Model ?? Model;
@@ -296,6 +301,7 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
             TotalTokens = telemetry.TotalTokens ?? TotalTokens;
             CachedPromptTokens = telemetry.CachedPromptTokens ?? CachedPromptTokens;
             ReasoningTokens = telemetry.ReasoningTokens ?? ReasoningTokens;
+            HasObservedOutputContent |= telemetry.HasObservedOutputContent;
             foreach ((string name, decimal value) in telemetry.BackendMetrics)
             {
                 BackendMetrics[name] = value;
@@ -325,6 +331,7 @@ internal sealed class StreamingJsonTelemetryExtractor
     private decimal? _totalTokens;
     private decimal? _cachedPromptTokens;
     private decimal? _reasoningTokens;
+    private bool _hasObservedOutputContent;
 
     public void Observe(ReadOnlySpan<byte> bytes)
     {
@@ -406,6 +413,7 @@ internal sealed class StreamingJsonTelemetryExtractor
             _totalTokens,
             _cachedPromptTokens,
             _reasoningTokens,
+            _hasObservedOutputContent,
             new Dictionary<string, decimal>(_backendMetrics, StringComparer.Ordinal));
     }
 
@@ -622,6 +630,11 @@ internal sealed class StreamingJsonTelemetryExtractor
         if (value is not null && path is ["model"])
         {
             _model = value;
+        }
+
+        if (_token.Count > 0 && path is ["choices", "delta", "content"])
+        {
+            _hasObservedOutputContent = true;
         }
     }
 
@@ -891,4 +904,5 @@ internal sealed record ExtractedTelemetry(
     decimal? TotalTokens,
     decimal? CachedPromptTokens,
     decimal? ReasoningTokens,
+    bool HasObservedOutputContent,
     IReadOnlyDictionary<string, decimal> BackendMetrics);
