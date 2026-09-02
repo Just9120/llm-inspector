@@ -151,7 +151,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         await _application.StopAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+    public void Dispose() =>
+        Task.Run(async () => await DisposeAsync().ConfigureAwait(false)).GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
     {
