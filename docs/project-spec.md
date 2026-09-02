@@ -102,7 +102,7 @@ Definition of Done: `15/15` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-03 — Live state и качество telemetry
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** показывать реальное состояние active request без fabricated progress.
 
 Acceptance criteria:
@@ -125,7 +125,7 @@ Definition of Done: `13/13` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-04 — Tokens, context и timings
 
-**Status:** ⬜ BACKLOG  
+**Status:** 🟦 IN PROGRESS
 **Goal:** объяснять объём prompt/context и latency decomposition по доступным backend data.
 
 Acceptance criteria:
@@ -393,14 +393,14 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15` и имеет terminal CI Evidence. EPIC-03 локально выполняет `E03-AC01..13` на typed stage/progress contract, bounded live tracker/ETA estimator, Gateway lifecycle integration и qualified Avalonia projection; PR CI `33693671440` не прошёл унаследованный nondeterministic abort fixture, deterministic handshake fix ожидает follow-up Evidence, поэтому epic остаётся `IN PROGRESS` с `CI: ❌`. EPIC-09 core выполняет `E09-AC01..05` и `E09-AC07..14`; `E09-AC06` остаётся невыполненным до появления реальной history/analytics schema в EPIC-08. Другие product AC не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15` и имеет terminal CI Evidence. EPIC-03 выполняет `E03-AC01..13`: deterministic abort handshake прошёл follow-up PR CI `33694308639`, а exact merge commit `ba63d0b219e61527d3d81994638dee39a11c14bf` прошёл `main` CI `33694559218`, поэтому epic имеет полный required Evidence. EPIC-04 авторизован и начат от этого verified base, но до реализации его AC не кредитуются. EPIC-09 core выполняет `E09-AC01..05` и `E09-AC07..14`; `E09-AC06` остаётся невыполненным до появления реальной history/analytics schema в EPIC-08. Другие product AC не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | ❌ | N/A | N/A |
-| EPIC-04 | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
@@ -442,10 +442,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: PR/`main` workflow proven green by GOAL-003 PR/main runs; EPIC-09 exact PR CI pending. Repository rulesets/branch protection отсутствуют на last verified settings check.
-- Code/tests/runtime: loopback streaming gateway, privacy-safe observation contract, disclosure UI и 26 tests; SQLite/adapters/rich telemetry не реализованы.
-- EPIC-09 local completion candidate: `13/14`; `E09-AC06` deferred to selected EPIC-08 PR because a real history/analytics schema does not yet exist.
-- Initial release readiness: `13/139 = 9.4%`.
-- Full agreed roadmap readiness: `13/164 = 7.9%`.
+- GitHub Actions: EPIC-03 follow-up PR run `33694308639` and exact-merge `main` run `33694559218` completed successfully. Repository rulesets/branch protection отсутствовали на последней verified settings check.
+- Code/tests/runtime: loopback streaming gateway, versioned backend adapters, privacy-safe observation contract, live stage/quality UI и 80 tests; SQLite persistence/analytics ещё не реализованы.
+- EPIC-09 completion: `13/14`; `E09-AC06` deferred to selected EPIC-08 PR because a real history/analytics schema does not yet exist.
+- Initial release readiness: `41/139 = 29.5%`.
+- Full agreed roadmap readiness: `41/164 = 25.0%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-004 IN_PROGRESS`; `13/72` selected AC complete locally, EPIC-09 PR/CI Evidence pending; branch `codex/epic-09-privacy-proxy` from verified base `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`.
+- Active approved Goal: `GOAL-004 IN_PROGRESS`; `41/72` selected AC complete with required Evidence; EPIC-04 branch `codex/epic-04-tokens-context-timings` starts from verified base `ba63d0b219e61527d3d81994638dee39a11c14bf`.

@@ -4,7 +4,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09`, готовый `EPIC-02` и начатый отдельным инкрементом `EPIC-03`:
+Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09`, готовые `EPIC-02`/`EPIC-03` и начатый отдельным инкрементом `EPIC-04`:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
@@ -14,12 +14,12 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local, PR и exact-merge CI после отдельного transport-safe test fix; EPIC-03 имеет локальный кандидат `13/13`, а failed PR #6 run выявил унаследованную race в abort fixture, для которой подготовлен deterministic handshake fix;
+- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local, PR и exact-merge CI после отдельного transport-safe test fix; EPIC-03 имеет `READY 13/13` после deterministic abort-handshake fix, успешных follow-up PR CI и exact-merge `main` CI; EPIC-04 начал token/context/timing projection;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness по независимо проверенным atomic AC: `41/139 = 29.5%` initial release и `41/164 = 25.0%` full roadmap. `EPIC-02` имеет `READY 15/15`; EPIC-03 — локально подтверждённые `13/13` с ожидающим CI; `EPIC-09` имеет `13/14`, а persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`.
+Текущая readiness по независимо проверенным atomic AC: `41/139 = 29.5%` initial release и `41/164 = 25.0%` full roadmap. `EPIC-02` имеет `READY 15/15`, `EPIC-03` — `READY 13/13`; `EPIC-09` имеет `13/14`, а persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`. EPIC-04 пока не получает AC-кредит до реализации и проверки request-detail metrics.
 
 ## Быстрый старт
 
