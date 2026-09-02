@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
@@ -55,7 +56,8 @@ public sealed class ProxyPrivacyTests
             FileObservationSink sink = new(inspectionDirectory);
             await using ProxyGateway gateway = ProxyGateway.Create(
                 ProxyGatewayOptions.CreateForTesting(0, backend.Address),
-                sink);
+                sink,
+                BackendTelemetryAdapters.Create(BackendKind.Ollama));
             await gateway.StartAsync();
             using HttpClient client = new()
             {
@@ -103,19 +105,24 @@ public sealed class ProxyPrivacyTests
     [TestMethod]
     public void ObservationSchemaHasNoFreeFormContentCarrier()
     {
-        Type[] allowedPropertyTypes =
+        string[] allowedProperties =
         [
-            typeof(Guid),
-            typeof(DateTimeOffset),
-            typeof(TimeSpan),
-            typeof(int?),
-            typeof(ProxyOutcome),
+            nameof(ProxyObservation.BackendTelemetry),
+            nameof(ProxyObservation.Client),
+            nameof(ProxyObservation.Duration),
+            nameof(ProxyObservation.HttpStatusCode),
+            nameof(ProxyObservation.Outcome),
+            nameof(ProxyObservation.RequestId),
+            nameof(ProxyObservation.StartedAt),
         ];
+        string[] actualProperties = typeof(ProxyObservation)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
-        foreach (System.Reflection.PropertyInfo property in typeof(ProxyObservation).GetProperties())
-        {
-            Assert.Contains(property.PropertyType, allowedPropertyTypes, $"Unexpected field: {property.Name}");
-        }
+        CollectionAssert.AreEqual(allowedProperties, actualProperties);
+        Assert.IsFalse(typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)));
     }
 
     private sealed class FileObservationSink(string directory) : IProxyObservationSink

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Net;
+using LlmInspector.Domain;
 
 namespace LlmInspector.Gateway;
 
@@ -9,29 +10,61 @@ public sealed class ProxyGatewayOptions
 
     public static Uri DefaultBackendBaseAddress { get; } = new("http://127.0.0.1:11434/");
 
-    private ProxyGatewayOptions(int listenerPort, Uri backendBaseAddress)
+    public static Uri DefaultLlamaCppBaseAddress { get; } = new("http://127.0.0.1:8080/");
+
+    public static Uri DefaultLmStudioBaseAddress { get; } = new("http://127.0.0.1:1234/");
+
+    private ProxyGatewayOptions(int listenerPort, Uri backendBaseAddress, BackendKind backend)
     {
         ListenerPort = listenerPort;
         BackendBaseAddress = backendBaseAddress;
+        Backend = backend;
     }
 
     public int ListenerPort { get; }
 
     public Uri BackendBaseAddress { get; }
 
+    public BackendKind Backend { get; }
+
     public static ProxyGatewayOptions CreateDefault() =>
-        Create(DefaultListenerPort, DefaultBackendBaseAddress);
+        CreateDefault(BackendKind.Ollama);
+
+    public static ProxyGatewayOptions CreateDefault(BackendKind backend) =>
+        Create(DefaultListenerPort, GetDefaultBackendBaseAddress(backend), backend);
+
+    public static Uri GetDefaultBackendBaseAddress(BackendKind backend) => backend switch
+    {
+        BackendKind.Ollama => DefaultBackendBaseAddress,
+        BackendKind.LlamaCpp => DefaultLlamaCppBaseAddress,
+        BackendKind.LmStudio => DefaultLmStudioBaseAddress,
+        _ => throw new InvalidEnumArgumentException(nameof(backend), (int)backend, typeof(BackendKind)),
+    };
 
     public static ProxyGatewayOptions Create(int listenerPort, Uri backendBaseAddress) =>
-        CreateCore(listenerPort, backendBaseAddress, allowDynamicPort: false);
+        Create(listenerPort, backendBaseAddress, BackendKind.Ollama);
+
+    public static ProxyGatewayOptions Create(
+        int listenerPort,
+        Uri backendBaseAddress,
+        BackendKind backend) =>
+        CreateCore(listenerPort, backendBaseAddress, backend, allowDynamicPort: false);
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static ProxyGatewayOptions CreateForTesting(int listenerPort, Uri backendBaseAddress) =>
-        CreateCore(listenerPort, backendBaseAddress, allowDynamicPort: true);
+        CreateForTesting(listenerPort, backendBaseAddress, BackendKind.Ollama);
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static ProxyGatewayOptions CreateForTesting(
+        int listenerPort,
+        Uri backendBaseAddress,
+        BackendKind backend) =>
+        CreateCore(listenerPort, backendBaseAddress, backend, allowDynamicPort: true);
 
     private static ProxyGatewayOptions CreateCore(
         int listenerPort,
         Uri backendBaseAddress,
+        BackendKind backend,
         bool allowDynamicPort)
     {
         if (listenerPort is < 0 or > ushort.MaxValue || (!allowDynamicPort && listenerPort == 0))
@@ -42,6 +75,11 @@ public sealed class ProxyGatewayOptions
         }
 
         ArgumentNullException.ThrowIfNull(backendBaseAddress);
+
+        if (!Enum.IsDefined(backend))
+        {
+            throw new InvalidEnumArgumentException(nameof(backend), (int)backend, typeof(BackendKind));
+        }
 
         if (!backendBaseAddress.IsAbsoluteUri ||
             (backendBaseAddress.Scheme != Uri.UriSchemeHttp && backendBaseAddress.Scheme != Uri.UriSchemeHttps))
@@ -70,7 +108,7 @@ public sealed class ProxyGatewayOptions
         {
             Host = normalizedHost,
         };
-        return new ProxyGatewayOptions(listenerPort, normalizedBackend.Uri);
+        return new ProxyGatewayOptions(listenerPort, normalizedBackend.Uri, backend);
     }
 
     private static bool TryNormalizeLoopbackHost(string host, out string? normalizedHost)

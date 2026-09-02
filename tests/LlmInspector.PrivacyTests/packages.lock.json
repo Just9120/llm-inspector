@@ -101,6 +101,12 @@
         "resolved": "4.3.3",
         "contentHash": "cTcdSPIZ8WvchbC5DFmfHxrvVNZCtops+2W94le+Q+mx110Y9L9mqNVVc9flF35lFeL5GsY+rxGBylsjDk4+zg=="
       },
+      "llminspector.adapters": {
+        "type": "Project",
+        "dependencies": {
+          "LlmInspector.Domain": "[1.0.0, )"
+        }
+      },
       "llminspector.application": {
         "type": "Project",
         "dependencies": {

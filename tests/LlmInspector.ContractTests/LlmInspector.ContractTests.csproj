@@ -15,4 +15,7 @@
     <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Adapters/LlmInspector.Adapters.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Fixtures/epic02/v1/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

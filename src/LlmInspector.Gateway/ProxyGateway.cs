@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Net;
 using LlmInspector.Application;
@@ -19,6 +20,7 @@ namespace LlmInspector.Gateway;
 public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 {
     public const string ChatCompletionsPath = "/v1/chat/completions";
+    public const string ModelsPath = "/v1/models";
 
     private static readonly HashSet<string> HopByHopHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -34,6 +36,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
     private readonly ProxyGatewayOptions _options;
     private readonly IProxyObservationSink _observationSink;
+    private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly HttpClient _httpClient;
     private readonly WebApplication _application;
     private int _started;
@@ -42,11 +45,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private ProxyGateway(
         ProxyGatewayOptions options,
         IProxyObservationSink observationSink,
+        IBackendTelemetryAdapter telemetryAdapter,
         HttpClient httpClient,
         WebApplication application)
     {
         _options = options;
         _observationSink = observationSink;
+        _telemetryAdapter = telemetryAdapter;
         _httpClient = httpClient;
         _application = application;
     }
@@ -55,9 +60,18 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
     public static ProxyGateway Create(
         ProxyGatewayOptions options,
-        IProxyObservationSink? observationSink = null)
+        IProxyObservationSink? observationSink = null,
+        IBackendTelemetryAdapter? telemetryAdapter = null)
     {
         ArgumentNullException.ThrowIfNull(options);
+
+        telemetryAdapter ??= new UnavailableBackendTelemetryAdapter(options.Backend);
+        if (telemetryAdapter.Backend != options.Backend)
+        {
+            throw new ArgumentException(
+                "Telemetry adapter backend must match the configured backend.",
+                nameof(telemetryAdapter));
+        }
 
         SocketsHttpHandler handler = new()
         {
@@ -95,10 +109,30 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyGateway gateway = new(
             options,
             observationSink ?? NullProxyObservationSink.Instance,
+            telemetryAdapter,
             httpClient,
             application);
 
-        application.MapMethods(ChatCompletionsPath, [HttpMethods.Post], gateway.RelayAsync);
+        application.MapMethods(
+            ChatCompletionsPath,
+            [HttpMethods.Post],
+            context => gateway.RelayAsync(context, ClientKind.GenericUnknown));
+        application.MapMethods(
+            ModelsPath,
+            [HttpMethods.Get],
+            gateway.RelayModelsAsync);
+        foreach (ClientEndpoint endpoint in ClientEndpointCatalog.KnownClients)
+        {
+            application.MapMethods(
+                endpoint.ChatCompletionsPath,
+                [HttpMethods.Post],
+                context => gateway.RelayAsync(context, endpoint.Client));
+            application.MapMethods(
+                endpoint.ModelsPath,
+                [HttpMethods.Get],
+                gateway.RelayModelsAsync);
+        }
+
         return gateway;
     }
 
@@ -172,17 +206,22 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task RelayAsync(HttpContext context)
+    private async Task RelayAsync(HttpContext context, ClientKind client)
     {
         Guid requestId = Guid.NewGuid();
         DateTimeOffset startedAt = DateTimeOffset.UtcNow;
         long startedTimestamp = Stopwatch.GetTimestamp();
         int? statusCode = null;
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
+        BackendResponseTelemetry backendTelemetry = _telemetryAdapter.CreateUnavailable();
 
         try
         {
-            using HttpRequestMessage outboundRequest = CreateOutboundRequest(context);
+            using HttpRequestMessage outboundRequest = CreateOutboundRequest(
+                context,
+                HttpMethod.Post,
+                ChatCompletionsPath,
+                includeBody: true);
             using HttpResponseMessage backendResponse = await _httpClient.SendAsync(
                 outboundRequest,
                 HttpCompletionOption.ResponseHeadersRead,
@@ -193,7 +232,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             CopyResponseHeaders(backendResponse, context.Response);
 
             await context.Response.StartAsync(context.RequestAborted).ConfigureAwait(false);
-            await backendResponse.Content.CopyToAsync(
+            backendTelemetry = await RelayResponseBodyAsync(
+                backendResponse.Content,
                 context.Response.Body,
                 context.RequestAborted).ConfigureAwait(false);
 
@@ -231,27 +271,141 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 startedAt,
                 Stopwatch.GetElapsedTime(startedTimestamp),
                 statusCode,
-                outcome);
+                outcome,
+                client,
+                backendTelemetry);
             await RecordSafelyAsync(observation).ConfigureAwait(false);
         }
     }
 
-    private HttpRequestMessage CreateOutboundRequest(HttpContext context)
+    private async Task RelayModelsAsync(HttpContext context)
+    {
+        try
+        {
+            using HttpRequestMessage outboundRequest = CreateOutboundRequest(
+                context,
+                HttpMethod.Get,
+                ModelsPath,
+                includeBody: false);
+            using HttpResponseMessage backendResponse = await _httpClient.SendAsync(
+                outboundRequest,
+                HttpCompletionOption.ResponseHeadersRead,
+                context.RequestAborted).ConfigureAwait(false);
+
+            context.Response.StatusCode = (int)backendResponse.StatusCode;
+            CopyResponseHeaders(backendResponse, context.Response);
+            await context.Response.StartAsync(context.RequestAborted).ConfigureAwait(false);
+            await backendResponse.Content.CopyToAsync(
+                context.Response.Body,
+                context.RequestAborted).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            context.Abort();
+        }
+        catch (HttpRequestException)
+        {
+            await WriteSafeGatewayFailureAsync(
+                context,
+                StatusCodes.Status502BadGateway).ConfigureAwait(false);
+        }
+        catch (Exception) when (!context.RequestAborted.IsCancellationRequested)
+        {
+            await AbortOrWriteSafeGatewayFailureAsync(context).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<BackendResponseTelemetry> RelayResponseBodyAsync(
+        HttpContent backendContent,
+        Stream clientBody,
+        CancellationToken cancellationToken)
+    {
+        IBackendTelemetrySession? telemetrySession;
+        try
+        {
+            telemetrySession = _telemetryAdapter.CreateSession(backendContent.Headers.ContentType?.MediaType);
+        }
+        catch (Exception)
+        {
+            telemetrySession = null;
+        }
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
+        try
+        {
+            using Stream backendBody = await backendContent
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+            while (true)
+            {
+                int bytesRead = await backendBody
+                    .ReadAsync(buffer.AsMemory(), cancellationToken)
+                    .ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                if (telemetrySession is not null)
+                {
+                    try
+                    {
+                        telemetrySession.Observe(buffer.AsSpan(0, bytesRead));
+                    }
+                    catch (Exception)
+                    {
+                        telemetrySession = null;
+                    }
+                }
+
+                await clientBody
+                    .WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken)
+                    .ConfigureAwait(false);
+                await clientBody.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        if (telemetrySession is not null)
+        {
+            try
+            {
+                return telemetrySession.Complete();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return _telemetryAdapter.CreateUnavailable();
+    }
+
+    private HttpRequestMessage CreateOutboundRequest(
+        HttpContext context,
+        HttpMethod method,
+        string backendPath,
+        bool includeBody)
     {
         UriBuilder destination = new(_options.BackendBaseAddress)
         {
-            Path = ChatCompletionsPath,
+            Path = backendPath,
             Query = context.Request.QueryString.HasValue
                 ? context.Request.QueryString.Value![1..]
                 : string.Empty,
         };
 
-        HttpRequestMessage outbound = new(HttpMethod.Post, destination.Uri)
+        HttpRequestMessage outbound = new(method, destination.Uri)
         {
-            Content = new StreamContent(context.Request.Body),
             Version = HttpVersion.Version11,
             VersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
         };
+        if (includeBody)
+        {
+            outbound.Content = new StreamContent(context.Request.Body);
+        }
 
         HashSet<string> excludedHeaders = CreateExcludedHeaders(context.Request.Headers);
         foreach ((string name, StringValues values) in context.Request.Headers)
@@ -262,7 +416,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             }
 
             string[] headerValues = values.OfType<string>().ToArray();
-            if (!outbound.Headers.TryAddWithoutValidation(name, headerValues))
+            if (!outbound.Headers.TryAddWithoutValidation(name, headerValues) && outbound.Content is not null)
             {
                 _ = outbound.Content.Headers.TryAddWithoutValidation(name, headerValues);
             }
@@ -352,5 +506,29 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         {
             // Observation is best-effort. A telemetry sink must never break request forwarding.
         }
+    }
+
+    private sealed class UnavailableBackendTelemetryAdapter(BackendKind backend) : IBackendTelemetryAdapter
+    {
+        private const string SourceVersion = "gateway-no-adapter-v1";
+
+        public BackendKind Backend { get; } = backend;
+
+        public string FixtureVersion => SourceVersion;
+
+        public IBackendTelemetrySession CreateSession(string? responseMediaType) =>
+            new UnavailableBackendTelemetrySession(CreateUnavailable());
+
+        public BackendResponseTelemetry CreateUnavailable() =>
+            BackendResponseTelemetry.Unavailable(Backend, SourceVersion);
+    }
+
+    private sealed class UnavailableBackendTelemetrySession(BackendResponseTelemetry telemetry) : IBackendTelemetrySession
+    {
+        public void Observe(ReadOnlySpan<byte> responseBytes)
+        {
+        }
+
+        public BackendResponseTelemetry Complete() => telemetry;
     }
 }

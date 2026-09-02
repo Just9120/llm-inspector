@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
@@ -344,6 +345,186 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    [DataRow(BackendKind.Ollama, "ollama-fixture", 11, 7, 18)]
+    [DataRow(BackendKind.LlamaCpp, "llama-cpp-fixture", 13, 8, 21)]
+    [DataRow(BackendKind.LmStudio, "lm-studio-fixture", 17, 9, 26)]
+    public async Task ConfiguredBackendAdapterProjectsTelemetryWithoutChangingResponse(
+        BackendKind backendKind,
+        string model,
+        int promptTokens,
+        int completionTokens,
+        int totalTokens)
+    {
+        string backendBody =
+            $"{{\"model\":\"{model}\",\"choices\":[{{\"message\":{{\"content\":\"synthetic\"}}}}]," +
+            $"\"usage\":{{\"prompt_tokens\":{promptTokens},\"completion_tokens\":{completionTokens},\"total_tokens\":{totalTokens}}}}}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(backendBody, context.RequestAborted);
+        });
+        CollectingObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address, backendKind);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            sink,
+            BackendTelemetryAdapters.Create(backendKind));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        string actualBody = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(backendBody, actualBody);
+        Assert.AreEqual(backendKind, observation.BackendTelemetry.Backend);
+        Assert.AreEqual(model, observation.BackendTelemetry.Model?.Value);
+        Assert.AreEqual(promptTokens, observation.BackendTelemetry.PromptTokens.Value);
+        Assert.AreEqual(completionTokens, observation.BackendTelemetry.CompletionTokens.Value);
+        Assert.AreEqual(totalTokens, observation.BackendTelemetry.TotalTokens.Value);
+        Assert.AreEqual(ClientKind.GenericUnknown, observation.Client);
+    }
+
+    [TestMethod]
+    public async Task DedicatedBasePathsProvideExplicitKnownClientAttribution()
+    {
+        List<ClientEndpoint?> endpoints = [null, .. ClientEndpointCatalog.KnownClients];
+        foreach (ClientEndpoint? endpoint in endpoints)
+        {
+            string? backendPath = null;
+            await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+            {
+                backendPath = context.Request.Path;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(
+                    "{\"model\":\"fixture\",\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}",
+                    context.RequestAborted);
+            });
+            CollectingObservationSink sink = new();
+            ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address);
+            await using ProxyGateway gateway = ProxyGateway.Create(
+                options,
+                sink,
+                BackendTelemetryAdapters.Create(BackendKind.Ollama));
+            await gateway.StartAsync();
+            using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+            string path = endpoint?.ChatCompletionsPath ?? ClientEndpointCatalog.GenericChatCompletionsPath;
+
+            using HttpResponseMessage response = await client.PostAsync(
+                path,
+                new StringContent("{}", Encoding.UTF8, "application/json"));
+            ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            response.EnsureSuccessStatusCode();
+            Assert.AreEqual(ProxyGateway.ChatCompletionsPath, backendPath);
+            Assert.AreEqual(endpoint?.Client ?? ClientKind.GenericUnknown, observation.Client);
+        }
+    }
+
+    [TestMethod]
+    public async Task ModelDiscoveryPassesThroughEveryConfiguredClientBasePath()
+    {
+        const string modelsBody =
+            "{\"object\":\"list\",\"data\":[{\"id\":\"fixture-model\",\"object\":\"model\"}]}";
+        List<string> backendPaths = [];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            backendPaths.Add(context.Request.Path);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(modelsBody, context.RequestAborted);
+        });
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            telemetryAdapter: BackendTelemetryAdapters.Create(BackendKind.Ollama));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        string[] modelPaths =
+        [
+            ClientEndpointCatalog.GenericModelsPath,
+            .. ClientEndpointCatalog.KnownClients.Select(endpoint => endpoint.ModelsPath),
+        ];
+
+        foreach (string path in modelPaths)
+        {
+            using HttpResponseMessage response = await client.GetAsync(path);
+            string actual = await response.Content.ReadAsStringAsync();
+
+            response.EnsureSuccessStatusCode();
+            Assert.AreEqual(modelsBody, actual);
+        }
+
+        Assert.HasCount(modelPaths.Length, backendPaths);
+        Assert.IsTrue(backendPaths.All(path => path == ProxyGateway.ModelsPath));
+    }
+
+    [TestMethod]
+    public async Task StreamingToolCallOrderAndFinalUsageSurviveObservedRelay()
+    {
+        string[] events =
+        [
+            "data: {\"model\":\"fixture\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"fixture_tool\",\"arguments\":\"{\\\"x\\\":\"}}]}}]}\n\n",
+            "data: {\"model\":\"fixture\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"1}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6}}\n\n",
+            "data: [DONE]\n\n",
+        ];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "text/event-stream";
+            foreach (string item in events)
+            {
+                await context.Response.WriteAsync(item, context.RequestAborted);
+                await context.Response.Body.FlushAsync(context.RequestAborted);
+            }
+        });
+        CollectingObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address, BackendKind.LlamaCpp);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            sink,
+            BackendTelemetryAdapters.Create(BackendKind.LlamaCpp));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ClientEndpointCatalog.KnownClients.Single(item => item.Client == ClientKind.Cline).ChatCompletionsPath,
+            new StringContent("{\"stream\":true}", Encoding.UTF8, "application/json"));
+        string actual = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(string.Concat(events), actual);
+        Assert.AreEqual(ClientKind.Cline, observation.Client);
+        Assert.AreEqual(6, observation.BackendTelemetry.TotalTokens.Value);
+    }
+
+    [TestMethod]
+    public async Task TelemetryParserFailureCannotBreakRelay()
+    {
+        const string backendBody = "{\"choices\":[{\"message\":{\"content\":\"synthetic\"}}]}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(backendBody, context.RequestAborted);
+        });
+        CollectingObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address);
+        await using ProxyGateway gateway = ProxyGateway.Create(options, sink, new ThrowingTelemetryAdapter());
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        string actual = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        response.EnsureSuccessStatusCode();
+        Assert.AreEqual(backendBody, actual);
+        Assert.AreEqual(MetricQuality.Unavailable, observation.BackendTelemetry.TotalTokens.Quality);
+    }
+
+    [TestMethod]
     public async Task BackendConnectionFailureReturnsOnlySafeInspectorError()
     {
         int unavailablePort;
@@ -437,5 +618,26 @@ public sealed class ProxyGatewayIntegrationTests
     {
         public ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken) =>
             ValueTask.FromException(new InvalidOperationException("Synthetic sink failure."));
+    }
+
+    private sealed class ThrowingTelemetryAdapter : IBackendTelemetryAdapter
+    {
+        public BackendKind Backend => BackendKind.Ollama;
+
+        public string FixtureVersion => "throwing-fixture-v1";
+
+        public IBackendTelemetrySession CreateSession(string? responseMediaType) => new ThrowingSession();
+
+        public BackendResponseTelemetry CreateUnavailable() =>
+            BackendResponseTelemetry.Unavailable(Backend, FixtureVersion);
+
+        private sealed class ThrowingSession : IBackendTelemetrySession
+        {
+            public void Observe(ReadOnlySpan<byte> responseBytes) =>
+                throw new InvalidOperationException("Synthetic parser failure.");
+
+            public BackendResponseTelemetry Complete() =>
+                throw new InvalidOperationException("Synthetic parser failure.");
+        }
     }
 }

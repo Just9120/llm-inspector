@@ -27,6 +27,8 @@
           <TextBlock x:Name="GatewayStateText" TextWrapping="Wrap" />
           <TextBlock x:Name="ListenerText" TextWrapping="Wrap" />
           <TextBlock x:Name="BackendText" TextWrapping="Wrap" />
+          <TextBlock x:Name="BackendKindText" TextWrapping="Wrap" />
+          <TextBlock x:Name="ClientEndpointsText" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 

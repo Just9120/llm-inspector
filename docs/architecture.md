@@ -84,7 +84,7 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-`Gateway`, `Domain`, `Application` и `App` теперь содержат первый product increment; остальные non-UI modules по-прежнему представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
+`Gateway`, `Domain`, `Application`, `Adapters` и `App` содержат product code; `Telemetry`, `Storage.Sqlite`, `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
 ## 5. Runtime/process model
 
@@ -105,21 +105,24 @@ Collectors, retention и diagnostics работают как independently super
 
 Inspector — explicit reverse proxy, не system-wide MITM и не backend lifecycle manager.
 
-Текущий EPIC-09 increment использует fixed listener `127.0.0.1:5117`, default backend `127.0.0.1:11434` и поддерживает только `POST /v1/chat/completions`. Dynamic listener port разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
+Текущий runtime использует default listener `127.0.0.1:5117`. Versioned launch configuration v1 выбирает Ollama, llama.cpp или LM Studio с default ports `11434`, `8080` и `1234`; explicit backend URL/port остаётся literal-loopback-only. Generic и четыре per-client base paths поддерживают transparent `GET /v1/models` и `POST /v1/chat/completions`, а на backend всегда направляются стандартные `/v1/*` paths. Dynamic listener port `0` разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
 
 ```text
 OpenAI-compatible client
-  │  base URL = http://127.0.0.1:<configured-port>/v1
+  │  generic /v1 or explicit /clients/<known-client>/v1 base URL
   ▼
 Kestrel loopback gateway
   ├─ validate route + configured backend identity
   ├─ stream request to explicit loopback backend target
-  ├─ relay status/headers/body/SSE to client in original semantic order
-  └─ tee bounded in-memory bytes to privacy projection
+  ├─ relay model discovery or chat status/headers/body/SSE in original semantic order
+  └─ for chat only, inspect one bounded token window while relaying each chunk
             │
             ▼
   adapter + allowlist normalizer
             │ non-blocking metadata events only
+            ▼
+  latest allowlisted observation (bounded process memory)
+            │ future EPIC-08 persistence boundary
             ▼
   lifecycle queue ─> SQLite writer ─> read models ─> UI/diagnostics
   sample queue ─────> SQLite writer
@@ -130,7 +133,7 @@ Kestrel loopback gateway
 1. Backend target принимается только из versioned settings и в initial release должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote/LAN target требует backlog authorization.
 2. Generic `ASPNETCORE_URLS`, wildcard hostname, `0.0.0.0`, `[::]` и `ListenAnyIP` не могут расширить listener. Port conflict останавливает listener с явной UI error, а не выбирает скрытый alternate endpoint.
 3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Inspector не добавляет generation parameters и не заменяет model/tool payload.
-4. Request и response bodies relay-ятся streaming; full-body buffering запрещено. Parser получает bounded transient view и не влияет на flow control клиента.
+4. Request и response bodies relay-ятся streaming; full-body buffering запрещено. Parser хранит не более `256` bytes текущего lexical token и не влияет на flow control клиента; container depth больше `64`, malformed JSON или parser exception переводят telemetry в `unavailable`, не прерывая relay.
 5. SSE event order и bytes внутри relayed data не переупорядочиваются. Fragmented tool-call name может быть assembled только в bounded volatile state; arguments/results проходят к client/backend, но отбрасываются telemetry projection.
 6. Client cancellation немедленно propagates к backend. Inspector не replay-ит и не retry-ит generation request после начала forwarding: duplicate inference опаснее явного failure.
 7. Backend TLS certificate validation не отключается. Authorization/cookie/proxy-auth headers могут проходить к backend по configured policy, но исключены из logging, metrics, snapshots и exception text.

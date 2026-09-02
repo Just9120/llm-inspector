@@ -1,0 +1,6 @@
+data: {"id":"ollama-1","object":"chat.completion.chunk","model":"qwen3:8b","choices":[{"index":0,"delta":{"content":"synthetic-"}}],"usage":null}
+
+data: {"id":"ollama-1","object":"chat.completion.chunk","model":"qwen3:8b","choices":[{"index":0,"delta":{"content":"fixture"}}],"usage":{"prompt_tokens":7,"completion_tokens":3,"total_tokens":10}}
+
+data: [DONE]
+
