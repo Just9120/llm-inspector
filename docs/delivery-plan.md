@@ -1,31 +1,75 @@
 # Delivery plan
 
-> Dashboard status: `NO APPROVED GOAL`  
-> Updated: `2026-09-02T18:16:23Z`
+> Dashboard status: `GOAL-002 IN_PROGRESS`
+> Updated: `2026-09-02T18:32:32Z`
 
 ## Current Goal
 
-Активная approved Goal отсутствует. `GOAL-001` завершена и перенесена в [`delivery-plan-archive.md`](delivery-plan-archive.md). `GOAL-002` ниже — только proposal и не авторизует implementation.
+### `GOAL-002 — Утвердить architecture baseline и executable delivery foundation design`
+
+- **State:** `IN_PROGRESS`.
+- **Authorization source:** explicit user approval от `2026-09-02`: «Да, вот теперь идем через ПРы по инструкции» в ответ на proposal `GOAL-002`.
+
+**Scope**
+
+- Выбрать и обосновать Windows desktop/runtime stack, package manager и repository layout.
+- Определить transparent OpenAI-compatible observation boundary и client/backend data flow.
+- Определить process/module boundaries, failure isolation и state ownership.
+- Определить local storage/retention/migration model и privacy enforcement points.
+- Сформировать backend capability matrix для Ollama, llama.cpp и LM Studio.
+- Определить supported Windows matrix и measurable performance/idle benchmark protocol; numeric budgets вынести на explicit user approval, если source их не задаёт.
+- Определить test pyramid/seams для streaming, tools, concurrency, privacy и crash recovery.
+- Определить Windows build/package/signing/distribution model и CI commands без CD.
+- Обновить architecture, CI/CD project profile, README и delivery plan; подготовить bounded `GOAL-003` для repository/code bootstrap.
+
+**Non-goals**
+
+- Product source code, dependency installation или executable prototype.
+- GitHub Actions/workflows, repository settings, secrets, signing certificates или release publishing.
+- Server/runtime CD и production deployment.
+- Изменение ратифицированного product scope/AC.
+
+**Acceptance criteria**
+
+1. `docs/architecture.md` содержит выбранный stack и logical/runtime component map с owners/boundaries.
+2. Request/response/streaming/tool-call data flow показывает privacy filtering и failure behavior.
+3. Storage/retention/migration ownership и content-exclusion invariant определены.
+4. Capability matrix покрывает три required backends и unavailable semantics.
+5. Supported Windows matrix зафиксирована либо явно вынесена как owner blocker.
+6. Performance measurement protocol определён; numeric budgets утверждены либо остаются explicit blocker без invented values.
+7. Test strategy связывает critical seams с relevant canonical AC.
+8. CI/build/release profile отделяет Windows artifacts от отключённого CD.
+9. Documentation links, AC counts и profile consistency проходят local structural validation.
+10. Следующая code Goal bounded и не авторизована автоматически.
+
+**Required Evidence:** `SPEC: ✅`; `CODE: N/A`; `TEST: ✅` (structural/link/count validation); `CI: N/A`; `DEPLOY: N/A`; `LIVE: N/A`.
+
+**Known blockers/dependencies**
+
+- Numeric performance/idle/throughput budgets отсутствуют в ратифицированном source; в этой Goal определяется protocol, а значения остаются owner blocker.
+- Signing identity/certificate и release channel не создаются в этой Goal; architecture должна отделить выбранную package model от external release prerequisites.
+
+**Stop condition:** после завершения architecture baseline и applicable PR flow остановиться; repository/code bootstrap не начинать без нового approval.
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T18:16:23Z` |
+| Updated UTC | `2026-09-02T18:32:32Z` |
 | Expected base branch | `main` |
-| Base SHA | `e0860e4972e486e59fcf3a8499b5da0f2863b96c` — initial documentation snapshot |
-| Working branch | `main`; one-time empty-repository bootstrap explicitly authorized пользователем |
-| Last verified revision | `e0860e4972e486e59fcf3a8499b5da0f2863b96c`; содержащий этот checkpoint metadata commit намеренно не self-referenced |
-| Initial worktree state | Только `.git`; project files отсутствовали |
-| Current worktree state | Documentation content committed; checkpoint metadata подготовлена отдельным commit перед единым initial push |
-| Completed work | Empty-repository audit; canonical product ratification; 164 atomic AC; CD decision; initial `main` bootstrap |
-| Current step | Ожидание approval следующей bounded Goal |
-| Next exact action | Пользователь принимает, изменяет или отклоняет `GOAL-002`; до этого architecture/code implementation не начинать |
-| PR / CI | `N/A`: initial empty-repository bootstrap cannot use PR without an existing base; workflows отсутствуют |
+| Base SHA | `581e18097a6e9e13098f510fc1f82d3e45f849f7` — verified `origin/main` at Goal start |
+| Working branch | `codex/architecture-baseline` |
+| Last verified revision | `581e18097a6e9e13098f510fc1f82d3e45f849f7` |
+| Initial worktree state | Clean; local `main`, `origin/main` и GitHub `main` synchronized at base SHA |
+| Current worktree state | Goal checkpoint edited; architecture work not yet committed |
+| Completed work | `GOAL-002` authorized; remote fetched; clean feature branch created from verified base |
+| Current step | Evidence-backed architecture and delivery-foundation design |
+| Next exact action | Зафиксировать architecture decisions, capability matrix, privacy/data boundaries, test/release contracts и supporting operational documentation |
+| PR / CI | PR не создан; workflows отсутствуют и находятся вне scope этой Goal |
 | Deployment | Server/runtime CD explicitly disabled; Windows build/release pipeline не определён |
-| Blockers | Windows support matrix и numeric performance budgets не утверждены |
-| Unverified assumptions | Desktop stack, process/data architecture, packaging/signing/update model |
-| Preserved pre-existing changes | До audit/bootstrap project files отсутствовали; unrelated changes не обнаружены |
+| Blockers | Numeric performance budgets и external signing identity/channel отсутствуют; architecture protocol/model можно завершить без invented values |
+| Unverified assumptions | Выбранные design decisions не являются runtime Evidence до будущей implementation/validation Goal |
+| Preserved pre-existing changes | Goal начата на clean worktree; unrelated changes не обнаружены |
 
 ## Project readiness snapshots
 
@@ -85,58 +129,4 @@ Roadmap — sequencing proposal, не implementation authorization.
 
 ## Candidate next Goal
 
-### `GOAL-002 — Утвердить architecture baseline и executable delivery foundation design`
-
-- **State:** `PROPOSED`.
-- **Authorization needed:** explicit user approval.
-
-**Scope**
-
-- Выбрать и обосновать Windows desktop/runtime stack, package manager и repository layout.
-- Определить transparent OpenAI-compatible observation boundary и client/backend data flow.
-- Определить process/module boundaries, failure isolation и state ownership.
-- Определить local storage/retention/migration model и privacy enforcement points.
-- Сформировать backend capability matrix для Ollama, llama.cpp и LM Studio.
-- Определить supported Windows matrix и measurable performance/idle benchmark protocol; numeric budgets вынести на explicit user approval, если источник их не задаёт.
-- Определить test pyramid/seams для streaming, tools, concurrency, privacy и crash recovery.
-- Определить Windows build/package/signing/distribution model и CI commands без CD.
-- Обновить architecture, CI/CD project profile, README и delivery plan; подготовить bounded `GOAL-003` для repository/code bootstrap.
-
-**Non-goals**
-
-- Product source code, dependency installation или executable prototype.
-- GitHub Actions/workflows, repository settings, secrets, signing certificates или release publishing.
-- Server/runtime CD и production deployment.
-- Изменение ратифицированного product scope/AC.
-
-**Acceptance criteria**
-
-1. `docs/architecture.md` содержит выбранный stack и logical/runtime component map с owners/boundaries.
-2. Request/response/streaming/tool-call data flow показывает privacy filtering и failure behavior.
-3. Storage/retention/migration ownership и content-exclusion invariant определены.
-4. Capability matrix покрывает три required backends и unavailable semantics.
-5. Supported Windows matrix зафиксирована либо явно вынесена как owner blocker.
-6. Performance measurement protocol определён; numeric budgets утверждены либо остаются explicit blocker без invented values.
-7. Test strategy связывает critical seams с relevant canonical AC.
-8. CI/build/release profile отделяет Windows artifacts от отключённого CD.
-9. Documentation links, AC counts и profile consistency проходят local structural validation.
-10. Следующая code Goal bounded и не авторизована автоматически.
-
-**Required Evidence**
-
-- `SPEC: ✅` — architecture decisions traceable к canonical AC и explicit owner decisions.
-- `CODE: N/A`.
-- `TEST: ✅` — structural/link/count validation документации.
-- `CI: N/A` — workflow creation вне scope.
-- `DEPLOY: N/A`.
-- `LIVE: N/A`.
-
-**Known blockers**
-
-- Numeric performance budgets отсутствуют в ратифицированном source.
-- Windows support baseline и signing/distribution preferences не заданы.
-- Initial Git base существует; будущие Git mutations должны выполняться в feature branch и могут требовать managed approval.
-
-**Stop condition**
-
-После architecture baseline остановиться; repository/code bootstrap не начинать без нового approval.
+`GOAL-003` будет сформирована по результатам architecture baseline. До завершения `GOAL-002` этот раздел не авторизует code implementation.
