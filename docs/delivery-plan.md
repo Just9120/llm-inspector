@@ -65,16 +65,16 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:12:59Z` |
+| Updated UTC | `2026-09-02T23:15:15Z` |
 | Expected base branch | `main` |
 | Base SHA | `e1e1b735116b94d73fa87559da8759c5f58d243c` — verified local/`origin/main` after PR #5 merge and successful exact-merge CI |
 | Working branch | `codex/epic-03-live-state-quality` |
-| Last verified revision | `a3cbe1ffb391fc16a8a92bce29f290476daa3e55` — deterministic abort handshake fix covered by 21 focused runs and the exact parallel CI test command `80/80`; containing documentation is intentionally not self-referenced |
+| Last verified revision | `56d602fd7ffce9285c7853d4135ddf7975708771` — deterministic fix and failed-CI metadata covered by the full local CI-equivalent pipeline; containing checkpoint update is intentionally not self-referenced |
 | Initial worktree state | Clean EPIC-03 branch created from synchronized local/`origin/main`; merged fix branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | Confirmed CI-failure fix committed; failure/readiness metadata update is the only current worktree change |
-| Completed work | EPIC-03 initial candidate passed full local validation and opened PR #6; CI `33693671440` passed restore/format/build but failed `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure`, skipping downstream publish/smoke; failed log proved backend could abort before proxy observed headers; fixture now waits until client has received exact `200` and partial body before abort; focused test `21/21` and exact parallel CI test command `80/80` passed |
-| Current step | Synchronize failed-CI metadata, then repeat full local validation of the grouped follow-up candidate |
-| Next exact action | Commit failure/checkpoint metadata, then run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke |
+| Current worktree state | Deterministic fix and failed-CI metadata committed; worktree clean before this checkpoint update; branch is two commits ahead of the initial PR head |
+| Completed work | EPIC-03 initial candidate passed full local validation and opened PR #6; CI `33693671440` passed restore/format/build but failed `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure`, skipping downstream publish/smoke; failed log proved backend could abort before proxy observed headers; fixture now waits until client has received exact `200` and partial body before abort; focused test `21/21`; grouped candidate passed locked restore, format, parallel Release build with `0` warnings/errors, exact parallel CI test command `80/80` with `0` failed/skipped, locked win-x64 restore, self-contained publish and smoke |
+| Current step | Perform the single grouped follow-up push authorized by the confirmed CI failure |
+| Next exact action | Push the validated commits to PR #6 once, then inspect the new exact-head CI without speculative rerun |
 | PR / CI | EPIC-03 PR #6 open; initial head `d1e8f313b6652cfe1656f1de0c4fac99bd852103`; run `33693671440` failed at tests. One grouped follow-up push is authorized after complete local validation |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | Failed PR CI is an active merge gate and cannot be bypassed; local deterministic fix is not remote Evidence yet. `E09-AC06` still requires the later EPIC-08 persistent schema |
