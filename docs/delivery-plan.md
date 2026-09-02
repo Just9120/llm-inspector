@@ -65,20 +65,20 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T22:35:50Z` |
+| Updated UTC | `2026-09-02T22:39:36Z` |
 | Expected base branch | `main` |
 | Base SHA | `275b7407a015f6a98361f87b74b5dc444f0a8355` — PR #4 merge commit, verified local/`origin/main`; its exact-merge CI failed at one integration assertion |
 | Working branch | `codex/epic-02-backend-abort-fix` |
-| Last verified revision | `cf1cd3c1423b6a2d63b166fac0c58394212cfafa` — transport-safe abort assertion covered by one build+focused run and 10 additional sequential focused runs; containing documentation is intentionally not self-referenced |
+| Last verified revision | `0776454406ddda845e6b83e892dba7623fe16ca1` — focused fix and synchronized failure metadata covered by full local CI-equivalent validation; containing checkpoint update is intentionally not self-referenced |
 | Initial worktree state | Clean fix branch created from synchronized local/`origin/main` after PR #4 merge; merged feature branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | One focused test-harness fix committed; documentation update is the only current worktree change |
-| Completed work | EPIC-02 product increment merged as PR #4; exact-head PR CI `33690474686` passed all steps; exact-merge `main` CI `33690756965` failed only `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure` and skipped downstream publish/smoke; failed assertion no longer assumes one platform-specific `HttpClient` truncation signal while still requiring `RelayFailed` and original status; focused test passed `11/11` sequential runs |
-| Current step | Complete full local CI-equivalent validation of the focused fix, then open one fix PR |
-| Next exact action | Commit synchronized failure/checkpoint metadata, then run locked restore → format → Release build → all tests → locked RID restore → self-contained publish/smoke |
+| Current worktree state | Focused fix and failure metadata committed; worktree clean before this checkpoint update; branch remains local and unpushed |
+| Completed work | EPIC-02 product increment merged as PR #4; exact-head PR CI `33690474686` passed all steps; exact-merge `main` CI `33690756965` failed only `BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure` and skipped downstream publish/smoke; failed assertion no longer assumes one platform-specific `HttpClient` truncation signal while still requiring `RelayFailed` and original status; focused test passed `11/11` sequential runs; fix candidate passed locked restore, format, Release build with `0` warnings/errors, full suite `53/53` with `0` failed/skipped, locked win-x64 restore, self-contained publish and smoke |
+| Current step | Perform the fix branch's single initial push and open the EPIC-02 CI-stabilization PR |
+| Next exact action | Push `codex/epic-02-backend-abort-fix` once and create the fix Pull Request with failed-run and local validation Evidence |
 | PR / CI | PR #4 merged as `275b7407a015f6a98361f87b74b5dc444f0a8355`; PR run `33690474686` success; `main` run `33690756965` failure at tests. Fix branch is local and unpushed |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | No confirmed fix-PR blocker. Failed `main` CI is an active gate and cannot be bypassed. `E09-AC06` still requires the later EPIC-08 persistent schema |
-| Unverified assumptions | Full-suite and GitHub-hosted behavior of the transport-safe assertion remain pending. Compatibility is proven against `epic02-fixtures-v1`, not every future backend/client version; unknown fields still relay transparently but receive no telemetry credit |
+| Unverified assumptions | GitHub-hosted behavior of the transport-safe assertion remains pending. Compatibility is proven against `epic02-fixtures-v1`, not every future backend/client version; unknown fields still relay transparently but receive no telemetry credit |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
