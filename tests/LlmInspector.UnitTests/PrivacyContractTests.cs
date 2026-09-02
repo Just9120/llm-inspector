@@ -52,6 +52,7 @@ public sealed class PrivacyContractTests
             "Key",
             "Metric",
             "Model",
+            "NativeName",
             "PromptTokens",
             "Quality",
             "Source",

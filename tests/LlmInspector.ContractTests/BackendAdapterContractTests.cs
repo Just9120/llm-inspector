@@ -57,6 +57,14 @@ public sealed class BackendAdapterContractTests
         Dictionary<BackendMetricKey, MetricValue> metrics = telemetry.BackendSpecificMetrics
             .ToDictionary(item => item.Key, item => item.Metric);
         Assert.HasCount(7, metrics);
+        Assert.AreEqual(
+            "cache_n",
+            telemetry.BackendSpecificMetrics.Single(
+                item => item.Key == BackendMetricKey.LlamaCppCachedPromptTokens).NativeName.Value);
+        Assert.AreEqual(
+            "predicted_per_second",
+            telemetry.BackendSpecificMetrics.Single(
+                item => item.Key == BackendMetricKey.LlamaCppPredictedTokensPerSecond).NativeName.Value);
         Assert.AreEqual(236, metrics[BackendMetricKey.LlamaCppCachedPromptTokens].Value);
         Assert.AreEqual(MetricUnit.TokenCount, metrics[BackendMetricKey.LlamaCppCachedPromptTokens].Unit);
         Assert.AreEqual(30.958m, metrics[BackendMetricKey.LlamaCppPromptMilliseconds].Value);

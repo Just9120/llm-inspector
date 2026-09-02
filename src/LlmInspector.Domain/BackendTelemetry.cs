@@ -185,7 +185,10 @@ public sealed record MetricValue
         new(null, unit, MetricQuality.Unavailable, source, sourceVersion);
 }
 
-public sealed record BackendMetric(BackendMetricKey Key, MetricValue Metric);
+public sealed record BackendMetric(
+    BackendMetricKey Key,
+    TechnicalIdentifier NativeName,
+    MetricValue Metric);
 
 public sealed record BackendResponseTelemetry(
     BackendKind Backend,

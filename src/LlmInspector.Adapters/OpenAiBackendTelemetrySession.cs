@@ -233,6 +233,8 @@ internal sealed class OpenAiBackendTelemetrySession : IBackendTelemetrySession
         {
             destination.Add(new BackendMetric(
                 key,
+                TechnicalIdentifier.FromBackend(sourceName) ??
+                    throw new InvalidOperationException("Allowlisted backend metric name is invalid."),
                 MetricValue.Exact(value, unit, MetricSource.BackendExtension, _fixtureVersion)));
         }
     }
