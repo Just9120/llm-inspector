@@ -424,6 +424,43 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task ModelDiscoveryPassesThroughEveryConfiguredClientBasePath()
+    {
+        const string modelsBody =
+            "{\"object\":\"list\",\"data\":[{\"id\":\"fixture-model\",\"object\":\"model\"}]}";
+        List<string> backendPaths = [];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            backendPaths.Add(context.Request.Path);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(modelsBody, context.RequestAborted);
+        });
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(0, backend.Address);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            telemetryAdapter: BackendTelemetryAdapters.Create(BackendKind.Ollama));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        string[] modelPaths =
+        [
+            ClientEndpointCatalog.GenericModelsPath,
+            .. ClientEndpointCatalog.KnownClients.Select(endpoint => endpoint.ModelsPath),
+        ];
+
+        foreach (string path in modelPaths)
+        {
+            using HttpResponseMessage response = await client.GetAsync(path);
+            string actual = await response.Content.ReadAsStringAsync();
+
+            response.EnsureSuccessStatusCode();
+            Assert.AreEqual(modelsBody, actual);
+        }
+
+        Assert.HasCount(modelPaths.Length, backendPaths);
+        Assert.IsTrue(backendPaths.All(path => path == ProxyGateway.ModelsPath));
+    }
+
+    [TestMethod]
     public async Task StreamingToolCallOrderAndFinalUsageSurviveObservedRelay()
     {
         string[] events =

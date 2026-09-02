@@ -6,7 +6,8 @@ public sealed record ClientEndpoint(
     ClientKind Client,
     string DisplayName,
     string BasePath,
-    string ChatCompletionsPath);
+    string ChatCompletionsPath,
+    string ModelsPath);
 
 public static class ClientEndpointCatalog
 {
@@ -22,6 +23,8 @@ public static class ClientEndpointCatalog
 
     public static string GenericChatCompletionsPath => GenericBasePath + "/chat/completions";
 
+    public static string GenericModelsPath => GenericBasePath + "/models";
+
     private static ClientEndpoint Create(ClientKind client, string displayName, string basePath) =>
-        new(client, displayName, basePath, basePath + "/chat/completions");
+        new(client, displayName, basePath, basePath + "/chat/completions", basePath + "/models");
 }
