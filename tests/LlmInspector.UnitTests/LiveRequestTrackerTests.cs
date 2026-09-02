@@ -121,6 +121,39 @@ public sealed class LiveRequestTrackerTests
         Assert.AreEqual(MetricQuality.Unavailable, snapshot.Eta.Quality);
     }
 
+    [TestMethod]
+    public void ConcurrentRequestsRetainIndependentCurrentAndTerminalState()
+    {
+        ManualTimeProvider time = new();
+        LiveRequestTracker tracker = new(time);
+        Guid firstId = Guid.NewGuid();
+        Guid secondId = Guid.NewGuid();
+        tracker.RequestStarted(firstId, time.GetUtcNow(), ClientKind.Cline);
+        tracker.RequestStarted(secondId, time.GetUtcNow(), ClientKind.OpenWebUi);
+        tracker.StageChanged(
+            firstId,
+            RequestStageValue.BackendReported(RequestStage.ModelLoading, "backend-events-v1"));
+        tracker.StageChanged(
+            secondId,
+            RequestStageValue.BackendReported(RequestStage.ToolWait, "backend-events-v1"));
+
+        LiveRequestCollectionSnapshot active = tracker.GetSnapshot();
+        Assert.HasCount(2, active.ActiveRequests);
+        Assert.AreEqual(
+            RequestStage.ModelLoading,
+            active.ActiveRequests.Single(item => item.RequestId == firstId).Stage.Stage);
+        Assert.AreEqual(
+            RequestStage.ToolWait,
+            active.ActiveRequests.Single(item => item.RequestId == secondId).Stage.Stage);
+
+        tracker.RequestFinished(firstId, ProxyOutcome.Completed);
+
+        LiveRequestCollectionSnapshot afterCompletion = tracker.GetSnapshot();
+        Assert.AreEqual(secondId, afterCompletion.ActiveRequests.Single().RequestId);
+        Assert.AreEqual(firstId, afterCompletion.LatestTerminalRequest?.RequestId);
+        Assert.AreEqual(RequestStage.Completed, afterCompletion.LatestTerminalRequest?.Stage.Stage);
+    }
+
     private static void AddProgressSample(
         LiveRequestTracker tracker,
         ManualTimeProvider time,
