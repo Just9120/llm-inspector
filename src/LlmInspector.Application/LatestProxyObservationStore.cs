@@ -2,7 +2,12 @@ using LlmInspector.Domain;
 
 namespace LlmInspector.Application;
 
-public sealed class LatestProxyObservationStore : IProxyObservationSink
+public interface IProxyObservationSnapshotSource
+{
+    ProxyObservation? Latest { get; }
+}
+
+public sealed class LatestProxyObservationStore : IProxyObservationSink, IProxyObservationSnapshotSource
 {
     private ProxyObservation? _latest;
     private long _acceptedCount;
