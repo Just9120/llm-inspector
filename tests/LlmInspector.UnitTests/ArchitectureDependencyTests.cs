@@ -90,6 +90,34 @@ public sealed class ArchitectureDependencyTests
         }
     }
 
+    [TestMethod]
+    public void LockFilesCoverTheSolutionAndWindowsPublishGraphs()
+    {
+        DirectoryInfo repositoryRoot = FindRepositoryRoot();
+        string[] solutionProjects = Directory
+            .EnumerateFiles(repositoryRoot.FullName, "*.csproj", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .ToArray();
+
+        foreach (string projectPath in solutionProjects)
+        {
+            string projectDirectory = Path.GetDirectoryName(projectPath)!;
+            Assert.IsTrue(
+                File.Exists(Path.Combine(projectDirectory, "packages.lock.json")),
+                $"Normal lock file is missing for {projectPath}.");
+        }
+
+        foreach (string projectName in AllowedProductionReferences.Keys)
+        {
+            string lockPath = Path.Combine(
+                repositoryRoot.FullName,
+                "src",
+                projectName,
+                "packages.win-x64.lock.json");
+            Assert.IsTrue(File.Exists(lockPath), $"win-x64 lock file is missing for {projectName}.");
+        }
+    }
+
     private static DirectoryInfo FindRepositoryRoot()
     {
         DirectoryInfo? current = new(AppContext.BaseDirectory);
