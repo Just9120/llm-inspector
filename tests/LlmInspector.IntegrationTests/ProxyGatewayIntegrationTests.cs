@@ -586,12 +586,14 @@ public sealed class ProxyGatewayIntegrationTests
     [TestMethod]
     public async Task BackendBodyAbortKeepsOriginalStatusAndRecordsRelayFailure()
     {
+        TaskCompletionSource<bool> releaseBackendAbort = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
         {
             context.Response.StatusCode = StatusCodes.Status200OK;
             context.Response.ContentLength = 1024;
             await context.Response.WriteAsync("partial", context.RequestAborted);
             await context.Response.Body.FlushAsync(context.RequestAborted);
+            await releaseBackendAbort.Task.WaitAsync(context.RequestAborted);
             context.Abort();
         });
         CollectingObservationSink sink = new();
@@ -601,27 +603,36 @@ public sealed class ProxyGatewayIntegrationTests
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
 
-        HttpStatusCode? clientVisibleStatus = null;
         try
         {
-            using HttpResponseMessage response = await client.PostAsync(
-                ProxyGateway.ChatCompletionsPath,
-                new StringContent("{}", Encoding.UTF8, "application/json"));
-            clientVisibleStatus = response.StatusCode;
-        }
-        catch (HttpRequestException)
-        {
-            // A truncated HTTP/1.1 response may surface as a client exception. On some Windows
-            // transports the already-started status is returned instead; the durable invariant is
-            // the gateway observation below, not which transport-level signal HttpClient chooses.
-        }
+            using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+            {
+                Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+            };
+            using HttpResponseMessage response = await client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead);
+            await using Stream body = await response.Content.ReadAsStreamAsync();
+            byte[] partial = new byte["partial".Length];
+            using CancellationTokenSource readTimeout = new(TimeSpan.FromSeconds(5));
+            int bytesRead = await body.ReadAtLeastAsync(
+                partial,
+                partial.Length,
+                throwOnEndOfStream: true,
+                readTimeout.Token);
 
-        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
-        Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
-        if (clientVisibleStatus.HasValue)
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(partial.Length, bytesRead);
+            Assert.AreEqual("partial", Encoding.UTF8.GetString(partial));
+
+            releaseBackendAbort.TrySetResult(true);
+            ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
+            Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
+        }
+        finally
         {
-            Assert.AreEqual(HttpStatusCode.OK, clientVisibleStatus.Value);
+            releaseBackendAbort.TrySetResult(true);
         }
     }
 
