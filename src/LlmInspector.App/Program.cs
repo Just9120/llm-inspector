@@ -1,4 +1,5 @@
 using Avalonia;
+using LlmInspector.Adapters;
 using LlmInspector.Gateway;
 
 namespace LlmInspector.App;
@@ -36,7 +37,9 @@ public static class Program
 
         try
         {
-            gateway = ProxyGateway.Create(options);
+            gateway = ProxyGateway.Create(
+                options,
+                telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend));
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(gateway.ListeningAddress!, options.BackendBaseAddress);
         }
@@ -63,7 +66,9 @@ public static class Program
     private static int RunGatewaySmoke()
     {
         ProxyGatewayOptions options = ProxyGatewayOptions.CreateDefault();
-        using ProxyGateway gateway = ProxyGateway.Create(options);
+        using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend));
         gateway.Start();
         return gateway.ListeningAddress is not null ? 0 : 1;
     }
