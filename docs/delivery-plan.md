@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-02T21:30:37Z`
+> Updated: `2026-09-02T21:43:13Z`
 
 ## Current Goal
 
@@ -46,7 +46,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `13/72` selected product AC complete locally. EPIC-09 has `13/14`; PR/CI Evidence and persistent-schema `E09-AC06` remain open. Other selected epics are authorized but not started.
+**Current Goal verification:** `13/72` selected product AC complete. EPIC-09 has `13/14`; PR [#3](https://github.com/Just9120/llm-inspector/pull/3), PR CI `33685945571` and exact-merge `main` CI `33686231092` are successful. Persistent-schema `E09-AC06` remains open. EPIC-02 implementation is active; other selected epics are authorized but not started.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -65,27 +65,27 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T21:30:37Z` |
+| Updated UTC | `2026-09-02T21:43:13Z` |
 | Expected base branch | `main` |
-| Base SHA | `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7` — verified local/`origin/main`/GitHub `main` at GOAL-004 start |
-| Working branch | `codex/epic-09-privacy-proxy` |
-| Last verified revision | `a9bcb1c9e731f88e4a2dfbd767d93f72097d986b` — hardened loopback normalization and relay-failure semantics after product/runtime commits |
-| Initial worktree state | Clean; no open PR; local `main`, `origin/main` и GitHub `main` synchronized |
-| Current worktree state | Final local PR-09 candidate assembled; synchronized documentation in the containing commit is intentionally not self-referenced |
-| Completed work | Explicit `127.0.0.1:5117` gateway; literal-loopback backend validation; streaming relay; redirect/cancellation/concurrency/failure isolation; content-free observation DTO; privacy disclosure UI; 26 tests; self-contained smoke and owning-PID listener observation |
-| Current step | Validate synchronized documents and repeat full local CI-equivalent flow on final PR candidate |
-| Next exact action | Run structural/link/count checks, commit documentation, then execute locked restore → format → build → full tests → RID publish/smoke |
-| PR / CI | PR-09 not created; local TEST evidence complete for 13 AC, exact PR CI absent until one initial push after final validation |
+| Base SHA | `cd1e3716f465d716627b6df173e18cf3f94fb612` — verified local/`origin/main` after PR #3 merge and successful exact-merge CI |
+| Working branch | `codex/epic-02-backend-adapters` |
+| Last verified revision | `cd1e3716f465d716627b6df173e18cf3f94fb612` — PR #3 merge commit covered by successful `main` CI `33686231092` |
+| Initial worktree state | Clean branch created from synchronized local/`origin/main`; previous merged branch had zero unique commits and was safely removed locally/remotely |
+| Current worktree state | Clean EPIC-02 branch before implementation; this checkpoint is the first bounded change |
+| Completed work | PR #3 merged EPIC-09 privacy/proxy core at `13/14`; PR CI `33685945571` and `main` CI `33686231092` successful with no skipped required steps |
+| Current step | Define versioned EPIC-02 backend fixtures, metric/provenance model and trustworthy client-attribution boundary |
+| Next exact action | Implement allowlisted telemetry contracts and adapter parsers, then add unit/contract tests before integrating non-buffering observation with Gateway |
+| PR / CI | PR-02 not created. Prior increment: PR #3 merged as `cd1e3716f465d716627b6df173e18cf3f94fb612`; terminal PR/main CI successful |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | No PR blocker. `E09-AC06` requires the later EPIC-08 persistent schema and remains incomplete without blocking a truthful partial epic merge |
-| Unverified assumptions | GitHub-hosted exact-revision behavior for new network tests pending PR run; configurable backend settings are a later selected-epic concern |
+| Blockers | No current PR blocker. `E09-AC06` requires the later EPIC-08 persistent schema and remains incomplete without blocking a truthful partial epic merge |
+| Unverified assumptions | Exact OpenAI-compatible telemetry fields vary by backend/version; only fields proven by versioned fixtures will receive `exact`, and client brand requires explicit trustworthy attribution evidence |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-02T21:30:37Z` | `13/139 = 9.4%` | `13/164 = 7.9%` | `E09-AC01..05` и `E09-AC07..14` independently mapped to code/tests/runtime; `E09-AC06` and every other AC remain incomplete |
+| Current | `2026-09-02T21:43:13Z` | `13/139 = 9.4%` | `13/164 = 7.9%` | `E09-AC01..05` и `E09-AC07..14` independently mapped to merged code, tests and successful exact-revision CI; `E09-AC06` and every other AC remain incomplete |
 | Previous | `2026-09-02T21:05:52Z` | `0/139 = 0%` | `0/164 = 0%` | Start-of-GOAL-004 foundation had no product AC Evidence |
 
 Delta: `+9.4 п.п.` initial release и `+7.9 п.п.` full roadmap. Изменение основано на 13 newly completed EPIC-09 AC; оно не превышает 10 п.п., отдельная discrepancy explanation не требуется.
@@ -94,15 +94,15 @@ Delta: `+9.4 п.п.` initial release и `+7.9 п.п.` full roadmap. Измене
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-02 Backends/clients/API | ⬜ BACKLOG | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-02 Backends/clients/API | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-03 Live state/quality | ⬜ BACKLOG | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-04 Tokens/context/timings | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 History/analytics/retention | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | Other initial-release epics | ⬜ BACKLOG | 0/67 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **13/139** | **9.4%** | **◐** | **◐** | **◐** | **—** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **13/139** | **9.4%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | Canonical backlog | ⬜ BACKLOG | 0/25 | 0% | ◐ | — | — | — | —* | —* |
-| **Full roadmap** | **🟦 IN PROGRESS** | **13/164** | **7.9%** | **◐** | **◐** | **◐** | **—** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **13/164** | **7.9%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Remote/LAN backlog DEPLOY/LIVE applicability remains undecided and is outside this Goal.
 

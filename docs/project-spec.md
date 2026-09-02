@@ -76,7 +76,8 @@ Definition of Done: `4/4` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-02 — Backend/client adapters и OpenAI-compatible API
 
-**Status:** ⬜ BACKLOG  
+**Status:** 🟦 IN PROGRESS
+
 **Goal:** наблюдать обязательные local backends и compatible clients через штатную endpoint configuration.
 
 Acceptance criteria:
@@ -397,25 +398,25 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-02 | ⬜ BACKLOG | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-03 | ⬜ BACKLOG | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-04 | ⬜ BACKLOG | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **13/139** | **9.4%** | **◐** | **◐** | **◐** | **—** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **13/139** | **9.4%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **13/164** | **7.9%** | **◐** | **◐** | **◐** | **—** | **—*** | **—*** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **13/164** | **7.9%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
 
