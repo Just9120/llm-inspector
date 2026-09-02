@@ -2,6 +2,10 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## Replaced readiness snapshots
+
+- `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
+
 ## GOAL-003 — Создать reproducible .NET repository skeleton и PR CI foundation
 
 - **State:** `DONE`.

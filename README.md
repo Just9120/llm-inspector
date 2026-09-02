@@ -4,21 +4,22 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation и первый product increment `EPIC-09`:
+Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09` и локально завершённый кандидат `EPIC-02`:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
-- Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`, направленный по умолчанию на local backend `http://127.0.0.1:11434`;
-- proxy поддерживает transparent streaming relay для `POST /v1/chat/completions`, не следует redirects, propagates cancellation и принимает backend destination только на literal loopback;
-- UI показывает gateway state, текущие категории technical data и retention; persistence, adapters и rich telemetry ещё не реализованы;
+- Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
+- proxy поддерживает transparent `GET /v1/models` и non-streaming/streaming/tool-calling `POST /v1/chat/completions`, не следует redirects и propagates cancellation;
+- bounded streaming parser извлекает только allowlisted `model`, OpenAI `usage` и документированные llama.cpp `timings`; отсутствующие или недостоверные metrics имеют `unavailable`, а raw content не накапливается;
+- UI показывает gateway/backend state, generic и per-client base URLs, текущие категории technical data и retention; latest allowlisted observation хранится только в памяти процесса, SQLite persistence ещё не реализована;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- локально подтверждены locked restore, formatting, Release build, 26 foundation/unit/integration/privacy/Windows tests, self-contained `win-x64` publish и combined Avalonia/gateway smoke;
+- для EPIC-09 подтверждены PR/main CI, а EPIC-02 проходит focused unit/contract/integration/privacy/Windows checks; итоговый exact-revision CI будет Evidence текущего PR;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness: `13/139 = 9.4%` initial release и `13/164 = 7.9%` full roadmap. `EPIC-09` имеет `13/14`: persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`.
+Текущая readiness по независимо проверенным atomic AC: `28/139 = 20.1%` initial release и `28/164 = 17.1%` full roadmap. `EPIC-02` имеет `15/15`, но останется `IN PROGRESS` до green CI; `EPIC-09` имеет `13/14`, а persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`.
 
 ## Быстрый старт
 
@@ -37,7 +38,28 @@ dotnet restore LlmInspector.slnx --locked-mode
 dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore
 ```
 
-После запуска client можно направить на `http://127.0.0.1:5117/v1`. Сейчас реализован только `POST /v1/chat/completions`; default backend — `http://127.0.0.1:11434`. Техническое наблюдение остаётся только в памяти процесса, database не создаётся, raw request/response/tool content не сохраняется и не логируется.
+Default backend — Ollama на `http://127.0.0.1:11434`. Выбор adapter и безопасного local endpoint выполняется launch options:
+
+```powershell
+dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore -- --backend=llama-cpp
+dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore -- --backend=lm-studio --backend-url=http://127.0.0.1:4321/ --listener-port=5118
+```
+
+Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp|lm-studio`, `--backend-url=http[s]://<literal-loopback>:<port>/` и `--listener-port=1..65535`. Remote host, credentials/path/query/fragment в backend URL, duplicate и неизвестные options fail closed без вывода исходного значения.
+
+Для attribution настройте штатный OpenAI-compatible `baseURL` клиента:
+
+| Client | Base URL по умолчанию |
+|---|---|
+| Generic/Unknown | `http://127.0.0.1:5117/v1` |
+| OpenCode Desktop | `http://127.0.0.1:5117/clients/opencode/v1` |
+| Hermes Desktop | `http://127.0.0.1:5117/clients/hermes/v1` |
+| Cline | `http://127.0.0.1:5117/clients/cline/v1` |
+| Open WebUI | `http://127.0.0.1:5117/clients/open-webui/v1` |
+
+Это explicit endpoint attribution, а не process guessing: запросы через generic URL всегда остаются `Generic/Unknown`. Все base paths поддерживают `GET /models` и `POST /chat/completions`; исходный backend видит стандартные `/v1/models` и `/v1/chat/completions`. Возможность штатно менять base URL подтверждена документацией [OpenCode](https://dev.opencode.ai/docs/providers), [Hermes](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md), [Cline](https://github.com/cline/cline/blob/main/apps/vscode/webview-ui/src/components/settings/providers/OpenAICompatible.tsx) и [Open WebUI](https://github.com/open-webui/open-webui/blob/main/backend/open_webui/routers/openai.py).
+
+Техническое наблюдение остаётся только в памяти процесса, database не создаётся, raw request/response/reasoning/tool content не сохраняется и не логируется.
 
 ## Проверки и сборка
 
@@ -77,4 +99,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2) в commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; текущий EPIC-09 increment развивается отдельной PR-веткой от этого base.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core merged через [PR #3](https://github.com/Just9120/llm-inspector/pull/3) в commit `cd1e3716f465d716627b6df173e18cf3f94fb612`; текущий EPIC-02 increment развивается отдельной PR-веткой от этого verified base.
