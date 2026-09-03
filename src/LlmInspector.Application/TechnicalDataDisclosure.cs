@@ -17,11 +17,16 @@ public static class TechnicalDataDisclosure
             "Local SQLite technical history",
             "Pseudonymous request/session/turn/operation IDs, timestamps, durations, status/error classification, configured client/backend, normalized model/tool/GPU identifiers, available/invoked tool counts, tool duration quality/provenance, request/stage-correlated host GPU/CPU/RAM resource samples, exact related-process identity when provable, process CPU/RAM/disk counters, gateway traffic byte counters, model-load classification, and allowlisted numeric metrics with quality/provenance",
             "User-selected: 7 days, 30 days (default), 90 days, or indefinite; explicit clear is available"),
+        new(
+            "Local background preferences",
+            "Schema version, Windows autostart selection, four independent notification selections, and silent-mode selection",
+            "Until the user changes the settings or deletes the local settings file"),
     ];
 
     public const string PersistentDataStatement =
         "Persistent technical history is stored locally per user in %LOCALAPPDATA%\\LLM Inspector\\data\\inspector.db; " +
-        "the default retention is 30 days and the selectable options are 7 days, 30 days, 90 days, or indefinite.";
+        "the default retention is 30 days and the selectable options are 7 days, 30 days, 90 days, or indefinite. " +
+        "Background preferences are stored separately in %LOCALAPPDATA%\\LLM Inspector\\settings.json until changed or deleted.";
 
     public const string ForbiddenContentStatement =
         "Prompt, response, reasoning, tool arguments/results, user code, credentials and raw headers are never retained.";

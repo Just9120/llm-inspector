@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION; EPIC-02..06/08/09 TERMINAL; EPIC-07 LOCAL CANDIDATE`
+> Status: `DECIDED — FOUNDATION; EPIC-02..09 TERMINAL; EPIC-10 LOCAL CANDIDATE`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#12 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations и request-correlated Windows resources. Exact-main CI `33728697717` подтвердил terminal EPIC-06 baseline на merge SHA `883ed13bab90c9affa9f6cf26c13161565f27e67`; EPIC-07 diagnostics candidate пока имеет только local CODE/TEST Evidence.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#13 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources и explainable diagnostics. Exact-main CI `33732075018` подтвердил terminal EPIC-07 baseline на merge SHA `ea8498efae98adda684dd88d92e52d3401872a5c`; EPIC-10 background/tray candidate пока имеет local CODE/focused TEST Evidence.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -86,7 +86,7 @@ App (composition/UI)
 
 Все девять production boundaries содержат product code. `Diagnostics` владеет versioned explainable rules и typed conclusion/evidence contracts, но получает только allowlisted Domain/Application projections. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 candidate добавляет versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause.
+EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 candidate оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data.
 
 ## 5. Runtime/process model
 
@@ -100,6 +100,8 @@ EPIC-06 добавил per-request Windows resource sessions через Applicat
 - notification scheduler.
 
 Один instance guard предотвращает конкурирующих writers/listeners. Закрытие main window скрывает UI, но не завершает process; explicit tray `Exit` останавливает listener, перестаёт принимать новые requests, даёт текущим requests bounded graceful drain, flush-ит accepted metadata и закрывает SQLite. Значение drain timeout будет boundary-tested и versioned в configuration; оно не является product performance budget.
+
+EPIC-10 candidate реализует per-user Win32 tray как отдельный STA message loop, HKCU Run autostart с exact quoted executable и `--background`, а также atomic `%LOCALAPPDATA%\LLM Inspector\settings.json` schema v1. Четыре notification categories включаются независимо; presentation строится только из typed technical fields, silent mode передаётся как `NIIF_NOSOUND`. `notification-policy-v1` подавляет одинаковый event key на 15 минут и ограничивает delivery тремя уведомлениями за rolling 10 minutes; buffer capacity `256` не блокирует request forwarding и считает drops.
 
 Collectors, retention и diagnostics работают как independently supervised background services. Их exception переводит конкретный source в degraded/unavailable, создаёт safe diagnostic event и применяет bounded restart backoff. Ни request relay, ни client response не await-ит database, analytics, resource sampling или UI.
 
@@ -325,7 +327,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `150/150` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #12 CI `33728471307` и exact-main CI `33728697717` завершились успешно на merge `883ed13bab90c9affa9f6cf26c13161565f27e67`. Active EPIC-07 candidate прошёл тот же полный local pipeline с `172/172` tests без skips; exact-revision GitHub CI ещё не заявлен.
+Последняя terminal merged-main validation для EPIC-07 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `172/172` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #13 CI `33731824812` и exact-main CI `33732075018` завершились успешно на merge `ea8498efae98adda684dd88d92e52d3401872a5c`. Active EPIC-10 candidate прошёл тот же полный local pipeline с `186/186` tests без skips; exact-revision GitHub CI ещё не заявлен.
 
 Configured CI foundation:
 

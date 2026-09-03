@@ -14,11 +14,13 @@ public partial class MainWindow : Window
     private readonly ITechnicalHistoryStore? _history;
     private readonly AppRuntimeStatus _runtimeStatus;
     private readonly string _historyState;
+    private readonly BackgroundSettingsService? _backgroundSettings;
+    private readonly BackgroundLifetimeController? _backgroundLifetime;
     private readonly DispatcherTimer? _liveRefreshTimer;
     private HistoryClearPreview? _clearPreview;
 
     public MainWindow()
-        : this(AppRuntimeStatus.NotStarted, null, null, null, null, "Technical history is not composed.")
+        : this(AppRuntimeStatus.NotStarted, null, null, null, null, "Technical history is not composed.", null, null)
     {
     }
 
@@ -28,7 +30,9 @@ public partial class MainWindow : Window
         IProxyObservationSnapshotSource? observationSource = null,
         IResourceTelemetrySnapshotSource? resourceSource = null,
         ITechnicalHistoryStore? history = null,
-        string? historyState = null)
+        string? historyState = null,
+        BackgroundSettingsService? backgroundSettings = null,
+        BackgroundLifetimeController? backgroundLifetime = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
@@ -37,6 +41,8 @@ public partial class MainWindow : Window
         _history = history;
         _runtimeStatus = runtimeStatus;
         _historyState = historyState ?? "Technical history state is unavailable.";
+        _backgroundSettings = backgroundSettings;
+        _backgroundLifetime = backgroundLifetime;
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -51,6 +57,7 @@ public partial class MainWindow : Window
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
         HistoryStateText.Text = _historyState;
         ConfigureHistoryControls();
+        ConfigureBackgroundControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
         RefreshResources();
@@ -74,6 +81,33 @@ public partial class MainWindow : Window
         }
 
         Opened += OnOpened;
+        Closing += OnWindowClosing;
+    }
+
+    public void ShowFromTray(bool openNotificationSettings)
+    {
+        if (!IsVisible)
+        {
+            Show();
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        _liveRefreshTimer?.Start();
+        Activate();
+        if (openNotificationSettings)
+        {
+            _ = AutostartCheckBox.Focus();
+        }
+    }
+
+    public void HideToBackground()
+    {
+        _liveRefreshTimer?.Stop();
+        Hide();
     }
 
     private async void OnOpened(object? sender, EventArgs eventArgs)
@@ -127,6 +161,92 @@ public partial class MainWindow : Window
         CompareButton.IsEnabled = enabled;
         ApplyRetentionButton.IsEnabled = enabled;
         PreviewClearButton.IsEnabled = enabled;
+    }
+
+    private void ConfigureBackgroundControls()
+    {
+        bool enabled = _backgroundSettings is not null;
+        AutostartCheckBox.IsEnabled = enabled;
+        NotifyBackendUnavailableCheckBox.IsEnabled = enabled;
+        NotifyLongOperationCheckBox.IsEnabled = enabled;
+        NotifyRecurringErrorCheckBox.IsEnabled = enabled;
+        NotifyHighContextCheckBox.IsEnabled = enabled;
+        SilentNotificationsCheckBox.IsEnabled = enabled;
+        SaveBackgroundSettingsButton.IsEnabled = enabled;
+        if (_backgroundSettings is null)
+        {
+            BackgroundSettingsStateText.Text = "Background settings are unavailable.";
+            return;
+        }
+
+        ApplyBackgroundSettings(_backgroundSettings.Current);
+        BackgroundSettingsStateText.Text =
+            $"Settings schema v{BackgroundSettings.CurrentSchemaVersion}; Windows autostart is " +
+            (_backgroundSettings.Current.AutostartEnabled ? "enabled." : "disabled.");
+        SaveBackgroundSettingsButton.Click += async (_, _) => await SaveBackgroundSettingsAsync();
+    }
+
+    private async Task SaveBackgroundSettingsAsync()
+    {
+        if (_backgroundSettings is null)
+        {
+            return;
+        }
+
+        BackgroundSettings settings = new()
+        {
+            AutostartEnabled = AutostartCheckBox.IsChecked == true,
+            Notifications = new NotificationSettings
+            {
+                BackendUnavailable = NotifyBackendUnavailableCheckBox.IsChecked == true,
+                LongOperationCompleted = NotifyLongOperationCheckBox.IsChecked == true,
+                RecurringError = NotifyRecurringErrorCheckBox.IsChecked == true,
+                HighContextUsage = NotifyHighContextCheckBox.IsChecked == true,
+                SilentMode = SilentNotificationsCheckBox.IsChecked == true,
+            },
+        };
+        try
+        {
+            await _backgroundSettings.SaveAsync(settings);
+            ApplyBackgroundSettings(_backgroundSettings.Current);
+            BackgroundSettingsStateText.Text =
+                $"Background settings saved atomically; Windows autostart is " +
+                (settings.AutostartEnabled ? "enabled." : "disabled.");
+        }
+        catch (Exception exception) when (exception is
+            IOException or
+            UnauthorizedAccessException or
+            System.Security.SecurityException or
+            InvalidDataException or
+            InvalidOperationException or
+            PlatformNotSupportedException)
+        {
+            ApplyBackgroundSettings(_backgroundSettings.Current);
+            BackgroundSettingsStateText.Text =
+                $"Background settings were not changed ({exception.GetType().Name}).";
+        }
+    }
+
+    private void ApplyBackgroundSettings(BackgroundSettings settings)
+    {
+        AutostartCheckBox.IsChecked = settings.AutostartEnabled;
+        NotifyBackendUnavailableCheckBox.IsChecked = settings.Notifications.BackendUnavailable;
+        NotifyLongOperationCheckBox.IsChecked = settings.Notifications.LongOperationCompleted;
+        NotifyRecurringErrorCheckBox.IsChecked = settings.Notifications.RecurringError;
+        NotifyHighContextCheckBox.IsChecked = settings.Notifications.HighContextUsage;
+        SilentNotificationsCheckBox.IsChecked = settings.Notifications.SilentMode;
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs eventArgs)
+    {
+        if (_backgroundLifetime?.OnWindowClosing() != BackgroundCloseAction.HideAndContinue)
+        {
+            return;
+        }
+
+        eventArgs.Cancel = true;
+        HideToBackground();
+        BackgroundSettingsStateText.Text = "Monitoring continues in the Windows system tray.";
     }
 
     private async Task LoadHistoryAsync()

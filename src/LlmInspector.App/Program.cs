@@ -18,6 +18,8 @@ public static class Program
 
     public static AppRuntimeStatus RuntimeStatus { get; private set; } = AppRuntimeStatus.NotStarted;
 
+    public static AppLaunchConfiguration LaunchConfiguration { get; private set; } = AppLaunchConfiguration.Parse([]);
+
     public static LatestProxyObservationStore ObservationStore { get; private set; } = new();
 
     public static LiveRequestTracker LiveStateTracker { get; private set; } = new();
@@ -25,6 +27,8 @@ public static class Program
     public static ITechnicalHistoryStore? HistoryStore { get; private set; }
 
     public static WindowsRequestResourceMonitor ResourceMonitor { get; private set; } = new();
+
+    public static NotificationObservationBuffer NotificationObservations { get; private set; } = new();
 
     public static string HistoryState { get; private set; } = "Technical history has not started.";
 
@@ -51,7 +55,8 @@ public static class Program
         ProxyGatewayOptions options;
         try
         {
-            options = AppLaunchConfiguration.Parse(args).CreateProxyOptions();
+            LaunchConfiguration = AppLaunchConfiguration.Parse(args);
+            options = LaunchConfiguration.CreateProxyOptions();
         }
         catch (ArgumentException)
         {
@@ -65,6 +70,7 @@ public static class Program
         ObservationStore = new LatestProxyObservationStore();
         LiveStateTracker = new LiveRequestTracker();
         ResourceMonitor = new WindowsRequestResourceMonitor();
+        NotificationObservations = new NotificationObservationBuffer();
         HistoryStore = null;
         HistoryState = "Technical history is unavailable.";
 
@@ -88,8 +94,8 @@ public static class Program
         try
         {
             IProxyObservationSink observationSink = historySink is null
-                ? ObservationStore
-                : new CompositeProxyObservationSink(ObservationStore, historySink);
+                ? new CompositeProxyObservationSink(ObservationStore, NotificationObservations)
+                : new CompositeProxyObservationSink(ObservationStore, NotificationObservations, historySink);
             gateway = ProxyGateway.Create(
                 options,
                 observationSink,
@@ -154,6 +160,17 @@ public static class Program
         }
 
         return Path.Combine(localData, "LLM Inspector", "data", "inspector.db");
+    }
+
+    public static string GetDefaultSettingsPath()
+    {
+        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(localData))
+        {
+            throw new IOException("Windows local application data directory is unavailable.");
+        }
+
+        return Path.Combine(localData, "LLM Inspector", "settings.json");
     }
 
     private static bool IsExpectedHistoryFailure(Exception exception) => exception is

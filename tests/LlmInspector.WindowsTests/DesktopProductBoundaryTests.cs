@@ -25,6 +25,7 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(headings, "Live requests");
         CollectionAssert.Contains(headings, "History and analytics");
         CollectionAssert.Contains(headings, "Diagnostics");
+        CollectionAssert.Contains(headings, "Background and notifications");
 
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         string[] namedControls = xaml
@@ -36,6 +37,12 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(namedControls, "LiveRequestsText");
         CollectionAssert.Contains(namedControls, "AnalyticsOutputText");
         CollectionAssert.Contains(namedControls, "DiagnosticsSummaryText");
+        CollectionAssert.Contains(namedControls, "AutostartCheckBox");
+        CollectionAssert.Contains(namedControls, "NotifyBackendUnavailableCheckBox");
+        CollectionAssert.Contains(namedControls, "NotifyLongOperationCheckBox");
+        CollectionAssert.Contains(namedControls, "NotifyRecurringErrorCheckBox");
+        CollectionAssert.Contains(namedControls, "NotifyHighContextCheckBox");
+        CollectionAssert.Contains(namedControls, "SilentNotificationsCheckBox");
     }
 
     [TestMethod]
