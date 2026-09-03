@@ -52,6 +52,8 @@ public partial class App : Avalonia.Application, IDisposable
                 }
             }
 
+            Program.ResourceMonitor.ApplyProfile(settings.Current.Monitoring.Resolve());
+
             _tray = CreateTrayHost(
                 command => Dispatcher.UIThread.Post(() => trayCommands?.Execute(command)),
                 () => notificationDispatcher?.IsPaused ?? false);
@@ -66,7 +68,8 @@ public partial class App : Avalonia.Application, IDisposable
                 Program.HistoryStore,
                 Program.HistoryState,
                 settings,
-                createdLifetime);
+                createdLifetime,
+                Program.ResourceMonitor.ApplyProfile);
             desktop.ShutdownMode = _tray.IsAvailable
                 ? ShutdownMode.OnExplicitShutdown
                 : ShutdownMode.OnLastWindowClose;

@@ -314,7 +314,7 @@ Privacy tests сканируют structured stores и raw files byte-for-byte af
 
 ## 15. Performance and idle benchmark contract
 
-Numeric budgets и frozen reference fixture утверждены в contract `1.2`. Это SPEC Evidence; `E12-AC01..06` не получают completion до implementation harness и controlled measurements.
+Numeric budgets и reference corpus утверждены в contract `1.2`. Runtime profiles, schema-v1→v2 settings migration, atomic sampling-interval switch, fail-closed gate evaluator и frozen fixture `benchmarks/fixtures/epic12/v1/reference-workloads.json` реализованы в EPIC-12 increment. Fixture digest закреплён automated test; unavailable mandatory metric, protocol короче `5` alternating pairs или idle run короче `10 min + 1 h` не могут дать pass. Это CODE/TEST evidence для механизма, но `E12-AC01..06` не получают completion до controlled measurements каждого built-in profile.
 
 User-facing profiles:
 

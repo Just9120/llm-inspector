@@ -70,6 +70,7 @@ public static class Program
         ObservationStore = new LatestProxyObservationStore();
         LiveStateTracker = new LiveRequestTracker();
         ResourceMonitor = new WindowsRequestResourceMonitor();
+        ApplyStoredMonitoringProfile();
         NotificationObservations = new NotificationObservationBuffer();
         HistoryStore = null;
         HistoryState = "Technical history is unavailable.";
@@ -171,6 +172,25 @@ public static class Program
         }
 
         return Path.Combine(localData, "LLM Inspector", "settings.json");
+    }
+
+    private static void ApplyStoredMonitoringProfile()
+    {
+        try
+        {
+            JsonBackgroundSettingsStore store = new(GetDefaultSettingsPath());
+            BackgroundSettings settings = store.LoadAsync().AsTask().GetAwaiter().GetResult();
+            ResourceMonitor.ApplyProfile(settings.Monitoring.Resolve());
+        }
+        catch (Exception exception) when (exception is
+            IOException or
+            UnauthorizedAccessException or
+            System.Security.SecurityException or
+            InvalidDataException or
+            InvalidOperationException)
+        {
+            // Invalid or unavailable preferences keep the documented Balanced default.
+        }
     }
 
     private static bool IsExpectedHistoryFailure(Exception exception) => exception is

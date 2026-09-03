@@ -12,6 +12,7 @@
     <PackageReference Include="MSTest.TestFramework" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Gateway/LlmInspector.Gateway.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Telemetry/LlmInspector.Telemetry.csproj" />
   </ItemGroup>

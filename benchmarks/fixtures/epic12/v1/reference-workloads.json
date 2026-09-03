@@ -1,0 +1,79 @@
+{
+  "schema_version": "performance-corpus-v1",
+  "seed": 20260904,
+  "fixed_context_tokens": 8192,
+  "default_output_limit_tokens": 128,
+  "reference_runtime": {
+    "backend": "ollama",
+    "version": "0.33.2",
+    "model": "orcarouter/Qwen3.8-27B-Uncensored:q4_K_M",
+    "model_digest": "6fac2f98fdf716f292de04c8554681b1e1f3a0d71445e374afebb3433911f705"
+  },
+  "content_policy": "Synthetic technical prompts only; no captured user content.",
+  "workloads": [
+    {
+      "id": "idle",
+      "kind": "idle",
+      "duration_minutes": 60,
+      "warmup_minutes": 10
+    },
+    {
+      "id": "cold-load",
+      "kind": "chat_completion",
+      "stream": false,
+      "concurrency": 1,
+      "precondition": "reference model unloaded",
+      "prompt": "Return exactly the single token READY."
+    },
+    {
+      "id": "hybrid-streaming-c1",
+      "kind": "chat_completion",
+      "stream": true,
+      "concurrency": 1,
+      "prompt": "List the integers from 1 through 64, separated by one space and no commentary."
+    },
+    {
+      "id": "hybrid-nonstreaming-c1",
+      "kind": "chat_completion",
+      "stream": false,
+      "concurrency": 1,
+      "prompt": "List the integers from 64 down to 1, separated by one space and no commentary."
+    },
+    {
+      "id": "hybrid-streaming-c4",
+      "kind": "chat_completion",
+      "stream": true,
+      "concurrency": 4,
+      "prompt": "Write 64 lowercase letter x characters with no spaces or commentary."
+    },
+    {
+      "id": "cpu-only",
+      "kind": "chat_completion",
+      "stream": true,
+      "concurrency": 1,
+      "output_limit_tokens": 32,
+      "runtime_override": "gpu_layers=0",
+      "prompt": "Repeat the word cpu exactly 16 times, separated by one space."
+    },
+    {
+      "id": "tools-fragmented-stream",
+      "kind": "tool_chat_completion",
+      "stream": true,
+      "concurrency": 1,
+      "tool_name": "lookup_synthetic_temperature",
+      "prompt": "Use the tool once for synthetic city TESTVILLE and do not add commentary."
+    },
+    {
+      "id": "collector-unavailable",
+      "kind": "fault_injection",
+      "fault": "gpu_source_unavailable",
+      "paired_with": "hybrid-streaming-c1"
+    },
+    {
+      "id": "collector-failure",
+      "kind": "fault_injection",
+      "fault": "resource_collector_throws",
+      "paired_with": "hybrid-streaming-c1"
+    }
+  ]
+}

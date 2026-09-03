@@ -19,7 +19,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
 
     private readonly IWindowsResourceProbe _probe;
     private readonly IBackendProcessResolver _processResolver;
-    private readonly TimeSpan _samplingInterval;
+    private long _samplingIntervalTicks;
     private TechnicalResourceSampleRecord? _latest;
     private TechnicalResourceSampleRecord[] _latestSamples = [];
 
@@ -30,11 +30,29 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
     {
         _probe = probe ?? new WindowsResourceProbe();
         _processResolver = processResolver ?? new WindowsBackendProcessResolver();
-        _samplingInterval = samplingInterval ?? DefaultSamplingInterval;
-        if (_samplingInterval <= TimeSpan.Zero)
+        TimeSpan initialInterval = samplingInterval ?? DefaultSamplingInterval;
+        if (initialInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(samplingInterval));
         }
+
+        _samplingIntervalTicks = initialInterval.Ticks;
+    }
+
+    public TimeSpan SamplingInterval => TimeSpan.FromTicks(Interlocked.Read(ref _samplingIntervalTicks));
+
+    public void ApplyProfile(MonitoringPerformanceProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        MonitoringPerformanceProfile resolved = MonitoringPerformanceProfiles.Resolve(
+            profile.Id,
+            checked((int)profile.SamplingInterval.TotalMilliseconds));
+        if (resolved.SamplingInterval != profile.SamplingInterval)
+        {
+            throw new ArgumentException("The monitoring profile does not match its canonical sampling interval.", nameof(profile));
+        }
+
+        Interlocked.Exchange(ref _samplingIntervalTicks, profile.SamplingInterval.Ticks);
     }
 
     public TechnicalResourceSampleRecord? Latest => Volatile.Read(ref _latest);
@@ -74,6 +92,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         private readonly WindowsRequestResourceMonitor _owner;
         private readonly RequestResourceContext _context;
         private readonly TechnicalProcessAssociation? _process;
+        private readonly TimeSpan _samplingInterval;
         private readonly CancellationTokenSource _stop = new();
         private readonly SemaphoreSlim _captureLock = new(1, 1);
         private readonly object _samplesLock = new();
@@ -99,6 +118,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             _owner = owner;
             _context = context;
             _process = process;
+            _samplingInterval = owner.SamplingInterval;
             _samplingTask = Task.Run(SampleLoopAsync);
         }
 
@@ -148,7 +168,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             try
             {
                 await CaptureOnceAsync(_stop.Token).ConfigureAwait(false);
-                using PeriodicTimer timer = new(_owner._samplingInterval);
+                using PeriodicTimer timer = new(_samplingInterval);
                 while (await timer.WaitForNextTickAsync(_stop.Token).ConfigureAwait(false))
                 {
                     await CaptureOnceAsync(_stop.Token).ConfigureAwait(false);

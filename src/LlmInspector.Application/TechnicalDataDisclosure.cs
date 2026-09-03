@@ -19,7 +19,7 @@ public static class TechnicalDataDisclosure
             "User-selected: 7 days, 30 days (default), 90 days, or indefinite; explicit clear is available"),
         new(
             "Local background preferences",
-            "Schema version, Windows autostart selection, four independent notification selections, and silent-mode selection",
+            "Schema version, Windows autostart selection, four independent notification selections, silent-mode selection, monitoring performance profile, and custom sampling interval",
             "Until the user changes the settings or deletes the local settings file"),
         new(
             "User-created diagnostic snapshot",
