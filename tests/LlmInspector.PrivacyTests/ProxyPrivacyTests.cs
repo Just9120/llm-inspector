@@ -118,6 +118,7 @@ public sealed class ProxyPrivacyTests
             nameof(ProxyObservation.HttpStatusCode),
             nameof(ProxyObservation.Outcome),
             nameof(ProxyObservation.RequestId),
+            nameof(ProxyObservation.RuntimeFacts),
             nameof(ProxyObservation.StartedAt),
             nameof(ProxyObservation.TimeToFirstToken),
         ];

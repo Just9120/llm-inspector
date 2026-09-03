@@ -39,6 +39,7 @@ public static class ResourceTelemetryTextPresenter
             .Append('/').Append(Format(sample.BackendToClientBytes))
             .AppendLine();
         text.Append("GPU=").Append(sample.GpuDeviceId?.Value ?? "unavailable")
+            .Append(" | driver=").Append(sample.GpuDriverVersion?.Value ?? "unavailable")
             .Append(" | utilization=").Append(Format(sample.GpuUtilizationPercent))
             .Append(" | VRAM used/total=").Append(Format(sample.GpuVramUsedBytes))
             .Append('/').Append(Format(sample.GpuVramTotalBytes))

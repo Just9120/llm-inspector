@@ -15,6 +15,7 @@ public sealed record ProcessResourceSnapshot(
 
 public sealed record GpuResourceSnapshot(
     TechnicalIdentifier DeviceId,
+    TechnicalIdentifier? DriverVersion,
     decimal? UtilizationPercent,
     decimal? VramUsedMebibytes,
     decimal? VramTotalMebibytes,
@@ -303,7 +304,7 @@ public sealed class WindowsResourceProbe : IWindowsResourceProbe
 
 public sealed class NvidiaSmiGpuProbe
 {
-    private const string Query = "index,uuid,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw";
+    private const string Query = "index,uuid,driver_version,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw";
     private readonly string? _executablePath;
     private readonly TimeSpan _timeout;
 
@@ -372,7 +373,7 @@ public sealed class NvidiaSmiGpuProbe
     {
         string[]? primary = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.Split(',', StringSplitOptions.TrimEntries))
-            .Where(fields => fields.Length == 7 && int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            .Where(fields => fields.Length == 8 && int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
             .OrderBy(fields => int.Parse(fields[0], CultureInfo.InvariantCulture))
             .FirstOrDefault();
         if (primary is null || TechnicalIdentifier.FromBackend(primary[1]) is not TechnicalIdentifier deviceId)
@@ -382,11 +383,12 @@ public sealed class NvidiaSmiGpuProbe
 
         return new GpuResourceSnapshot(
             deviceId,
-            ParseMetric(primary[2]),
+            TechnicalIdentifier.FromBackend(primary[2]),
             ParseMetric(primary[3]),
             ParseMetric(primary[4]),
             ParseMetric(primary[5]),
-            ParseMetric(primary[6]));
+            ParseMetric(primary[6]),
+            ParseMetric(primary[7]));
     }
 
     private static decimal? ParseMetric(string value) =>

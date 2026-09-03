@@ -20,6 +20,26 @@ public enum ProxyErrorType
     BackendCrash,
     BackendUnavailable,
     RelayFailure,
+    InspectorFailure,
+}
+
+public sealed record TechnicalRuntimeFacts(TechnicalIdentifier ConfigurationId)
+{
+    public TechnicalIdentifier? InspectorVersion { get; init; }
+
+    public TechnicalIdentifier? FrameworkVersion { get; init; }
+
+    public TechnicalIdentifier? OperatingSystemVersion { get; init; }
+
+    public TechnicalIdentifier? TelemetryContractVersion { get; init; }
+
+    public TechnicalIdentifier? BackendVersion { get; init; }
+
+    public TechnicalIdentifier? ClientVersion { get; init; }
+
+    public TechnicalIdentifier? ModelVersion { get; init; }
+
+    public TechnicalIdentifier? GpuDriverVersion { get; init; }
 }
 
 public sealed record RequestCorrelation
@@ -77,6 +97,8 @@ public sealed record ProxyObservation(
     public AgentTurnTelemetry AgentTurn { get; init; } = AgentTurnTelemetry.Unavailable;
 
     public ProxyErrorType ErrorType { get; init; }
+
+    public TechnicalRuntimeFacts? RuntimeFacts { get; init; }
 
     public ProxyObservation(
         Guid requestId,

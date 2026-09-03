@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Storage.Sqlite;
@@ -9,6 +10,10 @@ namespace LlmInspector.IntegrationTests;
 [DoNotParallelize]
 public sealed class SqliteTechnicalHistoryStoreTests
 {
+    private const string CrashDatabaseVariable = "LLMINSPECTOR_TEST_CRASH_DATABASE";
+    private const string CrashMarkerVariable = "LLMINSPECTOR_TEST_CRASH_MARKER";
+    private const string CrashRequestVariable = "LLMINSPECTOR_TEST_CRASH_REQUEST";
+
     [TestMethod]
     public async Task RequestHistoryPersistsTechnicalMetricsAndSupportsEveryFilterDimension()
     {
@@ -454,19 +459,178 @@ public sealed class SqliteTechnicalHistoryStoreTests
                 Assert.AreEqual(ModelLoadDisposition.Unavailable, migrated.ModelLoadDisposition);
                 Assert.IsNull(migrated.CorrelatedTurnId);
                 Assert.IsNull(migrated.CorrelatedTurnSequence);
+                Assert.AreEqual(HistoryErrorOrigin.NotApplicable, migrated.ErrorOrigin);
+                Assert.IsNull(migrated.RuntimeFacts);
             }
 
             await using SqliteConnection verification = new($"Data Source={databasePath};Mode=ReadOnly");
             await verification.OpenAsync();
             await using SqliteCommand versionCommand = verification.CreateCommand();
             versionCommand.CommandText = "SELECT MAX(version) FROM schema_migrations;";
-            Assert.AreEqual(4L, await versionCommand.ExecuteScalarAsync());
+            Assert.AreEqual(5L, await versionCommand.ExecuteScalarAsync());
         }
         finally
         {
             SqliteConnection.ClearAllPools();
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [TestMethod]
+    public async Task NormalAndUncleanRestartPreserveCommittedHistoryAndAcceptNewTelemetry()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-restart-{Guid.NewGuid():N}");
+        string databasePath = Path.Combine(directory, "history.db");
+        Directory.CreateDirectory(directory);
+        Guid normalExitRecord = Guid.NewGuid();
+        Guid uncleanExitRecord = Guid.NewGuid();
+        Guid postRestartRecord = Guid.NewGuid();
+        TechnicalRuntimeFacts runtimeFacts = new(Id("config-restart-v1"))
+        {
+            InspectorVersion = Id("1.0.0"),
+            FrameworkVersion = Id("dotnet-10.0.0"),
+            OperatingSystemVersion = Id("windows-10.0.26100"),
+            TelemetryContractVersion = Id("adapter-contract-v1"),
+            BackendVersion = Id("ollama-0.12.0"),
+            ClientVersion = Id("cline-3.0.0"),
+            ModelVersion = Id("model-1.0"),
+            GpuDriverVersion = Id("572.83"),
+        };
+        try
+        {
+            await using (SqliteTechnicalHistoryStore normal = new(databasePath))
+            {
+                await normal.InitializeAsync();
+                await normal.RecordAsync(
+                    CreateObservation(
+                        normalExitRecord,
+                        DateTimeOffset.UtcNow,
+                        ClientKind.Cline,
+                        BackendKind.Ollama,
+                        "model-1.0",
+                        ProxyOutcome.BackendUnavailable,
+                        10,
+                        errorType: ProxyErrorType.ConnectionRefused) with { RuntimeFacts = runtimeFacts },
+                    CancellationToken.None);
+            }
+
+            SqliteConnection.ClearAllPools();
+            await RunCrashWriterProcessAsync(databasePath, uncleanExitRecord);
+
+            SqliteConnection.ClearAllPools();
+            await using SqliteTechnicalHistoryStore restarted = new(databasePath);
+            await restarted.InitializeAsync();
+            IReadOnlyList<RequestHistoryItem> recovered = await restarted.QueryRequestsAsync(new HistoryFilter());
+            CollectionAssert.AreEquivalent(
+                new[] { normalExitRecord, uncleanExitRecord },
+                recovered.Select(item => item.RequestId).ToArray());
+            RequestHistoryItem recoveredNormal = recovered.Single(item => item.RequestId == normalExitRecord);
+            Assert.AreEqual(HistoryErrorOrigin.Backend, recoveredNormal.ErrorOrigin);
+            Assert.AreEqual(runtimeFacts, recoveredNormal.RuntimeFacts);
+            await restarted.RecordAsync(
+                CreateObservation(
+                    postRestartRecord,
+                    DateTimeOffset.UtcNow.AddSeconds(2),
+                    ClientKind.Cline,
+                    BackendKind.Ollama,
+                    "model-1.0",
+                    ProxyOutcome.Completed,
+                    30) with { RuntimeFacts = runtimeFacts },
+                CancellationToken.None);
+            Assert.AreEqual(
+                3,
+                (await restarted.QueryRequestsAsync(new HistoryFilter())).Count);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task CrashWriterWorker()
+    {
+        string? databasePath = Environment.GetEnvironmentVariable(CrashDatabaseVariable);
+        string? markerPath = Environment.GetEnvironmentVariable(CrashMarkerVariable);
+        string? requestValue = Environment.GetEnvironmentVariable(CrashRequestVariable);
+        if (string.IsNullOrWhiteSpace(databasePath) ||
+            string.IsNullOrWhiteSpace(markerPath) ||
+            !Guid.TryParseExact(requestValue, "N", out Guid requestId))
+        {
+            return;
+        }
+
+        await using SqliteTechnicalHistoryStore store = new(databasePath);
+        await store.InitializeAsync();
+        await store.RecordAsync(
+            CreateObservation(
+                requestId,
+                DateTimeOffset.UtcNow,
+                ClientKind.Cline,
+                BackendKind.Ollama,
+                "crash-model",
+                ProxyOutcome.Completed,
+                20),
+            CancellationToken.None);
+        await File.WriteAllTextAsync(markerPath, "committed");
+        await Task.Delay(Timeout.InfiniteTimeSpan);
+    }
+
+    [TestMethod]
+    public async Task PersistedRuntimeVersionsDriveConfigurationChangeCorrelation()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTimeOffset baselineAt = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
+        TechnicalRuntimeFacts baseline = new(Id("config-a"))
+        {
+            BackendVersion = Id("ollama-1.0"),
+            ClientVersion = Id("cline-1.0"),
+            ModelVersion = Id("model-1.0"),
+            GpuDriverVersion = Id("driver-1.0"),
+        };
+        TechnicalRuntimeFacts candidate = new(Id("config-b"))
+        {
+            BackendVersion = Id("ollama-2.0"),
+            ClientVersion = Id("cline-2.0"),
+            ModelVersion = Id("model-2.0"),
+            GpuDriverVersion = Id("driver-2.0"),
+        };
+        for (int index = 0; index < HistoryPolicies.MinimumAggregateSamples; index++)
+        {
+            await fixture.Store.RecordAsync(
+                CreateObservation(
+                    Guid.NewGuid(),
+                    baselineAt.AddMinutes(index),
+                    ClientKind.Cline,
+                    BackendKind.Ollama,
+                    "model-1.0",
+                    ProxyOutcome.Completed,
+                    10) with { RuntimeFacts = baseline },
+                CancellationToken.None);
+            await fixture.Store.RecordAsync(
+                CreateObservation(
+                    Guid.NewGuid(),
+                    baselineAt.AddDays(1).AddMinutes(index),
+                    ClientKind.Cline,
+                    BackendKind.Ollama,
+                    "model-2.0",
+                    ProxyOutcome.BackendUnavailable,
+                    20,
+                    errorType: ProxyErrorType.BackendUnavailable) with { RuntimeFacts = candidate },
+                CancellationToken.None);
+        }
+
+        PeriodAnalytics analytics = await fixture.Store.AnalyzePeriodAsync(new HistoryFilter(
+            From: baselineAt,
+            To: baselineAt.AddDays(2)));
+
+        Assert.AreEqual(RuntimeCorrelationStatus.Sufficient, analytics.RuntimeCorrelation.Status);
+        Assert.AreEqual("ollama-1.0", analytics.RuntimeCorrelation.Baseline?.Facts.BackendVersion?.Value);
+        Assert.AreEqual("ollama-2.0", analytics.RuntimeCorrelation.Candidate?.Facts.BackendVersion?.Value);
+        Assert.IsTrue(analytics.RuntimeCorrelation.PerformanceComparisons.Single(
+            item => item.Metric == HistoryMetric.GenerationTokensPerSecond).IsConfirmedDegradation);
+        Assert.IsTrue(analytics.RuntimeCorrelation.ErrorRateComparison?.IsConfirmedDegradation == true);
     }
 
     [TestMethod]
@@ -638,6 +802,72 @@ public sealed class SqliteTechnicalHistoryStoreTests
     {
         Assert.HasCount(1, items);
         return items[0];
+    }
+
+    private static async Task RunCrashWriterProcessAsync(string databasePath, Guid requestId)
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string markerPath = Path.Combine(
+            Path.GetDirectoryName(databasePath)!,
+            $"crash-committed-{Guid.NewGuid():N}.marker");
+        ProcessStartInfo start = new()
+        {
+            FileName = "dotnet",
+            WorkingDirectory = repositoryRoot,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        start.ArgumentList.Add("test");
+        start.ArgumentList.Add("tests/LlmInspector.IntegrationTests/LlmInspector.IntegrationTests.csproj");
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add("Release");
+        start.ArgumentList.Add("--no-build");
+        start.ArgumentList.Add("--no-restore");
+        start.ArgumentList.Add("--filter");
+        start.ArgumentList.Add(
+            "FullyQualifiedName=LlmInspector.IntegrationTests.SqliteTechnicalHistoryStoreTests.CrashWriterWorker");
+        start.Environment[CrashDatabaseVariable] = databasePath;
+        start.Environment[CrashMarkerVariable] = markerPath;
+        start.Environment[CrashRequestVariable] = requestId.ToString("N");
+
+        using Process process = new() { StartInfo = start };
+        Assert.IsTrue(process.Start(), "Unable to start the crash-writer child process.");
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+        try
+        {
+            while (!File.Exists(markerPath))
+            {
+                if (process.HasExited)
+                {
+                    Assert.Fail($"Crash-writer child exited before commit marker (exit {process.ExitCode}).");
+                }
+
+                await Task.Delay(25, timeout.Token);
+            }
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+
+            await process.WaitForExitAsync(CancellationToken.None);
+        }
+
+        Assert.AreNotEqual(0, process.ExitCode, "Crash fixture must be terminated without normal disposal.");
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        DirectoryInfo? directory = new(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "LlmInspector.slnx")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ??
+            throw new InvalidOperationException("Repository root could not be found for the crash fixture.");
     }
 
     private static ProxyObservation CreateObservation(

@@ -16,6 +16,16 @@ public enum HistoryErrorType
     BackendCrash = 9,
 }
 
+public enum HistoryErrorOrigin
+{
+    NotApplicable = 0,
+    Unknown = 1,
+    Inspector = 2,
+    Client = 3,
+    Backend = 4,
+    Model = 5,
+}
+
 public enum TechnicalOperationStatus
 {
     Running,
@@ -139,6 +149,8 @@ public sealed record TechnicalResourceSampleRecord(
 
     public TechnicalIdentifier? GpuDeviceId { get; init; }
 
+    public TechnicalIdentifier? GpuDriverVersion { get; init; }
+
     public int DroppedSampleCount { get; init; }
 
     public MetricValue MemoryUsedBytes { get; init; } = Unavailable(MetricUnit.Bytes);
@@ -235,6 +247,10 @@ public sealed record RequestHistoryItem(
 {
     public int ErrorGroupOccurrenceCount { get; init; }
 
+    public HistoryErrorOrigin ErrorOrigin { get; init; } = HistoryErrorOrigin.NotApplicable;
+
+    public TechnicalRuntimeFacts? RuntimeFacts { get; init; }
+
     public bool IsRecurringError =>
         ErrorType != HistoryErrorType.None &&
         ErrorGroupOccurrenceCount >= HistoryPolicies.RecurringErrorMinimumOccurrences;
@@ -309,6 +325,8 @@ public sealed record PeriodAnalytics(
     public IReadOnlyList<ErrorGroupSummary> ErrorGroups { get; init; } = [];
 
     public ErrorCorrelationSummary ErrorCorrelations { get; init; } = ErrorCorrelationSummary.Empty;
+
+    public RuntimeChangeCorrelation RuntimeCorrelation { get; init; } = RuntimeChangeCorrelation.Empty;
 }
 
 public sealed record AnalyticsComparison(
@@ -357,6 +375,44 @@ public sealed record ErrorCorrelationSummary(
     int UncorrelatedErrors)
 {
     public static ErrorCorrelationSummary Empty { get; } = new([], 0);
+}
+
+public enum RuntimeCorrelationStatus
+{
+    NoRuntimeFacts,
+    SingleConfiguration,
+    InsufficientSamples,
+    Sufficient,
+}
+
+public sealed record RuntimeConfigurationAggregate(
+    TechnicalRuntimeFacts Facts,
+    DateTimeOffset FirstObservedAt,
+    DateTimeOffset LastObservedAt,
+    int RequestCount,
+    IReadOnlyDictionary<HistoryMetric, MetricAggregate> Metrics);
+
+public sealed record RuntimeChangeCorrelation(
+    RuntimeCorrelationStatus Status,
+    IReadOnlyList<RuntimeConfigurationAggregate> Configurations,
+    RuntimeConfigurationAggregate? Baseline,
+    RuntimeConfigurationAggregate? Candidate,
+    IReadOnlyList<AnalyticsComparison> PerformanceComparisons,
+    AnalyticsComparison? ErrorRateComparison)
+{
+    public static RuntimeChangeCorrelation Empty { get; } = new(
+        RuntimeCorrelationStatus.NoRuntimeFacts,
+        [],
+        null,
+        null,
+        [],
+        null);
+
+    public bool IsStatisticallySufficient => Status == RuntimeCorrelationStatus.Sufficient;
+
+    public bool HasConfirmedRegression =>
+        PerformanceComparisons.Any(comparison => comparison.IsConfirmedDegradation) ||
+        ErrorRateComparison?.IsConfirmedDegradation == true;
 }
 
 public sealed record HistoryClearScope

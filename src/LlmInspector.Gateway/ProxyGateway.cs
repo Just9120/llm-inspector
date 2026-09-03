@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using Microsoft.AspNetCore.Builder;
@@ -43,6 +45,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly IBackendTelemetryAdapter? _lmStudioNativeTelemetryAdapter;
+    private readonly TechnicalRuntimeFacts _runtimeFacts;
     private readonly RequestCorrelationTracker _correlationTracker = new();
     private readonly AgentOperationTracker _operationTracker = new();
     private readonly HttpClient _httpClient;
@@ -59,6 +62,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter,
+        TechnicalRuntimeFacts runtimeFacts,
         HttpClient httpClient,
         WebApplication application)
     {
@@ -70,6 +74,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
         _lmStudioNativeTelemetryAdapter = lmStudioNativeTelemetryAdapter;
+        _runtimeFacts = runtimeFacts;
         _httpClient = httpClient;
         _application = application;
     }
@@ -84,7 +89,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter = null,
         ITechnicalOperationSink? operationSink = null,
         ITechnicalResourceSampleSink? resourceSink = null,
-        IRequestResourceMonitor? resourceMonitor = null)
+        IRequestResourceMonitor? resourceMonitor = null,
+        TechnicalRuntimeFacts? runtimeFacts = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -147,6 +153,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
             lmStudioNativeTelemetryAdapter,
+            runtimeFacts ?? CreateDefaultRuntimeFacts(options, telemetryAdapter),
             httpClient,
             application);
 
@@ -283,7 +290,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         BackendResponseTelemetry backendTelemetry = telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
         RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
-        await using IRequestResourceSession resourceSession = StartResourceMonitoringSafely(
+        IRequestResourceSession resourceSession = StartResourceMonitoringSafely(
             new RequestResourceContext(
                 requestId,
                 correlation?.OperationId,
@@ -420,6 +427,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                         responseMediaType)
                     : AgentTurnTelemetry.Unavailable,
                 ErrorType = errorType,
+                RuntimeFacts = EnrichRuntimeFacts(backendTelemetry, resourceSamples),
             };
             await RecordSafelyAsync(observation).ConfigureAwait(false);
             TechnicalOperationGraph? operation = _operationTracker.Observe(observation);
@@ -429,6 +437,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             }
 
             await RecordResourcesSafelyAsync(resourceSamples).ConfigureAwait(false);
+            await DisposeResourceMonitoringSafelyAsync(resourceSession).ConfigureAwait(false);
         }
     }
 
@@ -766,6 +775,18 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
     }
 
+    private static async Task DisposeResourceMonitoringSafelyAsync(IRequestResourceSession session)
+    {
+        try
+        {
+            await session.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Collector disposal is best-effort and must never affect request forwarding.
+        }
+    }
+
     private static void NotifyResourceSafely(
         IRequestResourceSession session,
         Action<IRequestResourceSession> notification)
@@ -791,6 +812,45 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             // Live UI state is best-effort and must never affect request forwarding.
         }
     }
+
+    private TechnicalRuntimeFacts EnrichRuntimeFacts(
+        BackendResponseTelemetry telemetry,
+        IReadOnlyList<TechnicalResourceSampleRecord> resourceSamples) => _runtimeFacts with
+    {
+        ModelVersion = _runtimeFacts.ModelVersion ?? telemetry.Model,
+        GpuDriverVersion = resourceSamples
+            .Select(sample => sample.GpuDriverVersion)
+            .LastOrDefault(version => version is not null) ?? _runtimeFacts.GpuDriverVersion,
+    };
+
+    private static TechnicalRuntimeFacts CreateDefaultRuntimeFacts(
+        ProxyGatewayOptions options,
+        IBackendTelemetryAdapter telemetryAdapter)
+    {
+        string configurationMaterial = string.Join(
+            '|',
+            "gateway-runtime-config-v1",
+            options.ListenerPort,
+            options.Backend,
+            options.BackendBaseAddress.AbsoluteUri,
+            telemetryAdapter.FixtureVersion);
+        string configurationHash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(configurationMaterial))).ToLowerInvariant();
+        TechnicalIdentifier configurationId = RequireIdentifier($"sha256:{configurationHash}");
+        string? inspectorVersion = typeof(ProxyGateway).Assembly.GetName().Version?.ToString(3);
+        return new TechnicalRuntimeFacts(configurationId)
+        {
+            InspectorVersion = TechnicalIdentifier.FromBackend(inspectorVersion),
+            FrameworkVersion = TechnicalIdentifier.FromBackend($"dotnet-{Environment.Version}"),
+            OperatingSystemVersion = TechnicalIdentifier.FromBackend(
+                $"{Environment.OSVersion.Platform.ToString().ToLowerInvariant()}-{Environment.OSVersion.Version}"),
+            TelemetryContractVersion = TechnicalIdentifier.FromBackend(telemetryAdapter.FixtureVersion),
+        };
+    }
+
+    private static TechnicalIdentifier RequireIdentifier(string value) =>
+        TechnicalIdentifier.FromBackend(value) ??
+        throw new InvalidOperationException("Generated runtime identifier is invalid.");
 
     private sealed class UnavailableBackendTelemetryAdapter(BackendKind backend) : IBackendTelemetryAdapter
     {

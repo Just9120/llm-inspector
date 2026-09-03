@@ -20,6 +20,7 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.Correlation),
         nameof(ProxyObservation.ContextChangeTokens),
         nameof(ProxyObservation.AgentTurn),
+        nameof(ProxyObservation.RuntimeFacts),
     ];
 
     private static readonly string[] AllowedCorrelationProperties =
@@ -28,6 +29,19 @@ public sealed class PrivacyContractTests
         nameof(RequestCorrelation.TurnId),
         nameof(RequestCorrelation.TurnSequence),
         nameof(RequestCorrelation.OperationId),
+    ];
+
+    private static readonly string[] AllowedRuntimeFactProperties =
+    [
+        "BackendVersion",
+        "ClientVersion",
+        "ConfigurationId",
+        "FrameworkVersion",
+        "GpuDriverVersion",
+        "InspectorVersion",
+        "ModelVersion",
+        "OperatingSystemVersion",
+        "TelemetryContractVersion",
     ];
 
     [TestMethod]
@@ -46,6 +60,17 @@ public sealed class PrivacyContractTests
         Assert.IsFalse(
             typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)),
             "A free-form string would allow request or response content to enter the observation contract.");
+
+        string[] runtimeFactProperties = typeof(TechnicalRuntimeFacts)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEqual(
+            AllowedRuntimeFactProperties,
+            runtimeFactProperties);
+        Assert.IsTrue(typeof(TechnicalRuntimeFacts).GetProperties().All(property =>
+            property.PropertyType == typeof(TechnicalIdentifier)));
 
         string[] correlationProperties = typeof(RequestCorrelation)
             .GetProperties()
@@ -164,6 +189,7 @@ public sealed class PrivacyContractTests
             "DiskWriteBytes",
             "DroppedSampleCount",
             "GpuDeviceId",
+            "GpuDriverVersion",
             "GpuPowerWatts",
             "GpuTemperatureCelsius",
             "GpuUtilizationPercent",
