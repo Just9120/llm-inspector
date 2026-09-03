@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T06:17:58Z`: initial release `75/139 = 54.0%`, full roadmap `75/164 = 45.7%`; terminal EPIC-01 calculation. Archived after EPIC-05 reached terminal delivery and EPIC-06 produced a newer independent calculation.
 - `2026-09-03T06:01:33Z`: initial release `72/139 = 51.8%`, full roadmap `72/164 = 43.9%`; exact merged-main recovery before EPIC-01. Archived after EPIC-01 terminal delivery and the independent EPIC-05 calculation.
 - `2026-09-03T05:10:51Z`: initial release `70/139 = 50.4%`, full roadmap `70/164 = 42.7%`; terminal EPIC-08 state before the bounded EPIC-04 fix. Archived when GOAL-004 reached terminal `72/72` with exact-main CI.
 - `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
@@ -23,6 +24,16 @@
 - **Delivered:** monitoring/analytics/diagnostics UI surfaces, literal-loopback backend boundary and fail-closed absence of backend lifecycle/runtime mutation commands.
 - **Cleanup:** merged branch had zero unique commits and was removed locally/remotely after local `main` synchronized to the exact merge SHA.
 - **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/10#issuecomment-5521422014).
+
+## GOAL-005 / EPIC-05 — Agent operations, tools and concurrency
+
+- **Product outcome:** `READY 8/8`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#11](https://github.com/Just9120/llm-inspector/pull/11), head `350026cdb4b2dd8110f2977f6a0c928630055a66`, PR CI `33724914481` success.
+- **Merge/exact-main Evidence:** merge `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`; exact-main CI `33725139103` success with every required step.
+- **Delivered:** fail-closed operation correlation, bounded JSON/SSE tool metadata projection, ordered schema v3 operation graph, UI detail and concurrency/privacy coverage.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `142/142` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/11#issuecomment-5521783189).
 
 ## GOAL-004 — 72-AC core product tranche
 
