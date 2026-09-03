@@ -10,9 +10,10 @@ public static class InspectorCorrelationHeaders
     public const string SessionId = "X-LLM-Inspector-Session-Id";
     public const string TurnId = "X-LLM-Inspector-Turn-Id";
     public const string TurnSequence = "X-LLM-Inspector-Turn-Sequence";
+    public const string OperationId = "X-LLM-Inspector-Operation-Id";
 
     public static IReadOnlySet<string> Names { get; } = new HashSet<string>(
-        [SessionId, TurnId, TurnSequence],
+        [SessionId, TurnId, TurnSequence, OperationId],
         StringComparer.OrdinalIgnoreCase);
 }
 
@@ -34,7 +35,24 @@ internal static class RequestCorrelationHeaderReader
             return null;
         }
 
-        return new RequestCorrelation(sessionId, turnId, turnSequence);
+        Guid? operationId = null;
+        if (headers.TryGetValue(InspectorCorrelationHeaders.OperationId, out StringValues operationValues))
+        {
+            string? operationValue = operationValues.Count == 1 ? operationValues[0] : null;
+            if (string.IsNullOrWhiteSpace(operationValue) ||
+                !Guid.TryParseExact(operationValue, "N", out Guid parsedOperationId) ||
+                parsedOperationId == Guid.Empty)
+            {
+                return new RequestCorrelation(sessionId, turnId, turnSequence);
+            }
+
+            operationId = parsedOperationId;
+        }
+
+        return new RequestCorrelation(sessionId, turnId, turnSequence)
+        {
+            OperationId = operationId,
+        };
     }
 
     private static bool TryReadSingle(IHeaderDictionary headers, string name, out string? value)

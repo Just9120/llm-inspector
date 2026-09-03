@@ -107,6 +107,7 @@ public sealed class ProxyPrivacyTests
     {
         string[] allowedProperties =
         [
+            nameof(ProxyObservation.AgentTurn),
             nameof(ProxyObservation.BackendTelemetry),
             nameof(ProxyObservation.Client),
             nameof(ProxyObservation.ContextChangeTokens),

@@ -52,6 +52,8 @@ public static class HistoryTextPresenter
         {
             text.Append("Turn ").Append(turn.Sequence.ToString(CultureInfo.InvariantCulture))
                 .Append(" | ").Append(FormatMilliseconds(turn.Duration.TotalMilliseconds))
+                .Append(" | tools available=").Append(FormatMetric(turn.AvailableToolCount))
+                .Append(" | tools invoked=").Append(FormatMetric(turn.InvokedToolCount))
                 .Append(" | status=").Append(turn.Outcome)
                 .Append(" | error=").Append(turn.ErrorType)
                 .AppendLine();
@@ -59,7 +61,7 @@ public static class HistoryTextPresenter
             {
                 text.Append("  Tool ").Append(tool.Sequence.ToString(CultureInfo.InvariantCulture))
                     .Append(' ').Append(tool.ToolName.Value)
-                    .Append(" | ").Append(FormatMilliseconds(tool.Duration.TotalMilliseconds))
+                    .Append(" | ").Append(FormatMetric(tool.DurationMetric))
                     .Append(" | status=").Append(tool.Status)
                     .Append(" | error=").Append(tool.ErrorType)
                     .AppendLine();

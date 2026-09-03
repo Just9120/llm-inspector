@@ -93,7 +93,8 @@ public static class Program
                 liveRequestStateSink: LiveStateTracker,
                 lmStudioNativeTelemetryAdapter: options.Backend == BackendKind.LmStudio
                     ? BackendTelemetryAdapters.CreateLmStudioNative()
-                    : null);
+                    : null,
+                operationSink: historySink);
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(
                 gateway.ListeningAddress!,

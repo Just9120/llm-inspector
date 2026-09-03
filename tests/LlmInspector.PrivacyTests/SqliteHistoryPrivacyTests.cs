@@ -54,7 +54,8 @@ public sealed class SqliteHistoryPrivacyTests
                 await using ProxyGateway gateway = ProxyGateway.Create(
                     ProxyGatewayOptions.CreateForTesting(0, backend.Address),
                     store,
-                    BackendTelemetryAdapters.Create(BackendKind.Ollama));
+                    BackendTelemetryAdapters.Create(BackendKind.Ollama),
+                    operationSink: store);
                 await gateway.StartAsync();
                 using HttpClient client = new()
                 {
@@ -69,6 +70,16 @@ public sealed class SqliteHistoryPrivacyTests
                 };
                 request.Headers.Authorization = new("Bearer", canaries[5]);
                 request.Headers.TryAddWithoutValidation("X-Privacy-Canary", canaries[6]);
+                request.Headers.TryAddWithoutValidation(
+                    InspectorCorrelationHeaders.OperationId,
+                    Guid.NewGuid().ToString("N"));
+                request.Headers.TryAddWithoutValidation(
+                    InspectorCorrelationHeaders.SessionId,
+                    Guid.NewGuid().ToString("N"));
+                request.Headers.TryAddWithoutValidation(
+                    InspectorCorrelationHeaders.TurnId,
+                    Guid.NewGuid().ToString("N"));
+                request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnSequence, "1");
                 using HttpResponseMessage response = await client.SendAsync(request);
                 string relayed = await response.Content.ReadAsStringAsync();
 
@@ -119,8 +130,18 @@ public sealed class SqliteHistoryPrivacyTests
                     "correlation_turn_sequence", "model_load_disposition",
                 ],
                 ["request_metrics"] = ["request_id", "metric_key", "value", "unit", "quality", "source", "source_version", "derivation_version"],
-                ["turns"] = ["turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type"],
-                ["tool_events"] = ["tool_event_id", "operation_id", "turn_sequence", "sequence", "tool_name", "started_at_utc", "duration_ms", "status", "error_type"],
+                ["turns"] = [
+                    "turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type",
+                    "available_tool_count", "available_tool_count_quality", "available_tool_count_source",
+                    "available_tool_count_source_version", "available_tool_count_derivation_version",
+                    "invoked_tool_count", "invoked_tool_count_quality", "invoked_tool_count_source",
+                    "invoked_tool_count_source_version", "invoked_tool_count_derivation_version",
+                ],
+                ["tool_events"] = [
+                    "tool_event_id", "operation_id", "turn_sequence", "sequence", "tool_name", "started_at_utc",
+                    "duration_ms", "status", "error_type", "duration_quality", "duration_source",
+                    "duration_source_version", "duration_derivation_version",
+                ],
                 ["resource_samples"] = [
                     "sample_id", "operation_id", "captured_at_utc",
                     "cpu_percent", "cpu_quality", "cpu_source", "cpu_source_version", "cpu_derivation_version",

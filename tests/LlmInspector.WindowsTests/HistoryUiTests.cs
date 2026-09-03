@@ -120,7 +120,11 @@ public sealed class HistoryUiTests
                 TechnicalOperationStatus.Completed, HistoryErrorType.None),
             [new TechnicalTurnRecord(
                 Guid.NewGuid(), operationId, 0, request.RequestId, request.StartedAt,
-                TimeSpan.FromMilliseconds(500), ProxyOutcome.Completed, HistoryErrorType.None)],
+                TimeSpan.FromMilliseconds(500), ProxyOutcome.Completed, HistoryErrorType.None)
+            {
+                AvailableToolCount = Count(4),
+                InvokedToolCount = Count(1),
+            }],
             [new TechnicalToolEventRecord(
                 Guid.NewGuid(), operationId, 0, 0, Id("read_file"), request.StartedAt,
                 TimeSpan.FromMilliseconds(50), TechnicalToolStatus.Completed, HistoryErrorType.None)],
@@ -128,7 +132,10 @@ public sealed class HistoryUiTests
                 Guid.NewGuid(), operationId, request.StartedAt, Percent(40), Percent(50))]);
         string operation = App.HistoryTextPresenter.FormatOperation(detail);
         StringAssert.Contains(operation, "Turn 0");
+        StringAssert.Contains(operation, "tools available=4 [exact]");
+        StringAssert.Contains(operation, "tools invoked=1 [exact]");
         StringAssert.Contains(operation, "Tool 0 read_file");
+        StringAssert.Contains(operation, "50 [calculated]");
         StringAssert.Contains(operation, "CPU=40 [exact]");
 
         AnalyticsComparison comparison = new(
@@ -152,4 +159,7 @@ public sealed class HistoryUiTests
 
     private static MetricValue Percent(decimal value) =>
         MetricValue.Exact(value, MetricUnit.Percent, MetricSource.Inspector, "history-ui-test-v1");
+
+    private static MetricValue Count(decimal value) =>
+        MetricValue.Exact(value, MetricUnit.Count, MetricSource.Inspector, "history-ui-test-v1");
 }
