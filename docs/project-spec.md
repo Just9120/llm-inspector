@@ -448,4 +448,4 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Initial release readiness: `51/139 = 36.7%`.
 - Full agreed roadmap readiness: `51/164 = 31.1%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-004 IN_PROGRESS`; `51/72` selected AC complete locally. EPIC-04 candidate is `10/12` with CI pending on branch `codex/epic-04-tokens-context-timings` from verified base `ba63d0b219e61527d3d81994638dee39a11c14bf`; `E04-AC03`/`E04-AC12` remain open for cross-turn/cold-warm evidence.
+- Active approved Goal: `GOAL-004 IN_PROGRESS`; `51/72` selected AC complete. EPIC-04 was merged as an honest `10/12` partial increment in PR [#7](https://github.com/Just9120/llm-inspector/pull/7): merge `b29d80a788942938ad4246ab4cd358e7b41a71a8`, PR/main CI `33696539694`/`33696722298`. EPIC-08 implementation is active on `codex/epic-08-history-analytics-retention` from that verified base; no EPIC-08 AC receives credit before focused tests.

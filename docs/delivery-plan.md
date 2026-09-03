@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-02T23:44:27Z`
+> Updated: `2026-09-03T00:03:30Z`
 
 ## Current Goal
 
@@ -46,7 +46,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `51/72 = 70.8%` selected product AC complete locally. EPIC-02 is `READY 15/15`. EPIC-03 is `READY 13/13`: PR [#6](https://github.com/Just9120/llm-inspector/pull/6) follow-up CI `33694308639` and exact-merge `main` CI `33694559218` succeeded. EPIC-04 candidate is `10/12`: `E04-AC01..02` and `E04-AC04..11` have local CODE/TEST Evidence, while `E04-AC03`/`E04-AC12` remain open without trustworthy cross-turn/cold-warm evidence and CI is pending. EPIC-09 remains `13/14`; persistent-schema `E09-AC06` stays open for EPIC-08. EPIC-08 is authorized but not started.
+**Current Goal verification:** `51/72 = 70.8%` selected product AC complete. EPIC-02 is `READY 15/15`. EPIC-03 is `READY 13/13`: PR [#6](https://github.com/Just9120/llm-inspector/pull/6) follow-up CI `33694308639` and exact-merge `main` CI `33694559218` succeeded. EPIC-04 was delivered as an honest `10/12` partial increment: PR [#7](https://github.com/Just9120/llm-inspector/pull/7) and exact merge commit `b29d80a788942938ad4246ab4cd358e7b41a71a8` passed CI runs `33696539694` and `33696722298`; `E04-AC03`/`E04-AC12` remain open without trustworthy cross-turn/cold-warm evidence. EPIC-09 remains `13/14`; persistent-schema `E09-AC06` stays open for the active EPIC-08 increment.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -65,20 +65,20 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:44:27Z` |
+| Updated UTC | `2026-09-03T00:03:30Z` |
 | Expected base branch | `main` |
-| Base SHA | `ba63d0b219e61527d3d81994638dee39a11c14bf` — verified local/`origin/main` after PR #6 merge and successful exact-merge CI |
-| Working branch | `codex/epic-04-tokens-context-timings` |
-| Last verified revision | `473a6a5fd12c7e908cc6229771254175b2da36ac` — complete EPIC-04 candidate including readiness/Evidence docs covered by the full local CI-equivalent pipeline; containing final checkpoint update is intentionally not self-referenced |
-| Initial worktree state | Clean EPIC-04 branch created from synchronized local/`origin/main`; merged EPIC-03 branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | Seven reviewable EPIC-04 commits; worktree was clean before this final checkpoint-only update; generated `artifacts/` is ignored; unrelated changes absent |
-| Completed work | Added OpenAI Chat fixture v2 nested cached/reasoning counters, normalized llama.cpp cache/prompt/generation rates, typed conditional context/load/queue values, latest-request UI with quality, privacy-safe streaming TTFT, monotonic total duration and content non-decoding. Full pipeline passed: exact SDK `10.0.400`, normal/RID locked restores, format, Release build `0` warnings/errors, `86/86` tests with zero skips, self-contained `win-x64` publish and smoke |
-| Current step | Perform the one initial push and open the EPIC-04 partial PR |
-| Next exact action | Push `codex/epic-04-tokens-context-timings` once, create PR against `main`, and inspect the exact-head CI without speculative rerun |
-| PR / CI | EPIC-04 PR not created; no remote branch or CI run exists yet |
+| Base SHA | `b29d80a788942938ad4246ab4cd358e7b41a71a8` — verified local/`origin/main` after PR #7 merge and successful exact-merge CI `33696722298` |
+| Working branch | `codex/epic-08-history-analytics-retention` |
+| Last verified revision | `b29d80a788942938ad4246ab4cd358e7b41a71a8` — clean synchronized base before EPIC-08 implementation |
+| Initial worktree state | Clean EPIC-08 branch created from synchronized local/`origin/main`; merged EPIC-04 branch had zero unique commits and was safely removed locally/remotely |
+| Current worktree state | EPIC-08 contracts, SQLite package boundary and initial technical-history store are uncommitted work in progress; unrelated changes absent |
+| Completed work | EPIC-04 terminal delivery recovered: PR #7 CI `33696539694`, merge `b29d80a788942938ad4246ab4cd358e7b41a71a8`, exact-main CI `33696722298`; new EPIC-08 branch/base verified and storage/analytics contracts drafted without readiness credit before tests |
+| Current step | Compile and boundary-test the versioned SQLite history schema, filters, operation graph, statistics, retention and explicit clear flow |
+| Next exact action | Restore the new Microsoft.Data.Sqlite dependency, compile the storage boundary, fix deterministic failures, then add focused statistics/storage/privacy tests |
+| PR / CI | EPIC-08 PR not created; remote branch does not exist and no EPIC-08 CI run exists |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | No delivery gate blocker. `E09-AC06` still requires the later EPIC-08 persistent schema. EPIC-04 `E04-AC03` and `E04-AC12` lack trustworthy session/model-load correlation; per increment policy they remain open but do not block a safe partial epic PR/merge |
-| Unverified assumptions | Supported responses may expose nested cached/reasoning token counters, but coverage must be established by versioned fixtures. Current supported flows provide no trustworthy context limit, history/tools attribution, per-request model-load duration or queue duration; these values must remain `unavailable` unless exact source evidence is added |
+| Blockers | No delivery gate blocker. EPIC-04 `E04-AC03` and `E04-AC12` still lack trustworthy cross-turn/model-load evidence; EPIC-08 must not infer it from time proximity |
+| Unverified assumptions | The initial SQLite draft is not yet compile/test Evidence. Runtime composition, bounded non-blocking writes and user-facing history/analytics/retention controls remain to be implemented and validated |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
