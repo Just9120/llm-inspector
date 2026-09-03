@@ -565,6 +565,57 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task CompletePseudonymousCorrelationProducesOnlyAdjacentSignedContextDelta()
+    {
+        int responseIndex = -1;
+        int[] promptTokens = [100, 140, 80, 90];
+        List<string[]> forwardedInspectorHeaders = [];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            forwardedInspectorHeaders.Add(context.Request.Headers.Keys
+                .Where(InspectorCorrelationHeaders.Names.Contains)
+                .ToArray());
+            int index = Interlocked.Increment(ref responseIndex);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(
+                $"{{\"model\":\"fixture\",\"usage\":{{\"prompt_tokens\":{promptTokens[index]},\"completion_tokens\":1,\"total_tokens\":{promptTokens[index] + 1}}}}}",
+                context.RequestAborted);
+        });
+        SequenceObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink,
+            BackendTelemetryAdapters.Create(BackendKind.Ollama));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        Guid sessionId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        ProxyObservation first = await SendCorrelatedAsync(client, sink, sessionId, Guid.NewGuid(), 1);
+        ProxyObservation second = await SendCorrelatedAsync(client, sink, sessionId, Guid.NewGuid(), 2);
+        ProxyObservation third = await SendCorrelatedAsync(client, sink, sessionId, Guid.NewGuid(), 3);
+
+        Assert.AreEqual(MetricQuality.Unavailable, first.ContextChangeTokens.Quality);
+        Assert.AreEqual(40, second.ContextChangeTokens.Value);
+        Assert.AreEqual(-60, third.ContextChangeTokens.Value);
+        Assert.AreEqual(MetricUnit.TokenDelta, third.ContextChangeTokens.Unit);
+        Assert.AreEqual(MetricQuality.Calculated, third.ContextChangeTokens.Quality);
+        Assert.AreEqual("adjacent-context-delta-v1", third.ContextChangeTokens.DerivationVersion);
+        Assert.AreEqual(3, third.Correlation?.TurnSequence);
+
+        using HttpRequestMessage incomplete = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        incomplete.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.SessionId, sessionId.ToString("N"));
+        using HttpResponseMessage incompleteResponse = await client.SendAsync(incomplete);
+        incompleteResponse.EnsureSuccessStatusCode();
+        ProxyObservation ignored = await sink.ReadAsync();
+        Assert.IsNull(ignored.Correlation);
+        Assert.AreEqual(MetricQuality.Unavailable, ignored.ContextChangeTokens.Quality);
+        Assert.IsTrue(forwardedInspectorHeaders.All(headers => headers.Length == 0));
+    }
+
+    [TestMethod]
     public async Task TelemetryParserFailureCannotBreakRelay()
     {
         const string backendBody = "{\"choices\":[{\"message\":{\"content\":\"synthetic\"}}]}";
@@ -691,6 +742,27 @@ public sealed class ProxyGatewayIntegrationTests
         };
     }
 
+    private static async Task<ProxyObservation> SendCorrelatedAsync(
+        HttpClient client,
+        SequenceObservationSink sink,
+        Guid sessionId,
+        Guid turnId,
+        int turnSequence)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.SessionId, sessionId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnId, turnId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(
+            InspectorCorrelationHeaders.TurnSequence,
+            turnSequence.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        using HttpResponseMessage response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return await sink.ReadAsync();
+    }
+
     private static async Task<LiveRequestCollectionSnapshot> WaitForLiveStateAsync(
         LiveRequestTracker tracker,
         Func<LiveRequestCollectionSnapshot, bool> predicate)
@@ -718,6 +790,18 @@ public sealed class ProxyGatewayIntegrationTests
             NextObservation.TrySetResult(observation);
             return ValueTask.CompletedTask;
         }
+    }
+
+    private sealed class SequenceObservationSink : IProxyObservationSink
+    {
+        private readonly System.Threading.Channels.Channel<ProxyObservation> _observations =
+            System.Threading.Channels.Channel.CreateUnbounded<ProxyObservation>();
+
+        public ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken) =>
+            _observations.Writer.WriteAsync(observation, cancellationToken);
+
+        public async Task<ProxyObservation> ReadAsync() =>
+            await _observations.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private sealed class ThrowingObservationSink : IProxyObservationSink

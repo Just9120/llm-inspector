@@ -6,8 +6,6 @@ namespace LlmInspector.App;
 
 public static class RequestDetailTextPresenter
 {
-    private const string ProjectionVersion = "request-detail-projection-v1";
-
     public static string Format(ProxyObservation? observation)
     {
         if (observation is null)
@@ -16,10 +14,6 @@ public static class RequestDetailTextPresenter
         }
 
         BackendResponseTelemetry telemetry = observation.BackendTelemetry;
-        MetricValue unavailableTokenMetric = MetricValue.Unavailable(
-            MetricUnit.TokenCount,
-            MetricSource.Inspector,
-            ProjectionVersion);
         MetricValue totalDuration = MetricValue.Calculated(
             (decimal)observation.Duration.TotalMilliseconds,
             MetricUnit.Milliseconds,
@@ -51,7 +45,7 @@ public static class RequestDetailTextPresenter
         text.Append(" | Limit: ");
         text.Append(FormatMetric(telemetry.ContextLimitTokens));
         text.Append(" | Change vs previous session turn: ");
-        text.Append(FormatMetric(unavailableTokenMetric));
+        text.Append(FormatMetric(observation.ContextChangeTokens));
 
         text.AppendLine();
         text.Append("Context breakdown | History: ");
@@ -107,6 +101,7 @@ public static class RequestDetailTextPresenter
         string unit = metric.Unit switch
         {
             MetricUnit.TokenCount => "tokens",
+            MetricUnit.TokenDelta => "tokens",
             MetricUnit.Nanoseconds => "ns",
             MetricUnit.Milliseconds => "ms",
             MetricUnit.TokensPerSecond => "tokens/s",

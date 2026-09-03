@@ -39,7 +39,19 @@ public sealed class RequestDetailTextPresenterTests
                 MetricUnit.Milliseconds,
                 MetricSource.Inspector,
                 "gateway-streaming-ttft-v1",
-                "first-nonempty-chat-content-delta-v1"));
+                "first-nonempty-chat-content-delta-v1"))
+        {
+            Correlation = new RequestCorrelation(
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                2),
+            ContextChangeTokens = MetricValue.Calculated(
+                -25,
+                MetricUnit.TokenDelta,
+                MetricSource.Inspector,
+                "inspector-correlation-headers-v1",
+                "adjacent-context-delta-v1"),
+        };
 
         string text = App.RequestDetailTextPresenter.Format(observation);
 
@@ -49,6 +61,7 @@ public sealed class RequestDetailTextPresenterTests
         StringAssert.Contains(text, "Cached input: 80 tokens [exact]");
         StringAssert.Contains(text, "Reasoning: 12 tokens [exact]");
         StringAssert.Contains(text, "Context | Usage: 120 tokens [exact] | Limit: 4096 tokens [exact]");
+        StringAssert.Contains(text, "Change vs previous session turn: -25 tokens [calculated]");
         StringAssert.Contains(text, "History: 60 tokens [exact] | Tools: 20 tokens [exact] | Cache: 80 tokens [exact]");
         StringAssert.Contains(text, "Prompt/prefill: 20 tokens/s [exact]");
         StringAssert.Contains(text, "Generation: 40 tokens/s [exact]");

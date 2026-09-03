@@ -58,6 +58,31 @@ public sealed class BackendTelemetryContractTests
     }
 
     [TestMethod]
+    public void ContextDeltaAllowsSignedWholeTokensWithoutWeakeningTokenCounts()
+    {
+        MetricValue shrink = MetricValue.Calculated(
+            -25,
+            MetricUnit.TokenDelta,
+            MetricSource.Inspector,
+            "inspector-correlation-headers-v1",
+            "adjacent-context-delta-v1");
+
+        Assert.AreEqual(-25, shrink.Value);
+        Assert.AreEqual(MetricUnit.TokenDelta, shrink.Unit);
+        _ = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => MetricValue.Exact(
+            -1,
+            MetricUnit.TokenCount,
+            MetricSource.Inspector,
+            "fixture-v1"));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => MetricValue.Calculated(
+            1.5m,
+            MetricUnit.TokenDelta,
+            MetricSource.Inspector,
+            "fixture-v1",
+            "fixture-derivation-v1"));
+    }
+
+    [TestMethod]
     public void ModelIdentifierRejectsFreeFormOrOversizedValues()
     {
         Assert.IsNull(TechnicalIdentifier.FromBackend("model id with prompt-like text"));

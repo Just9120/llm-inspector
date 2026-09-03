@@ -38,6 +38,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private readonly IProxyObservationSink _observationSink;
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
+    private readonly RequestCorrelationTracker _correlationTracker = new();
     private readonly HttpClient _httpClient;
     private readonly WebApplication _application;
     private int _started;
@@ -220,6 +221,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
         BackendResponseTelemetry backendTelemetry = _telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
+        RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
         NotifyLiveStateSafely(sink => sink.RequestStarted(requestId, startedAt, client));
 
         try
@@ -293,7 +295,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 outcome,
                 client,
                 backendTelemetry,
-                CreateTimeToFirstTokenMetric(startedTimestamp, firstOutputTimestamp));
+                CreateTimeToFirstTokenMetric(startedTimestamp, firstOutputTimestamp))
+            {
+                Correlation = correlation,
+                ContextChangeTokens = _correlationTracker.Observe(
+                    correlation,
+                    backendTelemetry.ContextUsageTokens),
+            };
             await RecordSafelyAsync(observation).ConfigureAwait(false);
         }
     }
@@ -500,6 +508,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private static HashSet<string> CreateExcludedHeaders(IHeaderDictionary headers)
     {
         HashSet<string> excludedHeaders = new(HopByHopHeaders, StringComparer.OrdinalIgnoreCase);
+        excludedHeaders.UnionWith(InspectorCorrelationHeaders.Names);
         if (headers.TryGetValue("Connection", out StringValues connectionValues))
         {
             AddConnectionTokens(connectionValues, excludedHeaders);

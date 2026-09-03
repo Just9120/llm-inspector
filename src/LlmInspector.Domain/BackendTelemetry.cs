@@ -29,6 +29,7 @@ public enum MetricQuality
 public enum MetricUnit
 {
     TokenCount,
+    TokenDelta,
     Nanoseconds,
     Milliseconds,
     TokensPerSecond,
@@ -111,12 +112,14 @@ public sealed record MetricValue
                 nameof(value));
         }
 
-        if (value is < 0)
+        if (value is < 0 && unit != MetricUnit.TokenDelta)
         {
             throw new ArgumentOutOfRangeException(nameof(value), "Telemetry metrics cannot be negative.");
         }
 
-        if (unit == MetricUnit.TokenCount && value is decimal tokenValue && tokenValue != decimal.Truncate(tokenValue))
+        if (unit is MetricUnit.TokenCount or MetricUnit.TokenDelta &&
+            value is decimal tokenValue &&
+            tokenValue != decimal.Truncate(tokenValue))
         {
             throw new ArgumentException("Token counts must be whole numbers.", nameof(value));
         }

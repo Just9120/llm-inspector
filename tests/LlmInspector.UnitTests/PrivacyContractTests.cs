@@ -16,6 +16,15 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.Outcome),
         nameof(ProxyObservation.Client),
         nameof(ProxyObservation.BackendTelemetry),
+        nameof(ProxyObservation.Correlation),
+        nameof(ProxyObservation.ContextChangeTokens),
+    ];
+
+    private static readonly string[] AllowedCorrelationProperties =
+    [
+        nameof(RequestCorrelation.SessionId),
+        nameof(RequestCorrelation.TurnId),
+        nameof(RequestCorrelation.TurnSequence),
     ];
 
     [TestMethod]
@@ -34,6 +43,16 @@ public sealed class PrivacyContractTests
         Assert.IsFalse(
             typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)),
             "A free-form string would allow request or response content to enter the observation contract.");
+
+        string[] correlationProperties = typeof(RequestCorrelation)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEqual(
+            AllowedCorrelationProperties.Order(StringComparer.Ordinal).ToArray(),
+            correlationProperties);
+        Assert.IsFalse(typeof(RequestCorrelation).GetProperties().Any(property => property.PropertyType == typeof(string)));
 
         string[] telemetryPropertyNames = typeof(BackendResponseTelemetry)
             .GetProperties()

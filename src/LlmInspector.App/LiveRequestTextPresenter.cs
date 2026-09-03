@@ -101,6 +101,7 @@ public static class LiveRequestTextPresenter
         string unit = metric.Unit switch
         {
             MetricUnit.TokenCount => "tokens",
+            MetricUnit.TokenDelta => "tokens",
             MetricUnit.Nanoseconds => "ns",
             MetricUnit.Milliseconds => "ms",
             MetricUnit.TokensPerSecond => "tokens/s",
