@@ -581,6 +581,10 @@ public sealed class SqliteTechnicalHistoryStoreTests
             Interlocked.Increment(ref _recordedCount);
         }
 
+        public Task RecordOperationGraphAsync(
+            TechnicalOperationGraph graph,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(
             HistoryFilter filter,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();

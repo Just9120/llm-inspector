@@ -34,6 +34,7 @@ public enum MetricUnit
     Milliseconds,
     TokensPerSecond,
     Percent,
+    Count,
 }
 
 public enum MetricSource
