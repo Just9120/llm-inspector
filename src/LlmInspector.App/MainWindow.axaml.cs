@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly string _historyState;
     private readonly BackgroundSettingsService? _backgroundSettings;
     private readonly BackgroundLifetimeController? _backgroundLifetime;
+    private readonly Action<MonitoringPerformanceProfile>? _applyMonitoringProfile;
     private readonly DiagnosticSnapshotService? _snapshotService;
     private readonly AnalyticsExportService? _analyticsExportService;
     private readonly DispatcherTimer? _liveRefreshTimer;
@@ -37,7 +38,8 @@ public partial class MainWindow : Window
         ITechnicalHistoryStore? history = null,
         string? historyState = null,
         BackgroundSettingsService? backgroundSettings = null,
-        BackgroundLifetimeController? backgroundLifetime = null)
+        BackgroundLifetimeController? backgroundLifetime = null,
+        Action<MonitoringPerformanceProfile>? applyMonitoringProfile = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
@@ -48,6 +50,7 @@ public partial class MainWindow : Window
         _historyState = historyState ?? "Technical history state is unavailable.";
         _backgroundSettings = backgroundSettings;
         _backgroundLifetime = backgroundLifetime;
+        _applyMonitoringProfile = applyMonitoringProfile;
         _snapshotService = history is null ? null : new DiagnosticSnapshotService(history);
         _analyticsExportService = history is null ? null : new AnalyticsExportService(history);
 
@@ -181,6 +184,9 @@ public partial class MainWindow : Window
         NotifyRecurringErrorCheckBox.IsEnabled = enabled;
         NotifyHighContextCheckBox.IsEnabled = enabled;
         SilentNotificationsCheckBox.IsEnabled = enabled;
+        PerformanceProfileCombo.IsEnabled = enabled;
+        CustomSamplingIntervalText.IsEnabled = enabled;
+        ResetPerformanceProfileButton.IsEnabled = enabled;
         SaveBackgroundSettingsButton.IsEnabled = enabled;
         if (_backgroundSettings is null)
         {
@@ -193,6 +199,15 @@ public partial class MainWindow : Window
             $"Settings schema v{BackgroundSettings.CurrentSchemaVersion}; Windows autostart is " +
             (_backgroundSettings.Current.AutostartEnabled ? "enabled." : "disabled.");
         SaveBackgroundSettingsButton.Click += async (_, _) => await SaveBackgroundSettingsAsync();
+        PerformanceProfileCombo.SelectionChanged += (_, _) => UpdatePerformanceProfileDescription();
+        CustomSamplingIntervalText.TextChanged += (_, _) => UpdatePerformanceProfileDescription();
+        ResetPerformanceProfileButton.Click += (_, _) =>
+        {
+            PerformanceProfileCombo.SelectedItem = PerformanceProfileUi.Choices.Single(
+                choice => choice.Id == MonitoringPerformanceProfileId.Balanced);
+            CustomSamplingIntervalText.Text = "1000";
+            UpdatePerformanceProfileDescription();
+        };
     }
 
     private void ConfigureSnapshotControls()
@@ -384,25 +399,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        BackgroundSettings settings = new()
-        {
-            AutostartEnabled = AutostartCheckBox.IsChecked == true,
-            Notifications = new NotificationSettings
-            {
-                BackendUnavailable = NotifyBackendUnavailableCheckBox.IsChecked == true,
-                LongOperationCompleted = NotifyLongOperationCheckBox.IsChecked == true,
-                RecurringError = NotifyRecurringErrorCheckBox.IsChecked == true,
-                HighContextUsage = NotifyHighContextCheckBox.IsChecked == true,
-                SilentMode = SilentNotificationsCheckBox.IsChecked == true,
-            },
-        };
         try
         {
+            BackgroundSettings settings = new()
+            {
+                AutostartEnabled = AutostartCheckBox.IsChecked == true,
+                Notifications = new NotificationSettings
+                {
+                    BackendUnavailable = NotifyBackendUnavailableCheckBox.IsChecked == true,
+                    LongOperationCompleted = NotifyLongOperationCheckBox.IsChecked == true,
+                    RecurringError = NotifyRecurringErrorCheckBox.IsChecked == true,
+                    HighContextUsage = NotifyHighContextCheckBox.IsChecked == true,
+                    SilentMode = SilentNotificationsCheckBox.IsChecked == true,
+                },
+                Monitoring = CreateMonitoringSettingsFromControls(),
+            };
             await _backgroundSettings.SaveAsync(settings);
+            _applyMonitoringProfile?.Invoke(settings.Monitoring.Resolve());
             ApplyBackgroundSettings(_backgroundSettings.Current);
             BackgroundSettingsStateText.Text =
                 $"Background settings saved atomically; Windows autostart is " +
-                (settings.AutostartEnabled ? "enabled." : "disabled.");
+                (_backgroundSettings.Current.AutostartEnabled ? "enabled." : "disabled.");
         }
         catch (Exception exception) when (exception is
             IOException or
@@ -426,6 +443,42 @@ public partial class MainWindow : Window
         NotifyRecurringErrorCheckBox.IsChecked = settings.Notifications.RecurringError;
         NotifyHighContextCheckBox.IsChecked = settings.Notifications.HighContextUsage;
         SilentNotificationsCheckBox.IsChecked = settings.Notifications.SilentMode;
+        PerformanceProfileCombo.ItemsSource = PerformanceProfileUi.Choices;
+        PerformanceProfileCombo.SelectedItem = PerformanceProfileUi.Choices.Single(
+            choice => choice.Id == settings.Monitoring.Profile);
+        CustomSamplingIntervalText.Text = settings.Monitoring.CustomSamplingIntervalMilliseconds.ToString(
+            System.Globalization.CultureInfo.InvariantCulture);
+        UpdatePerformanceProfileDescription();
+    }
+
+    private MonitoringProfileSettings CreateMonitoringSettingsFromControls()
+    {
+        if (PerformanceProfileCombo.SelectedItem is not MonitoringPerformanceProfileChoice choice)
+        {
+            throw new InvalidDataException("Выберите профиль производительности мониторинга.");
+        }
+
+        return PerformanceProfileUi.CreateSettings(choice.Id, CustomSamplingIntervalText.Text);
+    }
+
+    private void UpdatePerformanceProfileDescription()
+    {
+        bool custom = PerformanceProfileCombo.SelectedItem is MonitoringPerformanceProfileChoice
+        {
+            Id: MonitoringPerformanceProfileId.Custom,
+        };
+        CustomSamplingIntervalText.IsEnabled = _backgroundSettings is not null && custom;
+        try
+        {
+            MonitoringProfileSettings settings = CreateMonitoringSettingsFromControls();
+            MonitoringPerformanceProfileChoice? choice = PerformanceProfileCombo.SelectedItem as
+                MonitoringPerformanceProfileChoice;
+            PerformanceProfileStateText.Text = $"{choice?.Description} {PerformanceProfileUi.Describe(settings)}";
+        }
+        catch (InvalidDataException exception)
+        {
+            PerformanceProfileStateText.Text = exception.Message;
+        }
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs eventArgs)

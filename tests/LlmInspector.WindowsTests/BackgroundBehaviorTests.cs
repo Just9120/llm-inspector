@@ -12,6 +12,13 @@ public sealed class BackgroundBehaviorTests
     private const string SourceVersion = "background-test-v1";
     private static readonly bool[] ExpectedAutostartChanges = [true, false];
     private static readonly bool[] ExpectedTrayOpenTargets = [false, true];
+    private static readonly string[] ExpectedPerformanceProfileLabels =
+    [
+        "Бережный · 2 с",
+        "Сбалансированный · 1 с (рекомендуется)",
+        "Детальный · 500 мс",
+        "Свой профиль",
+    ];
 
     [TestMethod]
     public void WindowCloseHidesUntilExplicitTrayExit()
@@ -117,16 +124,22 @@ public sealed class BackgroundBehaviorTests
                     HighContextUsage = true,
                     SilentMode = false,
                 },
+                Monitoring = new App.MonitoringProfileSettings
+                {
+                    Profile = MonitoringPerformanceProfileId.Custom,
+                    CustomSamplingIntervalMilliseconds = 750,
+                },
             };
 
             await store.SaveAsync(settings);
             Assert.AreEqual(settings, await store.LoadAsync());
+            StringAssert.Contains(await File.ReadAllTextAsync(path), "\"profile\": \"custom\"");
             Assert.IsFalse(Directory.EnumerateFiles(directory, "*.tmp").Any());
 
             await File.WriteAllTextAsync(
                 path,
                 """
-                {"schema_version":1,"autostart_enabled":false,"notifications":{},"unknown_security_key":true}
+                {"schema_version":2,"autostart_enabled":false,"notifications":{},"monitoring":{},"unknown_security_key":true}
                 """);
             _ = await Assert.ThrowsExactlyAsync<InvalidDataException>(async () => await store.LoadAsync());
         }
@@ -134,6 +147,65 @@ public sealed class BackgroundBehaviorTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [TestMethod]
+    public async Task VersionOneSettingsMigrateToTheRecommendedBalancedProfile()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-settings-v1-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "settings.json");
+        try
+        {
+            await File.WriteAllTextAsync(
+                path,
+                """
+                {
+                  "schema_version": 1,
+                  "autostart_enabled": true,
+                  "notifications": {
+                    "backend_unavailable": true,
+                    "long_operation_completed": false,
+                    "recurring_error": true,
+                    "high_context_usage": false,
+                    "silent_mode": true
+                  }
+                }
+                """);
+
+            App.BackgroundSettings migrated = await new App.JsonBackgroundSettingsStore(path).LoadAsync();
+
+            Assert.AreEqual(App.BackgroundSettings.CurrentSchemaVersion, migrated.SchemaVersion);
+            Assert.IsTrue(migrated.AutostartEnabled);
+            Assert.IsTrue(migrated.Notifications.BackendUnavailable);
+            Assert.IsTrue(migrated.Notifications.RecurringError);
+            Assert.IsTrue(migrated.Notifications.SilentMode);
+            Assert.AreEqual(MonitoringPerformanceProfileId.Balanced, migrated.Monitoring.Profile);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), migrated.Monitoring.Resolve().SamplingInterval);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void PerformanceProfileUiUsesRussianChoicesAndRejectsInvalidCustomIntervals()
+    {
+        CollectionAssert.AreEqual(
+            ExpectedPerformanceProfileLabels,
+            App.PerformanceProfileUi.Choices.Select(choice => choice.Label).ToArray());
+
+        App.MonitoringProfileSettings settings = App.PerformanceProfileUi.CreateSettings(
+            MonitoringPerformanceProfileId.Custom,
+            "250");
+
+        Assert.AreEqual(250, settings.CustomSamplingIntervalMilliseconds);
+        StringAssert.Contains(App.PerformanceProfileUi.Describe(settings), "не участвует");
+        _ = Assert.ThrowsExactly<InvalidDataException>(() =>
+            App.PerformanceProfileUi.CreateSettings(MonitoringPerformanceProfileId.Custom, "249"));
+        _ = Assert.ThrowsExactly<InvalidDataException>(() =>
+            App.PerformanceProfileUi.CreateSettings(MonitoringPerformanceProfileId.Custom, "1.5"));
     }
 
     [TestMethod]

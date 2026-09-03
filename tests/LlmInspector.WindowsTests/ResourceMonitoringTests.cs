@@ -11,6 +11,24 @@ namespace LlmInspector.WindowsTests;
 public sealed class ResourceMonitoringTests
 {
     [TestMethod]
+    public void MonitorAppliesOnlyCanonicalValidatedPerformanceProfiles()
+    {
+        WindowsRequestResourceMonitor monitor = new(
+            new ThrowingProbe(),
+            new FixedProcessResolver(null));
+
+        Assert.AreEqual(TimeSpan.FromSeconds(1), monitor.SamplingInterval);
+        monitor.ApplyProfile(MonitoringPerformanceProfiles.Saver);
+        Assert.AreEqual(TimeSpan.FromSeconds(2), monitor.SamplingInterval);
+        monitor.ApplyProfile(MonitoringPerformanceProfiles.CreateCustom(250));
+        Assert.AreEqual(TimeSpan.FromMilliseconds(250), monitor.SamplingInterval);
+
+        _ = Assert.ThrowsExactly<ArgumentException>(() => monitor.ApplyProfile(
+            MonitoringPerformanceProfiles.Balanced with { SamplingInterval = TimeSpan.FromMilliseconds(750) }));
+        Assert.AreEqual(TimeSpan.FromMilliseconds(250), monitor.SamplingInterval);
+    }
+
+    [TestMethod]
     public async Task MonitorCorrelatesTimestampedHostProcessGpuDiskAndTrafficMetrics()
     {
         DateTimeOffset started = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);

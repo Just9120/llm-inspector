@@ -161,6 +161,7 @@ public sealed class PrivacyContractTests
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[0].Retention, "Process lifetime", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[1].Retention, "30 days (default)", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[2].Fields, "autostart", StringComparison.OrdinalIgnoreCase);
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[2].Fields, "monitoring performance profile", StringComparison.OrdinalIgnoreCase);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[2].Retention, "settings file", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[3].Fields, "typed errors", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[3].Retention, "user deletes", StringComparison.Ordinal);

@@ -28,6 +28,7 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(headings, "Anonymized diagnostic snapshot");
         CollectionAssert.Contains(headings, "Anonymized analytics export");
         CollectionAssert.Contains(headings, "Background and notifications");
+        CollectionAssert.Contains(headings, "Производительность мониторинга");
 
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         string[] namedControls = xaml
@@ -57,6 +58,10 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(namedControls, "NotifyRecurringErrorCheckBox");
         CollectionAssert.Contains(namedControls, "NotifyHighContextCheckBox");
         CollectionAssert.Contains(namedControls, "SilentNotificationsCheckBox");
+        CollectionAssert.Contains(namedControls, "PerformanceProfileCombo");
+        CollectionAssert.Contains(namedControls, "CustomSamplingIntervalText");
+        CollectionAssert.Contains(namedControls, "ResetPerformanceProfileButton");
+        CollectionAssert.Contains(namedControls, "PerformanceProfileStateText");
 
         XElement saveSnapshot = xaml.Descendants()
             .Single(element => element.Attribute(x + "Name")?.Value == "SaveSnapshotButton");

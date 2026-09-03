@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LlmInspector.Domain;
 
 namespace LlmInspector.App;
 
@@ -27,13 +28,15 @@ public sealed record NotificationSettings
 
 public sealed record BackgroundSettings
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
     public bool AutostartEnabled { get; init; }
 
     public NotificationSettings Notifications { get; init; } = new();
+
+    public MonitoringProfileSettings Monitoring { get; init; } = new();
 
     public static BackgroundSettings Default { get; } = new();
 
@@ -48,6 +51,43 @@ public sealed record BackgroundSettings
         if (settings.Notifications is null)
         {
             throw new InvalidDataException("Notification settings are required.");
+        }
+
+        if (settings.Monitoring is null)
+        {
+            throw new InvalidDataException("Monitoring profile settings are required.");
+        }
+
+        settings.Monitoring.Validate();
+    }
+}
+
+public sealed record MonitoringProfileSettings
+{
+    public MonitoringPerformanceProfileId Profile { get; init; } = MonitoringPerformanceProfileId.Balanced;
+
+    public int CustomSamplingIntervalMilliseconds { get; init; } = 1_000;
+
+    public MonitoringPerformanceProfile Resolve()
+    {
+        Validate();
+        return MonitoringPerformanceProfiles.Resolve(Profile, CustomSamplingIntervalMilliseconds);
+    }
+
+    public void Validate()
+    {
+        if (!Enum.IsDefined(Profile))
+        {
+            throw new InvalidDataException("The monitoring performance profile is unsupported.");
+        }
+
+        try
+        {
+            _ = MonitoringPerformanceProfiles.CreateCustom(CustomSamplingIntervalMilliseconds);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            throw new InvalidDataException("The custom monitoring sampling interval is invalid.", exception);
         }
     }
 }
@@ -66,6 +106,10 @@ public sealed class JsonBackgroundSettingsStore : IBackgroundSettingsStore
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         WriteIndented = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        Converters =
+        {
+            new JsonStringEnumConverter<MonitoringPerformanceProfileId>(JsonNamingPolicy.SnakeCaseLower),
+        },
     };
 
     private readonly string _path;
@@ -96,11 +140,22 @@ public sealed class JsonBackgroundSettingsStore : IBackgroundSettingsStore
                 FileShare.Read,
                 4096,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
-            BackgroundSettings settings = await JsonSerializer.DeserializeAsync<BackgroundSettings>(
+            using JsonDocument document = await JsonDocument.ParseAsync(
                 stream,
-                SerializerOptions,
-                cancellationToken).ConfigureAwait(false) ??
-                throw new InvalidDataException("The background settings document is empty.");
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!document.RootElement.TryGetProperty("schema_version", out JsonElement schemaElement) ||
+                !schemaElement.TryGetInt32(out int schemaVersion))
+            {
+                throw new InvalidDataException("The background settings schema version is missing.");
+            }
+
+            BackgroundSettings settings = schemaVersion switch
+            {
+                1 => MigrateFromV1(document.RootElement),
+                BackgroundSettings.CurrentSchemaVersion => document.RootElement.Deserialize<BackgroundSettings>(
+                    SerializerOptions) ?? throw new InvalidDataException("The background settings document is empty."),
+                _ => throw new InvalidDataException("The background settings schema version is unsupported."),
+            };
             BackgroundSettings.Validate(settings);
             return settings;
         }
@@ -153,6 +208,32 @@ public sealed class JsonBackgroundSettingsStore : IBackgroundSettingsStore
                 File.Delete(temporaryPath);
             }
         }
+    }
+
+    private static BackgroundSettings MigrateFromV1(JsonElement root)
+    {
+        BackgroundSettingsV1 legacy = root.Deserialize<BackgroundSettingsV1>(SerializerOptions) ??
+            throw new InvalidDataException("The background settings document is empty.");
+        if (legacy.SchemaVersion != 1 || legacy.Notifications is null)
+        {
+            throw new InvalidDataException("The background settings v1 document is invalid.");
+        }
+
+        return new BackgroundSettings
+        {
+            AutostartEnabled = legacy.AutostartEnabled,
+            Notifications = legacy.Notifications,
+            Monitoring = new MonitoringProfileSettings(),
+        };
+    }
+
+    private sealed record BackgroundSettingsV1
+    {
+        public int SchemaVersion { get; init; }
+
+        public bool AutostartEnabled { get; init; }
+
+        public NotificationSettings? Notifications { get; init; }
     }
 }
 
