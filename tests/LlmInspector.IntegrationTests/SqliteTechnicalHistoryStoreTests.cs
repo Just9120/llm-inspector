@@ -1,6 +1,7 @@
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Storage.Sqlite;
+using Microsoft.Data.Sqlite;
 
 namespace LlmInspector.IntegrationTests;
 
@@ -207,6 +208,7 @@ public sealed class SqliteTechnicalHistoryStoreTests
             HistoryMetric.PromptTokensPerSecond,
             HistoryMetric.GenerationTokensPerSecond,
             HistoryMetric.ContextUsageTokens,
+            HistoryMetric.ModelLoadMilliseconds,
             HistoryMetric.CpuPercent,
             HistoryMetric.MemoryPercent,
             HistoryMetric.ErrorRatePercent,
@@ -232,6 +234,116 @@ public sealed class SqliteTechnicalHistoryStoreTests
             new HistoryFilter(Client: ClientKind.Cline),
             new HistoryFilter(Client: ClientKind.OpenWebUi),
             HistoryMetric.ErrorRatePercent)).Candidate.SampleCount);
+    }
+
+    [TestMethod]
+    public async Task CorrelationAndModelLoadClassificationArePersistedAndAnalyzed()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTimeOffset startedAt = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
+        Guid sessionId = Guid.NewGuid();
+        Guid coldTurnId = Guid.NewGuid();
+        Guid warmTurnId = Guid.NewGuid();
+        ProxyObservation cold = CreateObservation(
+            Guid.NewGuid(), startedAt, ClientKind.Cline, BackendKind.LmStudio,
+            "native-model", ProxyOutcome.Completed, 10,
+            ModelLoadDisposition.Cold,
+            new RequestCorrelation(sessionId, coldTurnId, 1));
+        ProxyObservation warm = CreateObservation(
+            Guid.NewGuid(), startedAt.AddMinutes(1), ClientKind.Cline, BackendKind.LmStudio,
+            "native-model", ProxyOutcome.Completed, 20,
+            ModelLoadDisposition.Warm,
+            new RequestCorrelation(sessionId, warmTurnId, 2));
+        ProxyObservation unavailable = CreateObservation(
+            Guid.NewGuid(), startedAt.AddMinutes(2), ClientKind.Cline, BackendKind.LmStudio,
+            "native-model", ProxyOutcome.Completed, 30);
+
+        await fixture.Store.RecordAsync(cold, CancellationToken.None);
+        await fixture.Store.RecordAsync(warm, CancellationToken.None);
+        await fixture.Store.RecordAsync(unavailable, CancellationToken.None);
+
+        IReadOnlyList<RequestHistoryItem> correlated = await fixture.Store.QueryRequestsAsync(
+            new HistoryFilter(SessionId: sessionId));
+        Assert.HasCount(2, correlated);
+        RequestHistoryItem storedWarm = correlated.Single(item => item.CorrelatedTurnSequence == 2);
+        Assert.AreEqual(warmTurnId, storedWarm.CorrelatedTurnId);
+        Assert.AreEqual(ModelLoadDisposition.Warm, storedWarm.ModelLoadDisposition);
+
+        PeriodAnalytics analytics = await fixture.Store.AnalyzePeriodAsync(new HistoryFilter(
+            From: startedAt,
+            To: startedAt.AddHours(1)));
+        Assert.AreEqual(1, analytics.ModelLoads.ColdRequests);
+        Assert.AreEqual(1, analytics.ModelLoads.WarmRequests);
+        Assert.AreEqual(1, analytics.ModelLoads.UnavailableRequests);
+        Assert.AreEqual(3, analytics.ModelLoads.TotalRequests);
+        Assert.HasCount(1, analytics.Trend);
+        Assert.AreEqual(
+            3,
+            analytics.Trend[0].Metrics[HistoryMetric.ModelLoadMilliseconds].SampleCount);
+    }
+
+    [TestMethod]
+    public async Task VersionOneDatabaseMigratesToVersionTwoWithoutLosingRequests()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-migration-{Guid.NewGuid():N}");
+        string databasePath = Path.Combine(directory, "history.db");
+        Directory.CreateDirectory(directory);
+        Guid requestId = Guid.NewGuid();
+        try
+        {
+            await using (SqliteConnection connection = new($"Data Source={databasePath}"))
+            {
+                await connection.OpenAsync();
+                await using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    CREATE TABLE schema_migrations(
+                        version INTEGER PRIMARY KEY,
+                        applied_at_utc TEXT NOT NULL
+                    ) STRICT;
+                    INSERT INTO schema_migrations(version, applied_at_utc)
+                    VALUES (1, '2026-01-01T00:00:00.0000000+00:00');
+                    CREATE TABLE requests(
+                        request_id TEXT PRIMARY KEY CHECK(length(request_id) = 32),
+                        session_id TEXT NULL,
+                        operation_id TEXT NULL,
+                        started_at_utc TEXT NOT NULL,
+                        http_status_code INTEGER NULL,
+                        outcome INTEGER NOT NULL,
+                        error_type INTEGER NOT NULL,
+                        client INTEGER NOT NULL,
+                        backend INTEGER NOT NULL,
+                        model TEXT NULL CHECK(model IS NULL OR length(model) <= 128)
+                    ) STRICT;
+                    INSERT INTO requests(
+                        request_id, session_id, operation_id, started_at_utc, http_status_code,
+                        outcome, error_type, client, backend, model)
+                    VALUES ($id, NULL, NULL, '2026-01-01T00:00:00.0000000+00:00', 200, 0, 0, 0, 0, 'legacy-model');
+                    """;
+                command.Parameters.AddWithValue("$id", requestId.ToString("N"));
+                await command.ExecuteNonQueryAsync();
+            }
+
+            await using (SqliteTechnicalHistoryStore store = new(databasePath))
+            {
+                await store.InitializeAsync();
+                RequestHistoryItem migrated = AssertSingle(await store.QueryRequestsAsync(new HistoryFilter()));
+                Assert.AreEqual(requestId, migrated.RequestId);
+                Assert.AreEqual(ModelLoadDisposition.Unavailable, migrated.ModelLoadDisposition);
+                Assert.IsNull(migrated.CorrelatedTurnId);
+                Assert.IsNull(migrated.CorrelatedTurnSequence);
+            }
+
+            await using SqliteConnection verification = new($"Data Source={databasePath};Mode=ReadOnly");
+            await verification.OpenAsync();
+            await using SqliteCommand versionCommand = verification.CreateCommand();
+            versionCommand.CommandText = "SELECT MAX(version) FROM schema_migrations;";
+            Assert.AreEqual(2L, await versionCommand.ExecuteScalarAsync());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [TestMethod]
@@ -373,7 +485,9 @@ public sealed class SqliteTechnicalHistoryStoreTests
         BackendKind backend,
         string model,
         ProxyOutcome outcome,
-        decimal value)
+        decimal value,
+        ModelLoadDisposition modelLoadDisposition = ModelLoadDisposition.Unavailable,
+        RequestCorrelation? correlation = null)
     {
         string sourceVersion = "history-fixture-v1";
         BackendResponseTelemetry telemetry = new(
@@ -392,7 +506,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
             Exact(80 - value, MetricUnit.TokensPerSecond),
             Exact(value * 5, MetricUnit.Milliseconds),
             Exact(value, MetricUnit.Milliseconds),
-            []);
+            [],
+            modelLoadDisposition);
         return new ProxyObservation(
             id,
             startedAt,
@@ -401,7 +516,10 @@ public sealed class SqliteTechnicalHistoryStoreTests
             outcome,
             client,
             telemetry,
-            MetricValue.Exact(value * 10, MetricUnit.Milliseconds, MetricSource.Inspector, sourceVersion));
+            MetricValue.Exact(value * 10, MetricUnit.Milliseconds, MetricSource.Inspector, sourceVersion))
+        {
+            Correlation = correlation,
+        };
 
         MetricValue Exact(decimal metricValue, MetricUnit unit) =>
             MetricValue.Exact(metricValue, unit, MetricSource.BackendExtension, sourceVersion);

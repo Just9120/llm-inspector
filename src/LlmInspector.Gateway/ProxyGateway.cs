@@ -21,6 +21,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 {
     public const string ChatCompletionsPath = "/v1/chat/completions";
     public const string ModelsPath = "/v1/models";
+    public const string LmStudioNativeChatPath = "/api/v1/chat";
 
     private static readonly HashSet<string> HopByHopHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -38,6 +39,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private readonly IProxyObservationSink _observationSink;
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
+    private readonly IBackendTelemetryAdapter? _lmStudioNativeTelemetryAdapter;
+    private readonly RequestCorrelationTracker _correlationTracker = new();
     private readonly HttpClient _httpClient;
     private readonly WebApplication _application;
     private int _started;
@@ -48,6 +51,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         IProxyObservationSink observationSink,
         ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
+        IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter,
         HttpClient httpClient,
         WebApplication application)
     {
@@ -55,6 +59,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         _observationSink = observationSink;
         _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
+        _lmStudioNativeTelemetryAdapter = lmStudioNativeTelemetryAdapter;
         _httpClient = httpClient;
         _application = application;
     }
@@ -65,7 +70,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyGatewayOptions options,
         IProxyObservationSink? observationSink = null,
         IBackendTelemetryAdapter? telemetryAdapter = null,
-        ILiveRequestStateSink? liveRequestStateSink = null)
+        ILiveRequestStateSink? liveRequestStateSink = null,
+        IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -75,6 +81,15 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             throw new ArgumentException(
                 "Telemetry adapter backend must match the configured backend.",
                 nameof(telemetryAdapter));
+        }
+
+        if (lmStudioNativeTelemetryAdapter is not null &&
+            (options.Backend != BackendKind.LmStudio ||
+             lmStudioNativeTelemetryAdapter.Backend != BackendKind.LmStudio))
+        {
+            throw new ArgumentException(
+                "Native LM Studio telemetry is only valid for an LM Studio backend.",
+                nameof(lmStudioNativeTelemetryAdapter));
         }
 
         SocketsHttpHandler handler = new()
@@ -115,13 +130,19 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             observationSink ?? NullProxyObservationSink.Instance,
             liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
+            lmStudioNativeTelemetryAdapter,
             httpClient,
             application);
 
         application.MapMethods(
             ChatCompletionsPath,
             [HttpMethods.Post],
-            context => gateway.RelayAsync(context, ClientKind.GenericUnknown));
+            context => gateway.RelayAsync(
+                context,
+                ClientKind.GenericUnknown,
+                ChatCompletionsPath,
+                gateway._telemetryAdapter,
+                "gateway-openai-lifecycle-v1"));
         application.MapMethods(
             ModelsPath,
             [HttpMethods.Get],
@@ -131,11 +152,30 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             application.MapMethods(
                 endpoint.ChatCompletionsPath,
                 [HttpMethods.Post],
-                context => gateway.RelayAsync(context, endpoint.Client));
+                context => gateway.RelayAsync(
+                    context,
+                    endpoint.Client,
+                    ChatCompletionsPath,
+                    gateway._telemetryAdapter,
+                    "gateway-openai-lifecycle-v1"));
             application.MapMethods(
                 endpoint.ModelsPath,
                 [HttpMethods.Get],
                 gateway.RelayModelsAsync);
+        }
+
+
+        if (gateway._lmStudioNativeTelemetryAdapter is not null)
+        {
+            application.MapMethods(
+                LmStudioNativeChatPath,
+                [HttpMethods.Post],
+                context => gateway.RelayAsync(
+                    context,
+                    ClientKind.GenericUnknown,
+                    LmStudioNativeChatPath,
+                    gateway._lmStudioNativeTelemetryAdapter,
+                    "gateway-lm-studio-native-lifecycle-v1"));
         }
 
         return gateway;
@@ -211,15 +251,21 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task RelayAsync(HttpContext context, ClientKind client)
+    private async Task RelayAsync(
+        HttpContext context,
+        ClientKind client,
+        string backendPath,
+        IBackendTelemetryAdapter telemetryAdapter,
+        string lifecycleSourceVersion)
     {
         Guid requestId = Guid.NewGuid();
         DateTimeOffset startedAt = DateTimeOffset.UtcNow;
         long startedTimestamp = Stopwatch.GetTimestamp();
         int? statusCode = null;
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
-        BackendResponseTelemetry backendTelemetry = _telemetryAdapter.CreateUnavailable();
+        BackendResponseTelemetry backendTelemetry = telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
+        RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
         NotifyLiveStateSafely(sink => sink.RequestStarted(requestId, startedAt, client));
 
         try
@@ -228,11 +274,11 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 requestId,
                 RequestStageValue.ProtocolObserved(
                     RequestStage.PromptProcessing,
-                    "gateway-openai-lifecycle-v1")));
+                    lifecycleSourceVersion)));
             using HttpRequestMessage outboundRequest = CreateOutboundRequest(
                 context,
                 HttpMethod.Post,
-                ChatCompletionsPath,
+                backendPath,
                 includeBody: true);
             using HttpResponseMessage backendResponse = await _httpClient.SendAsync(
                 outboundRequest,
@@ -246,12 +292,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             await context.Response.StartAsync(context.RequestAborted).ConfigureAwait(false);
             backendTelemetry = await RelayResponseBodyAsync(
                 backendResponse.Content,
+                telemetryAdapter,
                 context.Response.Body,
                 () => NotifyLiveStateSafely(sink => sink.StageChanged(
                     requestId,
                     RequestStageValue.ProtocolObserved(
                         RequestStage.ReasoningGeneration,
-                        "gateway-openai-lifecycle-v1"))),
+                        lifecycleSourceVersion))),
                 () => firstOutputTimestamp ??= Stopwatch.GetTimestamp(),
                 context.RequestAborted).ConfigureAwait(false);
 
@@ -293,7 +340,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 outcome,
                 client,
                 backendTelemetry,
-                CreateTimeToFirstTokenMetric(startedTimestamp, firstOutputTimestamp));
+                CreateTimeToFirstTokenMetric(startedTimestamp, firstOutputTimestamp))
+            {
+                Correlation = correlation,
+                ContextChangeTokens = _correlationTracker.Observe(
+                    correlation,
+                    backendTelemetry.ContextUsageTokens),
+            };
             await RecordSafelyAsync(observation).ConfigureAwait(false);
         }
     }
@@ -335,8 +388,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task<BackendResponseTelemetry> RelayResponseBodyAsync(
+    private static async Task<BackendResponseTelemetry> RelayResponseBodyAsync(
         HttpContent backendContent,
+        IBackendTelemetryAdapter telemetryAdapter,
         Stream clientBody,
         Action responseBodyObserved,
         Action outputContentObserved,
@@ -345,7 +399,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         IBackendTelemetrySession? telemetrySession;
         try
         {
-            telemetrySession = _telemetryAdapter.CreateSession(backendContent.Headers.ContentType?.MediaType);
+            telemetrySession = telemetryAdapter.CreateSession(backendContent.Headers.ContentType?.MediaType);
         }
         catch (Exception)
         {
@@ -415,7 +469,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             }
         }
 
-        return _telemetryAdapter.CreateUnavailable();
+        return telemetryAdapter.CreateUnavailable();
     }
 
     private static MetricValue CreateTimeToFirstTokenMetric(
@@ -500,6 +554,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private static HashSet<string> CreateExcludedHeaders(IHeaderDictionary headers)
     {
         HashSet<string> excludedHeaders = new(HopByHopHeaders, StringComparer.OrdinalIgnoreCase);
+        excludedHeaders.UnionWith(InspectorCorrelationHeaders.Names);
         if (headers.TryGetValue("Connection", out StringValues connectionValues))
         {
             AddConnectionTokens(connectionValues, excludedHeaders);

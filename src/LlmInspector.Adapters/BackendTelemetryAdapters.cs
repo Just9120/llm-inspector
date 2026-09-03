@@ -17,6 +17,9 @@ public static class BackendTelemetryAdapters
             "openai-chat-fixtures-v2/lm-studio"),
         _ => throw new ArgumentOutOfRangeException(nameof(backend)),
     };
+
+    public static IBackendTelemetryAdapter CreateLmStudioNative() =>
+        new LmStudioNativeTelemetryAdapter("lm-studio-native-chat-v1");
 }
 
 internal sealed class OpenAiBackendTelemetryAdapter(

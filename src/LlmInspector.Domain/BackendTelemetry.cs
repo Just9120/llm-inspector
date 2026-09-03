@@ -29,6 +29,7 @@ public enum MetricQuality
 public enum MetricUnit
 {
     TokenCount,
+    TokenDelta,
     Nanoseconds,
     Milliseconds,
     TokensPerSecond,
@@ -51,6 +52,13 @@ public enum BackendMetricKey
     LlamaCppPredictedMilliseconds,
     LlamaCppPromptTokensPerSecond,
     LlamaCppPredictedTokensPerSecond,
+}
+
+public enum ModelLoadDisposition
+{
+    Unavailable,
+    Cold,
+    Warm,
 }
 
 public sealed record TechnicalIdentifier
@@ -111,12 +119,14 @@ public sealed record MetricValue
                 nameof(value));
         }
 
-        if (value is < 0)
+        if (value is < 0 && unit != MetricUnit.TokenDelta)
         {
             throw new ArgumentOutOfRangeException(nameof(value), "Telemetry metrics cannot be negative.");
         }
 
-        if (unit == MetricUnit.TokenCount && value is decimal tokenValue && tokenValue != decimal.Truncate(tokenValue))
+        if (unit is MetricUnit.TokenCount or MetricUnit.TokenDelta &&
+            value is decimal tokenValue &&
+            tokenValue != decimal.Truncate(tokenValue))
         {
             throw new ArgumentException("Token counts must be whole numbers.", nameof(value));
         }
@@ -212,7 +222,8 @@ public sealed record BackendResponseTelemetry(
     MetricValue CompletionTokensPerSecond,
     MetricValue ModelLoadTime,
     MetricValue QueueTime,
-    IReadOnlyList<BackendMetric> BackendSpecificMetrics)
+    IReadOnlyList<BackendMetric> BackendSpecificMetrics,
+    ModelLoadDisposition ModelLoadDisposition = ModelLoadDisposition.Unavailable)
 {
     public static BackendResponseTelemetry Unavailable(BackendKind backend, string sourceVersion) =>
         new(

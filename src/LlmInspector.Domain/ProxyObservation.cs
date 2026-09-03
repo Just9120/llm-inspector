@@ -8,6 +8,37 @@ public enum ProxyOutcome
     RelayFailed,
 }
 
+public sealed record RequestCorrelation
+{
+    public RequestCorrelation(Guid sessionId, Guid turnId, int turnSequence)
+    {
+        if (sessionId == Guid.Empty)
+        {
+            throw new ArgumentException("Session identifier cannot be empty.", nameof(sessionId));
+        }
+
+        if (turnId == Guid.Empty)
+        {
+            throw new ArgumentException("Turn identifier cannot be empty.", nameof(turnId));
+        }
+
+        if (turnSequence < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(turnSequence), "Turn sequence must be positive.");
+        }
+
+        SessionId = sessionId;
+        TurnId = turnId;
+        TurnSequence = turnSequence;
+    }
+
+    public Guid SessionId { get; }
+
+    public Guid TurnId { get; }
+
+    public int TurnSequence { get; }
+}
+
 public sealed record ProxyObservation(
     Guid RequestId,
     DateTimeOffset StartedAt,
@@ -18,6 +49,15 @@ public sealed record ProxyObservation(
     BackendResponseTelemetry BackendTelemetry,
     MetricValue TimeToFirstToken)
 {
+    private const string CorrelationSourceVersion = "inspector-correlation-headers-v1";
+
+    public RequestCorrelation? Correlation { get; init; }
+
+    public MetricValue ContextChangeTokens { get; init; } = MetricValue.Unavailable(
+        MetricUnit.TokenDelta,
+        MetricSource.Inspector,
+        CorrelationSourceVersion);
+
     public ProxyObservation(
         Guid requestId,
         DateTimeOffset startedAt,

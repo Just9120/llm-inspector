@@ -105,11 +105,11 @@ Collectors, retention и diagnostics работают как independently super
 
 Inspector — explicit reverse proxy, не system-wide MITM и не backend lifecycle manager.
 
-Текущий runtime использует default listener `127.0.0.1:5117`. Versioned launch configuration v1 выбирает Ollama, llama.cpp или LM Studio с default ports `11434`, `8080` и `1234`; explicit backend URL/port остаётся literal-loopback-only. Generic и четыре per-client base paths поддерживают transparent `GET /v1/models` и `POST /v1/chat/completions`, а на backend всегда направляются стандартные `/v1/*` paths. Dynamic listener port `0` разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
+Текущий runtime использует default listener `127.0.0.1:5117`. Versioned launch configuration v1 выбирает Ollama, llama.cpp или LM Studio с default ports `11434`, `8080` и `1234`; explicit backend URL/port остаётся literal-loopback-only. Generic и четыре per-client base paths поддерживают transparent `GET /v1/models` и `POST /v1/chat/completions`, а на backend всегда направляются стандартные `/v1/*` paths. При выбранном LM Studio отдельный generic route `POST /api/v1/chat` прозрачно сохраняет native path и получает отдельный telemetry adapter; для других backend route отсутствует. Dynamic listener port `0` разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
 
 ```text
 OpenAI-compatible client
-  │  generic /v1 or explicit /clients/<known-client>/v1 base URL
+  │  generic /v1, explicit /clients/<known-client>/v1 or LM Studio /api/v1/chat
   ▼
 Kestrel loopback gateway
   ├─ validate route + configured backend identity
@@ -122,7 +122,7 @@ Kestrel loopback gateway
             │ non-blocking metadata events only
             ▼
   latest allowlisted observation (bounded process memory)
-            │ future EPIC-08 persistence boundary
+            │ bounded non-blocking persistence boundary
             ▼
   lifecycle queue ─> SQLite writer ─> read models ─> UI/diagnostics
   sample queue ─────> SQLite writer
@@ -132,7 +132,7 @@ Kestrel loopback gateway
 
 1. Backend target принимается только из versioned settings и в initial release должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote/LAN target требует backlog authorization.
 2. Generic `ASPNETCORE_URLS`, wildcard hostname, `0.0.0.0`, `[::]` и `ListenAnyIP` не могут расширить listener. Port conflict останавливает listener с явной UI error, а не выбирает скрытый alternate endpoint.
-3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Inspector не добавляет generation parameters и не заменяет model/tool payload.
+3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Три Inspector-reserved correlation headers являются единственным исключением: они читаются локально и удаляются до backend. Inspector не добавляет generation parameters и не заменяет model/tool payload.
 4. Request и response bodies relay-ятся streaming; full-body buffering запрещено. Parser хранит не более `256` bytes текущего lexical token и не влияет на flow control клиента; container depth больше `64`, malformed JSON или parser exception переводят telemetry в `unavailable`, не прерывая relay.
 5. SSE event order и bytes внутри relayed data не переупорядочиваются. Fragmented tool-call name может быть assembled только в bounded volatile state; arguments/results проходят к client/backend, но отбрасываются telemetry projection.
 6. Client cancellation немедленно propagates к backend. Inspector не replay-ит и не retry-ит generation request после начала forwarding: duplicate inference опаснее явного failure.
@@ -148,7 +148,7 @@ Enforcement выполняется в трёх независимых слоях
 2. `Telemetry`: schema-first allowlist projection создаёт новый metadata record. Запрещённые значения не маскируются post hoc — они отсутствуют в output type.
 3. `Storage/Diagnostics`: database schema и snapshot DTO содержат только allowlisted fields; serialization неизвестного поля fail-closed.
 
-Persistent allowlist: timestamps/durations, token counts, normalized model/backend/client identities, generated or pseudonymized correlation IDs, tool names/count/status/duration, HTTP/error categories без raw body, quality/provenance, resource samples, OS/backend/client/driver version identifiers и versioned configuration fingerprints. Backend URL хранится как user label и normalized loopback identity без credentials/query. Client-provided IDs и paths не сохраняются raw; при необходимости стабильной correlation используется per-install keyed pseudonymization.
+Persistent allowlist: timestamps/durations, token counts, normalized model/backend/client identities, generated or pseudonymized correlation IDs, tool names/count/status/duration, HTTP/error categories без raw body, quality/provenance, resource samples, OS/backend/client/driver version identifiers и versioned configuration fingerprints. Backend URL хранится как user label и normalized loopback identity без credentials/query. Dedicated Inspector correlation GUIDs считаются уже псевдонимными и могут сохраняться; backend/account IDs и paths не сохраняются raw, а будущая correlation по внешнему stable ID потребует per-install keyed pseudonymization.
 
 Всегда запрещены: prompt/response/reasoning text, images/audio, embeddings, tool arguments/results, user code, authorization/cookie values, full request/response/error bodies, raw query strings, arbitrary headers, stack traces с local paths и unsanitized exception messages.
 
@@ -165,7 +165,7 @@ Release configuration не отправляет telemetry, history или settin
 | Diagnostic logs | Structured safe logger | Size-bounded rolling files under `%LOCALAPPDATA%\LLM Inspector\logs`, default retention 7 days |
 | User-created snapshot | `LlmInspector.Diagnostics` | User-selected local path; not auto-uploaded and not silently indexed |
 
-Текущий EPIC-08 schema v1 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples` и `schema_migrations`. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
+Текущий EPIC-08 schema v2 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples` и `schema_migrations`. Forward-only transaction migration v2 добавляет к request только pseudonymous turn ID/sequence и enum model-load disposition; v1 rows сохраняются с `Unavailable`. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
 
 SQLite rules:
 
@@ -200,9 +200,9 @@ Analytics группирует trends по UTC day. Arithmetic mean и median с
 
 Elapsed time вычисляется monotonic clock как `calculated`. Progress percentage принимает только typed exact backend signal `0..100`; при отсутствии такого signal UI показывает `unavailable` без percentage. Bounded linear ETA estimator использует до четырёх samples и выдаёт `estimated` только после минимум трёх strictly increasing samples одного source со span не меньше `5` percentage points; regression или source-version change сбрасывает estimator evidence. Terminal request не показывает ETA. Tracker хранит active set и только последний terminal snapshot в volatile memory; UI получает immutable snapshot каждые `250 ms`, а его failure не участвует в request relay.
 
-Latest-request projection использует versioned OpenAI Chat Completions fixture v2: input/output/cached/reasoning token counts принимаются только как non-negative whole exact values; llama.cpp `cache_n`, `prompt_per_second` и `predicted_per_second` одновременно сохраняют native metric и получают common mapping с backend provenance. Current context usage равен exact `prompt_tokens`; limit/history/tools и load/queue остаются typed `unavailable`, пока adapter не получает совместимый exact source. Streaming TTFT — `calculated` monotonic interval до первого непустого `choices[].delta.content`; role-only, tool-only и non-streaming response не выдают TTFB за TTFT. Total duration — monotonic calculated metric для каждого terminal observation. Non-allowlisted string values, включая response и reasoning content, parser не декодирует в managed telemetry strings.
+Latest-request projection использует versioned OpenAI Chat Completions fixture v2 и LM Studio native fixture v1: input/output/cached/reasoning token counts принимаются только как non-negative whole exact values; llama.cpp `cache_n`, `prompt_per_second` и `predicted_per_second` одновременно сохраняют native metric и получают common mapping с backend provenance. Current context usage равен exact input/prompt token count; limit/history/tools и queue остаются typed `unavailable`, пока adapter не получает совместимый exact source. LM Studio native complete terminal `stats` без load signal подтверждает warm request с exact zero load, а optional `model_load_time_seconds` или completed `model_load.end.load_time_seconds` подтверждает cold load; started, но незавершённый lifecycle остаётся `unavailable`. Streaming TTFT — `calculated` monotonic interval до первого непустого OpenAI `choices[].delta.content` или LM Studio `message.delta.content`; role/reasoning/tool-only и non-streaming response не выдают TTFB за TTFT. Total duration — monotonic calculated metric для каждого terminal observation. Non-allowlisted string values, включая response и reasoning content, parser не декодирует в managed telemetry strings.
 
-Correlation использует generated request ID, connection metadata и exact protocol IDs. Time proximity само по себе не доказывает session/tool/process association; ambiguous membership получает `unavailable`.
+Cross-turn correlation является explicit opt-in: client передаёт полный triplet Inspector-reserved `session ID`, `turn ID`, `turn sequence`; IDs должны быть non-empty GUID в canonical 32-hex format, sequence — положительным. Gateway удаляет эти headers до backend, хранит не более `1024` session states и считает signed context delta только между соседними sequence одной session при exact token count. First turn, duplicate, gap, out-of-order, incomplete или malformed metadata дают `unavailable`. Time proximity и connection reuse не используются как доказательство.
 
 ## 10. Backend capability matrix
 
@@ -213,12 +213,12 @@ Correlation использует generated request ID, connection metadata и ex
 | OpenAI Chat Completions | `/v1/chat/completions` documented | `/v1/chat/completions` documented; project предупреждает, что full OpenAI compatibility не гарантируется | `/v1/chat/completions` documented | Unknown field проходит transparently; adapter parses only tested subset |
 | Non-streaming / streaming | Оба documented | Оба documented | Оба documented | Total duration `calculated`; TTFT `calculated` только по first non-empty streaming content delta, иначе `unavailable`; event order contract-tested |
 | Tool calls | Documented input support; model dependent | Требует `--jinja`/compatible chat template; parallel calls model/template dependent | Documented; streamed name/arguments fragmented across chunks | Persist tool name/count/status/timing only; arguments/results never persist |
-| Token usage | `stream_options.include_usage` accepted; native `/api/chat` exposes token counters | Standard `usage` plus backend `timings` documented | OpenAI flow must be established by versioned fixtures; richer native APIs expose stats | Exact only when present and semantics mapped; otherwise unavailable, not retokenized silently |
-| Prompt/generation timing | Native `/api/chat` has prompt/eval durations, but initial OpenAI path cannot assume them | Response `timings` exposes prompt/prediction counts/rates | Native REST v1 events/stats expose TTFT/rate, but OpenAI path cannot assume them | llama.cpp fixture maps exact prompt/generation rates; streaming TTFT is calculated; load/queue stay unavailable without exact source |
+| Token usage | `stream_options.include_usage` accepted; native `/api/chat` exposes token counters | Standard `usage` plus backend `timings` documented | OpenAI flow плюс explicit native `/api/v1/chat`; native terminal stats expose input/output/reasoning counters | Exact only when present and semantics mapped; otherwise unavailable, not retokenized silently |
+| Prompt/generation timing | Native `/api/chat` has prompt/eval durations, but initial OpenAI path cannot assume them | Response `timings` exposes prompt/prediction counts/rates | Native REST v1 events/stats expose rate, model-load time and message deltas | llama.cpp fixture maps exact prompt/generation rates; LM Studio native maps exact generation rate/load and calculated streaming TTFT; queue stays unavailable without exact source |
 | Stage/progress | OpenAI flow has no guaranteed load/queue percentages | Optional `/metrics` is aggregate and enabled only by `--metrics`; not per-request proof | Native v1 has load/prompt/tool events; OpenAI flow has less detail | Stage from exact event where available; otherwise protocol-observed stage without percentage |
 | Optional probes | Read-only capability/version probes only; no duplicate generation | `/metrics` only when explicitly enabled; aggregate provenance | Native read-only capability/version endpoints only | Probe failure never blocks request and never upgrades per-request attribution |
 
-Adapters не переключают client с OpenAI-compatible protocol на native generation API и не посылают duplicate prompt ради metrics. Native endpoints используются только для read-only capabilities/health или когда будущая explicit protocol Goal добавит их как separate supported flow.
+Adapters не переключают client с OpenAI-compatible protocol на native generation API и не посылают duplicate prompt ради metrics. LM Studio `/api/v1/chat` является отдельным explicit supported flow: его выбирает сам client, а gateway только relays один исходный request. Другие native generation endpoints остаются вне текущего scope.
 
 ## 11. Resource collectors
 
@@ -359,6 +359,6 @@ Production signing identity and distribution channel remain external gates: Micr
 - [.NET publishing](https://learn.microsoft.com/en-us/dotnet/core/deploying/) — self-contained and RID-specific output.
 - [MSIX signing](https://learn.microsoft.com/en-us/windows/msix/package/signing-package-overview) and [Windows distribution paths](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/choose-distribution-path) — signature/trust/timestamp and distribution trade-offs.
 - [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) and [native chat fields](https://docs.ollama.com/api/chat) — streaming/tools/usage request support and native timing counters.
-- [OpenAI Chat Completions API reference](https://developers.openai.com/api/reference/resources/chat) — canonical `usage`, streaming `choices[].delta.content` и technical token-detail semantics для compatible wire contract.
+- [OpenAI Chat Completions API reference](https://developers.openai.com/api/reference/cli/resources/chat/subresources/completions) — canonical `usage`, streaming `choices[].delta.content` и technical token-detail semantics для compatible wire contract.
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) — OpenAI-compatible flow, tools, timings and optional metrics.
-- [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls and richer native stage/stat signals.
+- [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools), [native chat](https://lmstudio.ai/docs/developer/rest/chat) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls, terminal stats and exact model-load lifecycle signals.

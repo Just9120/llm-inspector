@@ -393,30 +393,30 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15` и имеет terminal CI Evidence. EPIC-03 выполняет `E03-AC01..13`: deterministic abort handshake прошёл follow-up PR CI `33694308639`, а exact merge commit `ba63d0b219e61527d3d81994638dee39a11c14bf` прошёл `main` CI `33694559218`. EPIC-04 выполняет `E04-AC01..02`, `E04-AC04..11`; `E04-AC03` и `E04-AC12` не кредитуются без trustworthy cross-turn session/model-load correlation. EPIC-08 локально выполняет `E08-AC01..18` через privacy-safe SQLite schema, typed queries/UI, documented aggregates/comparisons и tested retention/clear flow. Эти же real-schema/negative canary tests выполняют `E09-AC06`, поэтому EPIC-09 локально достигает `14/14`; новый CI Evidence для EPIC-08/E09-AC06 отсутствует до PR. Другие product AC не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15`, EPIC-03 — `E03-AC01..13`, а EPIC-08/09 были подтверждены terminal PR #8 и exact-merge `main` CI. Текущий fix-кандидат локально доводит EPIC-04 до `E04-AC01..12`: explicit pseudonymous session/turn headers дают fail-closed adjacent context delta, а отдельный LM Studio `/api/v1/chat` adapter даёт versioned cold/warm evidence из terminal stats/model-load events. Изменения затрагивают SQLite/privacy surfaces EPIC-08/09, поэтому их прежнее terminal Evidence сохраняется как baseline, но CI exact revision текущего fix ещё отсутствует. Другие product AC не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-04 | 🟦 IN PROGRESS | 10/12 | 83.3% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-04 | 🟦 IN PROGRESS | 12/12 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | — | N/A | N/A |
+| EPIC-08 | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-09 | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **70/139** | **50.4%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **72/139** | **51.8%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **70/164** | **42.7%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **72/164** | **43.9%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
 
@@ -436,16 +436,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03`.
+- Last recalculation: `2026-09-03T05:32:19Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 PR run `33696539694` and exact-merge `main` run `33696722298` completed successfully. Repository rulesets/branch protection отсутствовали на последней verified settings check.
-- Code/tests/runtime: loopback streaming gateway, versioned backend adapters, privacy-safe observation contract, live/token/context/timing UI и EPIC-08 local SQLite history/analytics/retention candidate. Full local pipeline passed with `112/112` tests, zero skips and zero build warnings/errors.
-- EPIC-09 completion: `14/14` locally; `E09-AC06` has CODE/TEST Evidence from the real SQLite schema and runtime canary corpus, while CI remains partial until the EPIC-08 PR.
-- Initial release readiness: `70/139 = 50.4%`.
-- Full agreed roadmap readiness: `70/164 = 42.7%`.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298` and EPIC-08 PR/main runs `33702613336`/`33702791561` completed successfully. Exact-revision CI for the active fix branch is pending.
+- Code/tests/runtime: loopback streaming gateway, versioned backend adapters including LM Studio native v1, privacy-safe observation/correlation contract, live/token/context/timing UI и SQLite schema v2 history/analytics/retention. Exact SDK `10.0.400` full local pipeline passed: locked normal/RID restores, format, Release build with zero warnings/errors, `125/125` tests with zero skips, clean self-contained `win-x64` publish and smoke `exit 0`.
+- EPIC-09 completion: `14/14`; the active fix updates the real SQLite schema and disclosure/privacy corpus, so exact-revision CI is pending.
+- Initial release readiness: `72/139 = 51.8%`.
+- Full agreed roadmap readiness: `72/164 = 43.9%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-004 IN_PROGRESS`; `70/72` selected AC complete locally. EPIC-04 was merged as an honest `10/12` partial increment in PR [#7](https://github.com/Just9120/llm-inspector/pull/7): merge `b29d80a788942938ad4246ab4cd358e7b41a71a8`, PR/main CI `33696539694`/`33696722298`. EPIC-08 branch `codex/epic-08-history-analytics-retention` from that verified base passes the full local pipeline; PR/CI remain pending. The remaining denominator is exactly `E04-AC03` and `E04-AC12`.
+- Active approved Goal: `GOAL-004 IN_PROGRESS`; `72/72` selected product AC complete locally. EPIC-04 was merged as an honest `10/12` partial increment in PR [#7](https://github.com/Just9120/llm-inspector/pull/7); the active bounded fix implements `E04-AC03`/`E04-AC12` on branch `codex/fix-epic-04-correlation-lmstudio` from verified base `5757652943753e549ef85f81308c0fc0c6d83686`. Full local validation is green; Goal delivery remains open until fix PR CI, merge and exact-main CI.

@@ -1,0 +1,15 @@
+event: chat.start
+data: {"type":"chat.start","model_instance_id":"lmstudio-community/qwen2.5"}
+
+event: model_load.start
+data: {"type":"model_load.start","model_instance_id":"lmstudio-community/qwen2.5"}
+
+event: model_load.end
+data: {"type":"model_load.end","model_instance_id":"lmstudio-community/qwen2.5","load_time_seconds":3.25}
+
+event: message.delta
+data: {"type":"message.delta","content":"synthetic"}
+
+event: chat.end
+data: {"type":"chat.end","result":{"model_instance_id":"lmstudio-community/qwen2.5","output":[{"type":"message","content":"FORBIDDEN_STREAM_CONTENT_SENTINEL"}],"stats":{"input_tokens":329,"total_output_tokens":268,"reasoning_output_tokens":5,"tokens_per_second":43.73,"time_to_first_token_seconds":0.781},"response_id":"resp_synthetic_stream"}}
+

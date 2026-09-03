@@ -16,6 +16,15 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.Outcome),
         nameof(ProxyObservation.Client),
         nameof(ProxyObservation.BackendTelemetry),
+        nameof(ProxyObservation.Correlation),
+        nameof(ProxyObservation.ContextChangeTokens),
+    ];
+
+    private static readonly string[] AllowedCorrelationProperties =
+    [
+        nameof(RequestCorrelation.SessionId),
+        nameof(RequestCorrelation.TurnId),
+        nameof(RequestCorrelation.TurnSequence),
     ];
 
     [TestMethod]
@@ -34,6 +43,16 @@ public sealed class PrivacyContractTests
         Assert.IsFalse(
             typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)),
             "A free-form string would allow request or response content to enter the observation contract.");
+
+        string[] correlationProperties = typeof(RequestCorrelation)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEqual(
+            AllowedCorrelationProperties.Order(StringComparer.Ordinal).ToArray(),
+            correlationProperties);
+        Assert.IsFalse(typeof(RequestCorrelation).GetProperties().Any(property => property.PropertyType == typeof(string)));
 
         string[] telemetryPropertyNames = typeof(BackendResponseTelemetry)
             .GetProperties()
@@ -59,6 +78,7 @@ public sealed class PrivacyContractTests
             "Key",
             "Metric",
             "Model",
+            "ModelLoadDisposition",
             "ModelLoadTime",
             "NativeName",
             "PromptTokens",
@@ -78,13 +98,19 @@ public sealed class PrivacyContractTests
     [TestMethod]
     public void TechnicalDataDisclosureListsFieldsAndRetention()
     {
-        Assert.HasCount(1, TechnicalDataDisclosure.CurrentCategories);
+        Assert.HasCount(2, TechnicalDataDisclosure.CurrentCategories);
 
-        TechnicalDataCategory category = TechnicalDataDisclosure.CurrentCategories[0];
-        Assert.IsFalse(string.IsNullOrWhiteSpace(category.Name));
-        Assert.IsFalse(string.IsNullOrWhiteSpace(category.Fields));
-        StringAssert.Contains(category.Retention, "Process lifetime", StringComparison.Ordinal);
-        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "none", StringComparison.OrdinalIgnoreCase);
+        foreach (TechnicalDataCategory category in TechnicalDataDisclosure.CurrentCategories)
+        {
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Name));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Fields));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Retention));
+        }
+
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[0].Retention, "Process lifetime", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[1].Retention, "30 days (default)", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "%LOCALAPPDATA%", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "30 days", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.ForbiddenContentStatement, "never retained", StringComparison.Ordinal);
     }
 }

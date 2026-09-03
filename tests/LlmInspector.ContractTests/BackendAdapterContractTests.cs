@@ -215,6 +215,74 @@ public sealed class BackendAdapterContractTests
         }
     }
 
+    [TestMethod]
+    [DataRow("cold-nonstreaming.json", ModelLoadDisposition.Cold, 2656, 646, 586)]
+    [DataRow("warm-nonstreaming.json", ModelLoadDisposition.Warm, 0, 700, 40)]
+    public void LmStudioNativeNonStreamingFixturesExposeExactColdWarmEvidence(
+        string fixtureName,
+        ModelLoadDisposition expectedDisposition,
+        double expectedLoadMilliseconds,
+        int expectedInput,
+        int expectedOutput)
+    {
+        BackendResponseTelemetry telemetry = ParseLmStudioNativeFixture(fixtureName, "application/json");
+
+        Assert.AreEqual(expectedDisposition, telemetry.ModelLoadDisposition);
+        Assert.AreEqual((decimal)expectedLoadMilliseconds, telemetry.ModelLoadTime.Value);
+        Assert.AreEqual(MetricQuality.Exact, telemetry.ModelLoadTime.Quality);
+        Assert.AreEqual(MetricSource.BackendExtension, telemetry.ModelLoadTime.Source);
+        Assert.AreEqual(expectedInput, telemetry.PromptTokens.Value);
+        Assert.AreEqual(expectedOutput, telemetry.CompletionTokens.Value);
+        Assert.AreEqual(expectedInput + expectedOutput, telemetry.TotalTokens.Value);
+        Assert.AreEqual(MetricQuality.Calculated, telemetry.TotalTokens.Quality);
+        Assert.AreEqual("lmstudio-community/qwen2.5", telemetry.Model?.Value);
+        Assert.DoesNotContain(
+            "FORBIDDEN_NATIVE_CONTENT_SENTINEL",
+            System.Text.Json.JsonSerializer.Serialize(telemetry),
+            StringComparison.Ordinal);
+    }
+
+    [TestMethod]
+    [DataRow("cold-streaming.sse", ModelLoadDisposition.Cold, 3250, 329, 268)]
+    [DataRow("warm-streaming.sse", ModelLoadDisposition.Warm, 0, 350, 20)]
+    public void LmStudioNativeStreamingFixturesExposeExactColdWarmEvidenceAcrossFragments(
+        string fixtureName,
+        ModelLoadDisposition expectedDisposition,
+        double expectedLoadMilliseconds,
+        int expectedInput,
+        int expectedOutput)
+    {
+        BackendResponseTelemetry telemetry = ParseLmStudioNativeFixture(fixtureName, "text/event-stream");
+
+        Assert.AreEqual(expectedDisposition, telemetry.ModelLoadDisposition);
+        Assert.AreEqual((decimal)expectedLoadMilliseconds, telemetry.ModelLoadTime.Value);
+        Assert.AreEqual(expectedInput, telemetry.PromptTokens.Value);
+        Assert.AreEqual(expectedOutput, telemetry.CompletionTokens.Value);
+        Assert.AreEqual(MetricQuality.Exact, telemetry.CompletionTokensPerSecond.Quality);
+        Assert.DoesNotContain(
+            "FORBIDDEN_STREAM_CONTENT_SENTINEL",
+            System.Text.Json.JsonSerializer.Serialize(telemetry),
+            StringComparison.Ordinal);
+    }
+
+    [TestMethod]
+    public void LmStudioNativeStreamingSessionSignalsOnlyMessageContentAndFailsClosedWithoutTerminalStats()
+    {
+        IBackendTelemetrySession session = BackendTelemetryAdapters
+            .CreateLmStudioNative()
+            .CreateSession("text/event-stream");
+        session.Observe("event: reasoning.delta\ndata: {\"type\":\"reasoning.delta\",\"content\":\"opaque\"}\n\n"u8);
+        Assert.IsFalse(session.HasObservedOutputContent);
+        session.Observe("event: message.delta\ndata: {\"type\":\"message.delta\",\"content\":\"synthetic\"}\n\n"u8);
+        Assert.IsTrue(session.HasObservedOutputContent);
+
+        BackendResponseTelemetry telemetry = session.Complete();
+
+        Assert.AreEqual(ModelLoadDisposition.Unavailable, telemetry.ModelLoadDisposition);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.ModelLoadTime.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, telemetry.PromptTokens.Quality);
+    }
+
     private static BackendResponseTelemetry ParseFixture(
         BackendKind backend,
         string fixtureName,
@@ -232,6 +300,27 @@ public sealed class BackendAdapterContractTests
         while (offset < fixture.Length)
         {
             int length = Math.Min(1 + (offset % 23), fixture.Length - offset);
+            session.Observe(fixture.AsSpan(offset, length));
+            offset += length;
+        }
+
+        return session.Complete();
+    }
+
+    private static BackendResponseTelemetry ParseLmStudioNativeFixture(string fixtureName, string mediaType)
+    {
+        byte[] fixture = File.ReadAllBytes(Path.Combine(
+            AppContext.BaseDirectory,
+            "Fixtures",
+            "epic04",
+            "lm-studio-native-v1",
+            fixtureName));
+        IBackendTelemetrySession session = BackendTelemetryAdapters.CreateLmStudioNative().CreateSession(mediaType);
+
+        int offset = 0;
+        while (offset < fixture.Length)
+        {
+            int length = Math.Min(1 + (offset % 19), fixture.Length - offset);
             session.Observe(fixture.AsSpan(offset, length));
             offset += length;
         }

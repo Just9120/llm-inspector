@@ -11,6 +11,16 @@
 - `2026-09-02T23:02:05Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 had local code/test Evidence and pending CI. Archived after terminal EPIC-03 delivery Evidence.
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
+- `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-004 / EPIC-08 — History, analytics и retention
+
+- **Product outcome:** `READY 18/18`; its real-schema/runtime-canary Evidence also completed `E09-AC06`, making EPIC-09 `READY 14/14`.
+- **Product PR:** [#8](https://github.com/Just9120/llm-inspector/pull/8), head `9d4651f883a4fac843510ac378346da39214932f`.
+- **Local Evidence:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0 warnings / 0 errors`, `112/112` tests, self-contained `win-x64` publish and smoke.
+- **Terminal CI:** PR run `33702613336` success; merged as `5757652943753e549ef85f81308c0fc0c6d83686`; exact-main run `33702791561` success with all required steps.
+- **Cleanup:** merged branch had zero unique commits and was removed locally/remotely; local `main` was fast-forwarded before the EPIC-04 fix branch.
+- **Metadata limitation:** repository has no approved post-merge writer; terminal Evidence was recorded in the merged PR comment and recovered into the next substantive fix PR.
 
 ## GOAL-004 / EPIC-03 — Live state, quality и deterministic abort fixture
 

@@ -4,23 +4,23 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, merged privacy/proxy foundation, готовые `EPIC-02`/`EPIC-03`, partial `EPIC-04` и локально завершённый кандидат `EPIC-08`:
+Проект имеет repository/CI foundation, merged core epics и локально завершённый `EPIC-04` fix-кандидат, ожидающий PR CI:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
-- proxy поддерживает transparent `GET /v1/models` и non-streaming/streaming/tool-calling `POST /v1/chat/completions`, не следует redirects и propagates cancellation;
-- bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details и документированные llama.cpp `timings`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
+- proxy поддерживает transparent `GET /v1/models`, non-streaming/streaming/tool-calling `POST /v1/chat/completions` и, только при выбранном LM Studio, native `POST /api/v1/chat`; он не следует redirects и propagates cancellation;
+- bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details, документированные llama.cpp `timings` и LM Studio native `stats`/`model_load.*`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
 - UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, а также latest request tokens/context/timings с quality state; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
-- SQLite WAL в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, operation detail, daily aggregates, comparisons, retention и explicit clear preview/confirmation;
+- SQLite WAL schema v2 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, operation detail, daily aggregates, cold/warm breakdown, comparisons, retention и explicit clear preview/confirmation;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- для EPIC-09 core, EPIC-02, EPIC-03 и EPIC-04 подтверждены PR/main CI; EPIC-04 выполняет `10/12`, а `E04-AC03`/`E04-AC12` ждут trustworthy session/model-load evidence; EPIC-08 локально выполняет `18/18`, но не получает `READY` до PR/main CI;
+- EPIC-02/03 и ранее доставленные части EPIC-04/08/09 имеют terminal PR/main CI; текущий fix локально доводит EPIC-04 до `12/12`, а затронутые EPIC-04/08/09 ожидают CI exact revision этого PR;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая локальная readiness по независимо проверенным atomic AC: `70/139 = 50.4%` initial release и `70/164 = 42.7%` full roadmap. `EPIC-02` имеет `READY 15/15`, `EPIC-03` — `READY 13/13`; EPIC-04 остаётся `10/12`; EPIC-08 выполняет `18/18` локально, а его negative SQLite schema/canary tests закрывают последний product AC EPIC-09. CI Evidence нового инкремента появится только после PR.
+Текущая локальная readiness по независимо проверенным atomic AC: `72/139 = 51.8%` initial release и `72/164 = 43.9%` full roadmap. Выбранная `GOAL-004` достигает `72/72` product AC локально; terminal CI Evidence нового fix-инкремента появится только после PR.
 
 ## Быстрый старт
 
@@ -59,6 +59,10 @@ Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp
 | Open WebUI | `http://127.0.0.1:5117/clients/open-webui/v1` |
 
 Это explicit endpoint attribution, а не process guessing: запросы через generic URL всегда остаются `Generic/Unknown`. Все base paths поддерживают `GET /models` и `POST /chat/completions`; исходный backend видит стандартные `/v1/models` и `/v1/chat/completions`. Возможность штатно менять base URL подтверждена документацией [OpenCode](https://dev.opencode.ai/docs/providers), [Hermes](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md), [Cline](https://github.com/cline/cline/blob/main/apps/vscode/webview-ui/src/components/settings/providers/OpenAICompatible.tsx) и [Open WebUI](https://github.com/open-webui/open-webui/blob/main/backend/open_webui/routers/openai.py).
+
+При `--backend=lm-studio` gateway дополнительно открывает generic `http://127.0.0.1:5117/api/v1/chat` и прозрачно передаёт одноимённый native LM Studio flow. Полные terminal `stats` и optional `model_load_time_seconds` либо streaming `model_load.start/end` дают exact cold/warm evidence; неполный или противоречивый lifecycle остаётся `unavailable`.
+
+Опциональная cross-turn correlation включается только полным набором Inspector-reserved headers: `X-LLM-Inspector-Session-Id`, `X-LLM-Inspector-Turn-Id` (оба — non-empty GUID в 32-hex `N` format) и положительный `X-LLM-Inspector-Turn-Sequence`. Headers удаляются до forwarding к backend. Изменение context size рассчитывается только для соседних sequence одной session; первый, duplicate, gap, out-of-order или неполный набор отображается как `unavailable`, без time-based guessing.
 
 Техническое наблюдение сохраняется локально с default retention `30 days`; доступны точные варианты `7 days`, `30 days`, `90 days`, `indefinite`. При старте и после изменения setting применяется bounded oldest-first cleanup. Raw request/response/reasoning/tool content не сохраняется, не индексируется и не логируется; negative runtime canary test проверяет основной DB/WAL surface.
 
@@ -102,4 +106,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через [PR #3](https://github.com/Just9120/llm-inspector/pull/3); EPIC-02 — через [PR #4](https://github.com/Just9120/llm-inspector/pull/4), а его CI stabilization — через [PR #5](https://github.com/Just9120/llm-inspector/pull/5) в verified commit `e1e1b735116b94d73fa87559da8759c5f58d243c`.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; partial EPIC-04 — через PR #7; EPIC-08 — через PR #8 в verified `main` commit `5757652943753e549ef85f81308c0fc0c6d83686`.

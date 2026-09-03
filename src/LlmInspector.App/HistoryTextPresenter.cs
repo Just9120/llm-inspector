@@ -26,7 +26,10 @@ public static class HistoryTextPresenter
                 .Append(" | status=").Append(request.Outcome)
                 .Append(" | error=").Append(request.ErrorType)
                 .Append(" | session=").Append(FullId(request.SessionId))
+                .Append(" | turn=").Append(FullId(request.CorrelatedTurnId))
+                .Append('/').Append(request.CorrelatedTurnSequence?.ToString(CultureInfo.InvariantCulture) ?? "unavailable")
                 .Append(" | operation=").Append(FullId(request.OperationId))
+                .Append(" | model-load=").Append(request.ModelLoadDisposition)
                 .AppendLine();
         }
 
@@ -82,6 +85,13 @@ public static class HistoryTextPresenter
         }
 
         StringBuilder text = new();
+        text.Append("Model load classification | cold=")
+            .Append(analytics.ModelLoads.ColdRequests.ToString(CultureInfo.InvariantCulture))
+            .Append(" | warm=")
+            .Append(analytics.ModelLoads.WarmRequests.ToString(CultureInfo.InvariantCulture))
+            .Append(" | unavailable=")
+            .Append(analytics.ModelLoads.UnavailableRequests.ToString(CultureInfo.InvariantCulture))
+            .AppendLine();
         foreach (AnalyticsTrendPoint point in analytics.Trend)
         {
             text.AppendLine(point.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
