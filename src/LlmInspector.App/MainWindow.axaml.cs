@@ -18,9 +18,11 @@ public partial class MainWindow : Window
     private readonly BackgroundSettingsService? _backgroundSettings;
     private readonly BackgroundLifetimeController? _backgroundLifetime;
     private readonly Action<MonitoringPerformanceProfile>? _applyMonitoringProfile;
+    private readonly IReadOnlyDictionary<BackendKind, BackendLifecycleManager> _lifecycleManagers;
     private readonly DiagnosticSnapshotService? _snapshotService;
     private readonly AnalyticsExportService? _analyticsExportService;
     private readonly DispatcherTimer? _liveRefreshTimer;
+    private readonly DispatcherTimer? _lifecycleRefreshTimer;
     private HistoryClearPreview? _clearPreview;
     private DiagnosticSnapshotArtifact? _snapshotPreview;
     private AnalyticsExportArtifact? _analyticsExportPreview;
@@ -39,7 +41,8 @@ public partial class MainWindow : Window
         string? historyState = null,
         BackgroundSettingsService? backgroundSettings = null,
         BackgroundLifetimeController? backgroundLifetime = null,
-        Action<MonitoringPerformanceProfile>? applyMonitoringProfile = null)
+        Action<MonitoringPerformanceProfile>? applyMonitoringProfile = null,
+        IReadOnlyList<BackendLifecycleManager>? lifecycleManagers = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
@@ -51,6 +54,8 @@ public partial class MainWindow : Window
         _backgroundSettings = backgroundSettings;
         _backgroundLifetime = backgroundLifetime;
         _applyMonitoringProfile = applyMonitoringProfile;
+        _lifecycleManagers = (lifecycleManagers ?? [])
+            .ToDictionary(manager => manager.Profile.Backend);
         _snapshotService = history is null ? null : new DiagnosticSnapshotService(history);
         _analyticsExportService = history is null ? null : new AnalyticsExportService(history);
 
@@ -70,6 +75,7 @@ public partial class MainWindow : Window
         ConfigureSnapshotControls();
         ConfigureAnalyticsExportControls();
         ConfigureBackgroundControls();
+        ConfigureLifecycleControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
         RefreshResources();
@@ -90,6 +96,14 @@ public partial class MainWindow : Window
             };
             _liveRefreshTimer.Start();
             Closed += (_, _) => _liveRefreshTimer.Stop();
+        }
+
+        if (_lifecycleManagers.Count > 0)
+        {
+            _lifecycleRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _lifecycleRefreshTimer.Tick += async (_, _) => await RefreshLifecycleAsync();
+            _lifecycleRefreshTimer.Start();
+            Closed += (_, _) => _lifecycleRefreshTimer.Stop();
         }
 
         Opened += OnOpened;
@@ -120,6 +134,224 @@ public partial class MainWindow : Window
     {
         _liveRefreshTimer?.Stop();
         Hide();
+    }
+
+    private void ConfigureLifecycleControls()
+    {
+        bool enabled = _lifecycleManagers.Count > 0;
+        LifecycleBackendCombo.IsEnabled = enabled;
+        LifecycleExecutablePathText.IsEnabled = enabled;
+        DiscoverBackendButton.IsEnabled = enabled;
+        ConfirmLifecycleTargetCheckBox.IsEnabled = false;
+        SetLifecycleActionAvailability(false);
+        if (!enabled)
+        {
+            LifecycleStateText.Text = "Lifecycle management недоступен на этой платформе.";
+            return;
+        }
+
+        LifecycleBackendCombo.ItemsSource = _lifecycleManagers.Values
+            .Select(manager => new BackendLifecycleUiChoice(manager.Profile.Backend, manager.Profile.DisplayName))
+            .ToArray();
+        _ = Enum.TryParse(_runtimeStatus.BackendType, out BackendKind configuredBackend);
+        LifecycleBackendCombo.SelectedItem = LifecycleBackendCombo.ItemsSource
+            .Cast<BackendLifecycleUiChoice>()
+            .FirstOrDefault(choice => choice.Backend == configuredBackend) ??
+            LifecycleBackendCombo.ItemsSource.Cast<BackendLifecycleUiChoice>().First();
+        LifecycleBackendCombo.SelectionChanged += (_, _) => SelectLifecycleBackend();
+        LifecycleParameterCombo.SelectionChanged += (_, _) => SelectLifecycleParameter();
+        DiscoverBackendButton.Click += async (_, _) => await DiscoverLifecycleBackendAsync();
+        ConfirmLifecycleTargetCheckBox.Click += (_, _) => ConfirmLifecycleTarget();
+        StartBackendButton.Click += async (_, _) => await RunLifecycleOperationAsync(manager => manager.StartAsync());
+        StopBackendButton.Click += async (_, _) => await RunLifecycleOperationAsync(manager => manager.StopAsync());
+        RestartBackendButton.Click += async (_, _) => await RunLifecycleOperationAsync(manager => manager.RestartAsync());
+        LoadLifecycleModelButton.Click += async (_, _) =>
+            await RunLifecycleOperationAsync(manager => manager.LoadModelAsync(LifecycleModelText.Text ?? string.Empty));
+        ApplyLifecycleParameterButton.Click += (_, _) => ApplyLifecycleParameter();
+        ResetLifecycleParametersButton.Click += (_, _) => ResetLifecycleParameters();
+        SelectLifecycleBackend();
+    }
+
+    private BackendLifecycleManager? SelectedLifecycleManager =>
+        LifecycleBackendCombo.SelectedItem is BackendLifecycleUiChoice choice &&
+        _lifecycleManagers.TryGetValue(choice.Backend, out BackendLifecycleManager? manager)
+            ? manager
+            : null;
+
+    private void SelectLifecycleBackend()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null)
+        {
+            return;
+        }
+
+        LifecycleParameterCombo.ItemsSource = manager.Profile.Parameters
+            .Select(parameter => new BackendLifecycleParameterUiChoice(parameter))
+            .ToArray();
+        LifecycleParameterCombo.SelectedIndex = manager.Profile.Parameters.Count > 0 ? 0 : -1;
+        ConfirmLifecycleTargetCheckBox.IsChecked = false;
+        UpdateLifecycleSurface(manager.Snapshot);
+        SelectLifecycleParameter();
+    }
+
+    private async Task DiscoverLifecycleBackendAsync()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null)
+        {
+            return;
+        }
+
+        SetLifecycleActionAvailability(false);
+        BackendLifecycleResult result = await manager.DiscoverAsync(LifecycleExecutablePathText.Text);
+        ConfirmLifecycleTargetCheckBox.IsChecked = false;
+        ConfirmLifecycleTargetCheckBox.IsEnabled = result.Succeeded;
+        UpdateLifecycleSurface(result.Snapshot);
+    }
+
+    private void ConfirmLifecycleTarget()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager?.Snapshot.Target is not BackendLifecycleTarget target ||
+            ConfirmLifecycleTargetCheckBox.IsChecked != true)
+        {
+            SetLifecycleActionAvailability(false);
+            return;
+        }
+
+        BackendLifecycleResult result = manager.ConfirmTarget(target.ConfirmationToken);
+        ConfirmLifecycleTargetCheckBox.IsChecked = result.Succeeded;
+        UpdateLifecycleSurface(result.Snapshot);
+    }
+
+    private void ApplyLifecycleParameter()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null || LifecycleParameterCombo.SelectedItem is not BackendLifecycleParameterUiChoice choice)
+        {
+            return;
+        }
+
+        BackendLifecycleResult result = manager.SetParameter(choice.Definition.Key, LifecycleParameterValueText.Text);
+        if (result.Snapshot.State == BackendLifecycleState.TargetPendingConfirmation)
+        {
+            ConfirmLifecycleTargetCheckBox.IsChecked = false;
+            ConfirmLifecycleTargetCheckBox.IsEnabled = true;
+        }
+
+        UpdateLifecycleSurface(result.Snapshot);
+        SelectLifecycleParameter();
+    }
+
+    private void ResetLifecycleParameters()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null)
+        {
+            return;
+        }
+
+        BackendLifecycleResult result = manager.ResetParameters();
+        UpdateLifecycleSurface(result.Snapshot);
+        SelectLifecycleParameter();
+    }
+
+    private void SelectLifecycleParameter()
+    {
+        if (SelectedLifecycleManager is not BackendLifecycleManager manager ||
+            LifecycleParameterCombo.SelectedItem is not BackendLifecycleParameterUiChoice choice)
+        {
+            LifecycleParameterHelpText.Text = string.Empty;
+            return;
+        }
+
+        manager.Snapshot.Parameters.TryGetValue(choice.Definition.Key, out string? value);
+        LifecycleParameterValueText.Text = value ?? string.Empty;
+        LifecycleParameterHelpText.Text = choice.Definition.Description +
+            (choice.Definition.DefaultValue is null
+                ? " Native default не переопределён."
+                : $" Backend default: {choice.Definition.DefaultValue}.");
+    }
+
+    private async Task RunLifecycleOperationAsync(
+        Func<BackendLifecycleManager, ValueTask<BackendLifecycleResult>> operation)
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null || ConfirmLifecycleTargetCheckBox.IsChecked != true)
+        {
+            LifecycleStateText.Text = "Сначала подтвердите exact target.";
+            return;
+        }
+
+        SetLifecycleActionAvailability(false);
+        try
+        {
+            BackendLifecycleResult result = await operation(manager);
+            UpdateLifecycleSurface(result.Snapshot);
+        }
+        catch (Exception exception) when (exception is
+            IOException or InvalidOperationException or UnauthorizedAccessException or
+            System.ComponentModel.Win32Exception or HttpRequestException or TimeoutException)
+        {
+            LifecycleStateText.Text = $"Операция не выполнена безопасно ({exception.GetType().Name}).";
+        }
+        finally
+        {
+            SetLifecycleActionAvailability(ConfirmLifecycleTargetCheckBox.IsChecked == true);
+        }
+    }
+
+    private async Task RefreshLifecycleAsync()
+    {
+        BackendLifecycleManager? manager = SelectedLifecycleManager;
+        if (manager is null)
+        {
+            return;
+        }
+
+        BackendLifecycleSnapshot snapshot = await manager.RefreshAsync();
+        UpdateLifecycleSurface(snapshot);
+    }
+
+    private void UpdateLifecycleSurface(BackendLifecycleSnapshot snapshot)
+    {
+        LifecycleTargetText.Text = snapshot.Target is null
+            ? "Target: не выбран."
+            : $"Target: {snapshot.Target.ExecutablePath}{Environment.NewLine}" +
+              $"Version: {snapshot.Target.Version}; endpoint: {snapshot.Target.Endpoint}; status: {snapshot.Target.CompatibilityLabel}.";
+        LifecycleStateText.Text = $"State: {snapshot.State}. {snapshot.Message}";
+        if (snapshot.Model is not null)
+        {
+            LifecycleModelText.Text = snapshot.Model;
+        }
+
+        bool confirmed = ConfirmLifecycleTargetCheckBox.IsChecked == true &&
+            snapshot.State != BackendLifecycleState.TargetPendingConfirmation;
+        SetLifecycleActionAvailability(confirmed);
+    }
+
+    private void SetLifecycleActionAvailability(bool enabled)
+    {
+        StartBackendButton.IsEnabled = enabled;
+        StopBackendButton.IsEnabled = enabled;
+        RestartBackendButton.IsEnabled = enabled;
+        LifecycleParameterCombo.IsEnabled = enabled;
+        LifecycleParameterValueText.IsEnabled = enabled;
+        ApplyLifecycleParameterButton.IsEnabled = enabled;
+        ResetLifecycleParametersButton.IsEnabled = enabled;
+        LifecycleModelText.IsEnabled = enabled;
+        LoadLifecycleModelButton.IsEnabled = enabled;
+    }
+
+    private sealed record BackendLifecycleUiChoice(BackendKind Backend, string DisplayName)
+    {
+        public override string ToString() => DisplayName;
+    }
+
+    private sealed record BackendLifecycleParameterUiChoice(BackendParameterDefinition Definition)
+    {
+        public override string ToString() => Definition.DisplayName;
     }
 
     private async void OnOpened(object? sender, EventArgs eventArgs)

@@ -11,7 +11,7 @@ public sealed class ArchitectureDependencyTests
             ["LlmInspector.Domain"] = [],
             ["LlmInspector.Application"] = ["LlmInspector.Domain"],
             ["LlmInspector.Gateway"] = ["LlmInspector.Application", "LlmInspector.Domain"],
-            ["LlmInspector.Adapters"] = ["LlmInspector.Domain"],
+            ["LlmInspector.Adapters"] = ["LlmInspector.Application", "LlmInspector.Domain"],
             ["LlmInspector.Telemetry"] = ["LlmInspector.Application", "LlmInspector.Domain"],
             ["LlmInspector.Storage.Sqlite"] = ["LlmInspector.Application", "LlmInspector.Domain"],
             ["LlmInspector.Resources.Windows"] = ["LlmInspector.Application", "LlmInspector.Domain"],

@@ -29,6 +29,7 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(headings, "Anonymized analytics export");
         CollectionAssert.Contains(headings, "Background and notifications");
         CollectionAssert.Contains(headings, "Производительность мониторинга");
+        CollectionAssert.Contains(headings, "Управление локальным backend");
 
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         string[] namedControls = xaml
@@ -62,6 +63,18 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(namedControls, "CustomSamplingIntervalText");
         CollectionAssert.Contains(namedControls, "ResetPerformanceProfileButton");
         CollectionAssert.Contains(namedControls, "PerformanceProfileStateText");
+        CollectionAssert.Contains(namedControls, "LifecycleBackendCombo");
+        CollectionAssert.Contains(namedControls, "LifecycleExecutablePathText");
+        CollectionAssert.Contains(namedControls, "DiscoverBackendButton");
+        CollectionAssert.Contains(namedControls, "ConfirmLifecycleTargetCheckBox");
+        CollectionAssert.Contains(namedControls, "StartBackendButton");
+        CollectionAssert.Contains(namedControls, "StopBackendButton");
+        CollectionAssert.Contains(namedControls, "RestartBackendButton");
+        CollectionAssert.Contains(namedControls, "LifecycleParameterCombo");
+        CollectionAssert.Contains(namedControls, "ApplyLifecycleParameterButton");
+        CollectionAssert.Contains(namedControls, "ResetLifecycleParametersButton");
+        CollectionAssert.Contains(namedControls, "LifecycleModelText");
+        CollectionAssert.Contains(namedControls, "LoadLifecycleModelButton");
 
         XElement saveSnapshot = xaml.Descendants()
             .Single(element => element.Attribute(x + "Name")?.Value == "SaveSnapshotButton");
