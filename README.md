@@ -15,6 +15,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - Windows background runtime продолжает proxy/history monitoring после скрытия main window, предоставляет native tray, per-user autostart и четыре independently configurable content-free notification events с silent mode и versioned anti-spam policy;
 - локальный `diagnostic-snapshot-v1` создаётся по выбранному UTC range или operation: user сначала просматривает exact allowlist JSON и SHA-256, затем сохраняет тот же preview; upload path отсутствует;
 - локальный `analytics-export-v1` экспортирует выбранный UTC range anonymized technical history и раздельные request/resource aggregates (`n`, mean, median, P95); oversized range отклоняется без неполного export, exact JSON preview обязателен до сохранения и проходит тот же negative content corpus;
+- supported NVIDIA GPUs обнаруживаются списком до 16 distinct devices; live/history показывают device-wide metrics раздельно, а workload-to-device attribution честно остаётся `unavailable` без достоверного source;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
@@ -23,7 +24,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main` `7c5528ec3c33396ce1068162fc0b6961a0dfe553`: `132/139 = 95.0%` initial release и `132/164 = 80.5%` full roadmap. Active BACKLOG-06 candidate выполняет `B06-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `135/164 = 82.3%`; полный local CI-equivalent прошёл `210/210` tests, exact-revision CI остаётся следующим gate. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
+Текущая readiness baseline на merged `main` `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`: `132/139 = 95.0%` initial release и `135/164 = 82.3%` full roadmap. Active BACKLOG-05 candidate выполняет `B05-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `138/164 = 84.1%`; focused Release build, Windows `61/61` и integration `53/53` tests прошли, full local CI-equivalent и exact-revision CI остаются следующими gates. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
 
 ## Быстрый старт
 
@@ -113,4 +114,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16 в verified `main` commit `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. BACKLOG-06 candidate находится в отдельной локальной ветке.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16; BACKLOG-06 — через PR #17 в verified `main` commit `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. BACKLOG-05 candidate находится в отдельной локальной ветке.

@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T10:02:16Z`: initial release `132/139 = 95.0%`, full roadmap `132/164 = 80.5%`; terminal EPIC-12 state before BACKLOG-06. Archived after BACKLOG-06 terminal Evidence and the independent BACKLOG-05 calculation produced a newer current/previous pair.
 - `2026-09-03T09:20:19Z`: initial release `125/139 = 89.9%`, full roadmap `125/164 = 76.2%`; terminal EPIC-11 state before EPIC-12 implementation. Archived after terminal EPIC-12 Evidence and the independent BACKLOG-06 calculation produced a newer current/previous pair.
 - `2026-09-03T08:53:36Z`: initial release `115/139 = 82.7%`, full roadmap `115/164 = 70.1%`; EPIC-10 terminal state before EPIC-11 implementation. Archived after terminal EPIC-11 Evidence and the independent EPIC-12 calculation produced a newer current/previous pair.
 - `2026-09-03T08:14:33Z`: initial release `107/139 = 77.0%`, full roadmap `107/164 = 65.2%`; EPIC-07 terminal state before EPIC-10 implementation. Archived after terminal EPIC-10 Evidence and the independent EPIC-11 calculation produced a newer current/previous pair.
@@ -20,6 +21,16 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / BACKLOG-06 — Analytics export
+
+- **Product outcome:** `READY 3/3`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#17](https://github.com/Just9120/llm-inspector/pull/17), head `6361a4ec361e6104cd30559160a78aff478a9315`, PR CI `33743758869` success.
+- **Merge/exact-main Evidence:** merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`; exact-main CI `33744027574` success with every required step.
+- **Delivered:** versioned selected-range anonymized history and request/resource aggregate export, fail-closed bounded completeness, exact preview/SHA-256/atomic local save and the shared diagnostic-snapshot negative content corpus.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `210/210` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/17#issuecomment-5524288401).
 
 ## GOAL-005 / EPIC-12 — Reliability and runtime-change correlation
 

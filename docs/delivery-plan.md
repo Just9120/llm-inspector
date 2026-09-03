@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T10:14:05Z`
+> Updated: `2026-09-03T10:37:48Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `7c5528ec3c33396ce1068162fc0b6961a0dfe553`; exact-main CI [33741928312](https://github.com/Just9120/llm-inspector/actions/runs/33741928312) succeeded.
+- **Verified base:** `origin/main` / local `main` = `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`; exact-main CI [33744027574](https://github.com/Just9120/llm-inspector/actions/runs/33744027574) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T10:18:42Z` |
+| Updated UTC | `2026-09-03T10:37:48Z` |
 | Expected base branch | `main` |
-| Base SHA | `7c5528ec3c33396ce1068162fc0b6961a0dfe553` — verified local/`origin/main`; exact-main CI `33741928312` success |
-| Working branch | `codex/goal-005-backlog-06` |
-| Last verified revision | `00977be` — complete BACKLOG-06 candidate passed the full exact-SDK local CI-equivalent |
-| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-12 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
-| Completed work | EPIC-12 terminal partial: PR #16, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553` and exact-main CI `33741928312` succeeded. BACKLOG-06 adds `analytics-export-v1`, exact UTC range selection, shared bounded anonymized history projection, request/resource aggregate categories, `n`/mean/median/P95, fail-closed truncation, exact preview/SHA-256/atomic local save and the same end-to-end negative content corpus as diagnostic snapshot. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `210/210` tests with zero skips, locked RID restore, clean self-contained publish and smoke exit `0` all passed |
-| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
-| Next exact action | Commit this checkpoint, verify the branch diff, perform the one initial push, create the BACKLOG-06 PR and wait for required exact-head CI |
-| PR / CI | EPIC-12 terminal: PR #16, head `c43564bad67b0dda17c4faf347051da8c8243c41`, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`, exact-main CI `33741928312`, all success. BACKLOG-06 has not been pushed; exact-revision CI pending |
+| Base SHA | `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4` — verified local/`origin/main`; exact-main CI `33744027574` success |
+| Working branch | `codex/goal-005-backlog-05` |
+| Last verified revision | `cb6a0593d95c8fc036b66ec267d8de88976346ab` — multi-GPU implementation passed focused Release build, `61/61` Windows tests and `53/53` integration tests |
+| Initial worktree state | Clean branch created from verified `origin/main` after BACKLOG-06 exact-main success and safe local/remote branch cleanup; no unrelated changes |
+| Current worktree state | Documentation update in progress after clean implementation commit; no unrelated changes |
+| Completed work | BACKLOG-06 terminal: PR #17, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574` and terminal Evidence comment succeeded. BACKLOG-05 now discovers up to 16 distinct supported NVIDIA devices, publishes and persists a separate GPU sample per device without duplicating host/traffic metrics, renders each device separately in live/history surfaces and explicitly marks workload attribution unavailable for the device-wide source. Release build has zero warnings/errors; focused Windows `61/61` and integration `53/53` tests passed |
+| Current step | Complete documentation synchronization, then run the full exact-SDK local CI-equivalent for BACKLOG-05 |
+| Next exact action | Commit documentation, run restore → format → build → full tests → RID restore → clean publish → smoke, then record the exact local-validation result |
+| PR / CI | BACKLOG-06 terminal: PR #17, head `6361a4ec361e6104cd30559160a78aff478a9315`, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574`, all success. BACKLOG-05 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | No blocker for BACKLOG-06. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |
-| Unverified assumptions | Export completeness is guaranteed by fail-closed rejection when the shared bounded history projection reports truncation; a wider range must be narrowed by the user rather than silently producing partial data |
+| Blockers | No blocker for BACKLOG-05. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |
+| Unverified assumptions | `nvidia-smi` device rows are treated only as device-wide metrics; no request/workload-to-device attribution is inferred. Non-NVIDIA support remains outside current supported source |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T10:14:05Z` | `132/139 = 95.0%` | `135/164 = 82.3%` | Independent AC-by-AC calculation credits B06-AC01..03 from exact range delegation, allowlisted history/aggregate export, preview/save UX and the shared end-to-end negative content corpus; exact-revision CI remains open |
-| Previous | `2026-09-03T10:02:16Z` | `132/139 = 95.0%` | `132/164 = 80.5%` | EPIC-12 `7/13`; terminal PR #16 and exact-main CI `33741928312` confirmed required CI Evidence; numeric AC01..06 remained uncredited |
+| Current | `2026-09-03T10:37:48Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation credits B05-AC01..03 from bounded multi-device discovery, separate per-device UI/persistence and explicit unavailable workload attribution; exact-revision CI remains open |
+| Previous | `2026-09-03T10:25:51Z` | `132/139 = 95.0%` | `135/164 = 82.3%` | BACKLOG-06 terminal PR #17 and exact-main CI `33744027574` confirmed `B06-AC01..03` and required CI Evidence |
 
-Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `3` atomic BACKLOG-06 criteria.
+Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `3` atomic BACKLOG-05 criteria.
 
 ## Epic readiness и Evidence
 
@@ -109,9 +109,9 @@ Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators 
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-06 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **135/164** | **82.3%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| BACKLOG-05 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| **Full roadmap** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -216,6 +216,14 @@ Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators 
 | `E12-AC11` | Тот же normal/process-kill restart test после recovery сохраняет третий request и читает все три records; new-write acceptance подтверждён фактическим SQLite store |
 | `E12-AC12` | Typed `TechnicalRuntimeFacts` содержит configuration fingerprint и allowlisted Inspector/framework/OS/adapter/backend/client/model/GPU-driver versions; schema v5 сохраняет available values, production gateway пишет local/config facts и model, NVIDIA source добавляет driver version. Reflection/schema privacy allowlists исключают free-form carrier |
 | `E12-AC13` | Period analytics группирует полную комбинацию runtime/version facts, сравнивает earliest/latest distinct cohorts по latency/throughput/error rate только при `n >= 3`, сохраняет typed recurring-error deltas и явно различает no facts/single config/undersampled data; unit, SQLite integration и UI presenter paths покрыты tests |
+
+### BACKLOG-05 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `B05-AC01` | `NvidiaSmiGpuProbe` parses, validates, orders and deduplicates every supported NVIDIA device row, with a safety bound of 16 devices; missing executable/device/output remains an empty unavailable result |
+| `B05-AC02` | Request monitor emits one correlated GPU record per device, SQLite preserves equal-timestamp device rows, and live/history presenters render distinct device identity and metrics without duplicating host or gateway traffic totals |
+| `B05-AC03` | `nvidia-smi` readings are explicitly labeled `workload attribution=unavailable (device-wide source)`; no request-to-device assignment is inferred from timing or utilization |
 
 ### BACKLOG-06 AC evidence map
 
