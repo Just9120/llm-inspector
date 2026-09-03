@@ -10,6 +10,7 @@ public partial class MainWindow : Window
 {
     private readonly ILiveRequestSnapshotSource? _liveRequestState;
     private readonly IProxyObservationSnapshotSource? _observationSource;
+    private readonly IResourceTelemetrySnapshotSource? _resourceSource;
     private readonly ITechnicalHistoryStore? _history;
     private readonly AppRuntimeStatus _runtimeStatus;
     private readonly string _historyState;
@@ -17,7 +18,7 @@ public partial class MainWindow : Window
     private HistoryClearPreview? _clearPreview;
 
     public MainWindow()
-        : this(AppRuntimeStatus.NotStarted, null, null, null, "Technical history is not composed.")
+        : this(AppRuntimeStatus.NotStarted, null, null, null, null, "Technical history is not composed.")
     {
     }
 
@@ -25,12 +26,14 @@ public partial class MainWindow : Window
         AppRuntimeStatus runtimeStatus,
         ILiveRequestSnapshotSource? liveRequestState = null,
         IProxyObservationSnapshotSource? observationSource = null,
+        IResourceTelemetrySnapshotSource? resourceSource = null,
         ITechnicalHistoryStore? history = null,
         string? historyState = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
         _observationSource = observationSource;
+        _resourceSource = resourceSource;
         _history = history;
         _runtimeStatus = runtimeStatus;
         _historyState = historyState ?? "Technical history state is unavailable.";
@@ -50,6 +53,7 @@ public partial class MainWindow : Window
         ConfigureHistoryControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
+        RefreshResources();
         RefreshDiagnostics();
 
         if (_liveRequestState is not null || _observationSource is not null)
@@ -62,6 +66,7 @@ public partial class MainWindow : Window
             {
                 RefreshLiveRequests();
                 RefreshRequestDetail();
+                RefreshResources();
                 RefreshDiagnostics();
             };
             _liveRefreshTimer.Start();
@@ -261,6 +266,11 @@ public partial class MainWindow : Window
             _runtimeStatus,
             _observationSource?.Latest,
             _historyState);
+    }
+
+    private void RefreshResources()
+    {
+        ResourceTelemetryText.Text = ResourceTelemetryTextPresenter.Format(_resourceSource?.Latest);
     }
 
     private static string CreateClientEndpointText(AppRuntimeStatus runtimeStatus)

@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T06:46:30Z`
+> Updated: `2026-09-03T07:29:05Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `6aaae88e3b24306d1c4c2ec165945436eeee05f2`; exact-main CI [33722434890](https://github.com/Just9120/llm-inspector/actions/runs/33722434890) succeeded.
+- **Verified base:** `origin/main` / local `main` = `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`; exact-main CI [33725139103](https://github.com/Just9120/llm-inspector/actions/runs/33725139103) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T06:46:30Z` |
+| Updated UTC | `2026-09-03T07:29:05Z` |
 | Expected base branch | `main` |
-| Base SHA | `6aaae88e3b24306d1c4c2ec165945436eeee05f2` — verified local/`origin/main`; exact-main CI `33722434890` success |
-| Working branch | `codex/goal-005-epic-05` |
-| Last verified revision | `ba6c81a39054280389bb588ae34776fe292b790e` — complete candidate tree covered by full local CI-equivalent; this checkpoint is docs-only |
+| Base SHA | `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0` — verified local/`origin/main`; exact-main CI `33725139103` success |
+| Working branch | `codex/goal-005-epic-06` |
+| Last verified revision | `29a517499c7ba8beaa401af6d0663851aa5b3700` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Clean at full-validation boundary except this expected docs-only checkpoint update; no unrelated changes |
-| Completed work | `eaff62c` adds fail-closed operation graph/domain tracker; `e3de08a` adds bounded JSON/SSE tool projection, ordered SQLite schema v3 persistence/UI and concurrency/privacy coverage; `ba6c81a` maps AC/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `142/142` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-05 PR |
-| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-05` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | No EPIC-05 PR yet; branch has not been pushed; exact-revision CI pending |
+| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
+| Completed work | `625b751` adds request-correlated Windows host/process/disk/gateway/NVIDIA resource telemetry, bounded/gap-aware sampling, schema v4 persistence, UI projection and fail-closed tests; `29a5174` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `150/150` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-06 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-06` once, create PR against `main`, then wait for exact-head required CI |
+| PR / CI | EPIC-05 terminal: PR #11, PR CI `33724914481`, merge `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`, exact-main CI `33725139103`, all success. EPIC-06 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | None for EPIC-05; `E01-AC01` remains an independent release-matrix blocker and is not credited |
-| Unverified assumptions | Full-body OpenAI protocol variants beyond the versioned tested JSON/SSE fixtures are not used as readiness Evidence; unsupported/ambiguous metadata fails closed |
+| Blockers | None for bounded EPIC-06 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
+| Unverified assumptions | Only the fixed-path NVIDIA `nvidia-smi` source is supported for GPU metrics; other vendors/devices and ambiguous backend listener ownership remain explicit `unavailable` and are not readiness Evidence |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T06:40:21Z` | `83/139 = 59.7%` | `83/164 = 50.6%` | Independent AC-by-AC calculation credits E05-AC01..08 after focused CODE/TEST Evidence; exact-revision CI remains open |
-| Previous | `2026-09-03T06:17:58Z` | `75/139 = 54.0%` | `75/164 = 45.7%` | Terminal EPIC-01 calculation confirmed by PR #10 and exact-main CI `33722434890` |
+| Current | `2026-09-03T07:24:58Z` | `91/139 = 65.5%` | `91/164 = 55.5%` | Independent AC-by-AC calculation credits E06-AC01..08 from request-correlated CODE and focused TEST Evidence; exact-revision CI remains open |
+| Previous | `2026-09-03T06:40:21Z` | `83/139 = 59.7%` | `83/164 = 50.6%` | EPIC-05 `8/8`; terminal PR #11 and exact-main CI `33725139103` subsequently confirmed required CI Evidence |
 
-Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше 10 п.п. Причина — локально подтверждены все восемь ранее невыполненных EPIC-05 criteria при неизменных denominators `139`/`164`.
+Delta: `+5.8 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше 10 п.п. Причина — локально подтверждены все восемь EPIC-06 criteria при неизменных denominators `139`/`164`.
 
 ## Epic readiness и Evidence
 
@@ -96,22 +96,22 @@ Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-05 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-05 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-06 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **83/139** | **59.7%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **91/139** | **65.5%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **83/164** | **50.6%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **91/164** | **55.5%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -136,6 +136,19 @@ Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше
 | `E05-AC06` | Operation ID и request ID разделяют одновременные requests; parallel integration fixture подтверждает восемь независимых operations |
 | `E05-AC07` | Tracker требует совпадение operation/session/client/backend и rejects cross-session/cross-client continuation; parallel tests подтверждают отсутствие смешения |
 | `E05-AC08` | Missing/malformed/duplicate/gap/out-of-order/inconsistent correlation остаётся ungrouped или `unavailable`; time proximity не используется |
+
+### EPIC-06 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E06-AC01` | Per-request sampler stores NVIDIA GPU utilization, VRAM used/total, temperature and power with device ID; missing executable/device/field is typed `unavailable` |
+| `E06-AC02` | Windows `GetSystemTimes` deltas and `GlobalMemoryStatusEx` provide versioned host CPU utilization plus RAM percent/used bytes |
+| `E06-AC03` | Every sample carries UTC timestamp, exact request ID, optional operation ID and current versioned request stage |
+| `E06-AC04` | Backend process is attributed only from one exact literal-loopback TCP listener owner, PID and start time/image identity; zero/multiple/unreadable owners remain unavailable |
+| `E06-AC05` | Proven process uses Windows cumulative CPU, working set and I/O counters; no process metric is inferred when association/source is absent |
+| `E06-AC06` | Read/write transfer deltas from the proven backend process are stored on the same request/stage timeline with calculated provenance |
+| `E06-AC07` | Gateway counts actually relayed request/response bytes on the exact request timeline without buffering or blocking relay |
+| `E06-AC08` | Live/history UI renders exact request/stage correlation, metric quality/source and explicit unavailable process/GPU state; samples are bounded to 2048 with persisted gap count |
 
 ## Current blockers и decisions
 

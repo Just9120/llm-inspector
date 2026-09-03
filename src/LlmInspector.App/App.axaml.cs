@@ -19,6 +19,7 @@ public partial class App : Avalonia.Application
                 Program.RuntimeStatus,
                 Program.LiveStateTracker,
                 Program.ObservationStore,
+                Program.ResourceMonitor,
                 Program.HistoryStore,
                 Program.HistoryState);
         }

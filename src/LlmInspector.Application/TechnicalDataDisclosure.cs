@@ -15,7 +15,7 @@ public static class TechnicalDataDisclosure
             "Process lifetime only"),
         new(
             "Local SQLite technical history",
-            "Pseudonymous request/session/turn/operation IDs, timestamps, durations, status/error classification, configured client/backend, normalized model and tool identifiers, available/invoked tool counts, tool duration quality/provenance, resource samples, model-load classification, and allowlisted numeric metrics with quality/provenance",
+            "Pseudonymous request/session/turn/operation IDs, timestamps, durations, status/error classification, configured client/backend, normalized model/tool/GPU identifiers, available/invoked tool counts, tool duration quality/provenance, request/stage-correlated host GPU/CPU/RAM resource samples, exact related-process identity when provable, process CPU/RAM/disk counters, gateway traffic byte counters, model-load classification, and allowlisted numeric metrics with quality/provenance",
             "User-selected: 7 days, 30 days (default), 90 days, or indefinite; explicit clear is available"),
     ];
 

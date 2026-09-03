@@ -154,7 +154,29 @@ public sealed class SqliteTechnicalHistoryStoreTests
                 new TechnicalResourceSampleRecord(
                     Guid.NewGuid(), operationId, startedAt.AddSeconds(4), Percent(70), Percent(80)),
                 new TechnicalResourceSampleRecord(
-                    Guid.NewGuid(), operationId, startedAt.AddSeconds(1), Percent(30), Percent(40)),
+                    Guid.NewGuid(), operationId, startedAt.AddSeconds(1), Percent(30), Percent(40))
+                {
+                    RequestId = firstRequestId,
+                    Stage = RequestStageValue.ProtocolObserved(RequestStage.PromptProcessing, "resource-store-fixture-v1"),
+                    RelatedProcess = new TechnicalProcessAssociation(
+                        42,
+                        startedAt.AddHours(-1),
+                        Id("llama-server"),
+                        "listener-owner-fixture-v1"),
+                    GpuDeviceId = Id("GPU-fixture"),
+                    MemoryUsedBytes = ResourceMetric(1_024, MetricUnit.Bytes, MetricSource.WindowsApi),
+                    ProcessCpuPercent = ResourceMetric(25, MetricUnit.Percent, MetricSource.WindowsApi),
+                    ProcessMemoryBytes = ResourceMetric(512, MetricUnit.Bytes, MetricSource.WindowsApi),
+                    DiskReadBytes = ResourceMetric(100, MetricUnit.Bytes, MetricSource.WindowsApi),
+                    DiskWriteBytes = ResourceMetric(200, MetricUnit.Bytes, MetricSource.WindowsApi),
+                    ClientToBackendBytes = ResourceMetric(300, MetricUnit.Bytes, MetricSource.GatewayTraffic),
+                    BackendToClientBytes = ResourceMetric(400, MetricUnit.Bytes, MetricSource.GatewayTraffic),
+                    GpuUtilizationPercent = ResourceMetric(50, MetricUnit.Percent, MetricSource.NvidiaSmi),
+                    GpuVramUsedBytes = ResourceMetric(2_048, MetricUnit.Bytes, MetricSource.NvidiaSmi),
+                    GpuVramTotalBytes = ResourceMetric(4_096, MetricUnit.Bytes, MetricSource.NvidiaSmi),
+                    GpuTemperatureCelsius = ResourceMetric(70, MetricUnit.Celsius, MetricSource.NvidiaSmi),
+                    GpuPowerWatts = ResourceMetric(125, MetricUnit.Watts, MetricSource.NvidiaSmi),
+                },
             ]);
         await fixture.Store.RecordOperationGraphAsync(graph);
 
@@ -170,6 +192,14 @@ public sealed class SqliteTechnicalHistoryStoreTests
         Assert.AreEqual("list_files", detail.ToolEvents[0].ToolName.Value);
         Assert.AreEqual("read_file", detail.ToolEvents[1].ToolName.Value);
         Assert.AreEqual(30m, detail.ResourceSamples[0].CpuPercent.Value);
+        Assert.AreEqual(firstRequestId, detail.ResourceSamples[0].RequestId);
+        Assert.AreEqual(RequestStage.PromptProcessing, detail.ResourceSamples[0].Stage?.Stage);
+        Assert.AreEqual(42, detail.ResourceSamples[0].RelatedProcess?.ProcessId);
+        Assert.AreEqual("llama-server", detail.ResourceSamples[0].RelatedProcess?.ImageName.Value);
+        Assert.AreEqual("GPU-fixture", detail.ResourceSamples[0].GpuDeviceId?.Value);
+        Assert.AreEqual(100m, detail.ResourceSamples[0].DiskReadBytes.Value);
+        Assert.AreEqual(400m, detail.ResourceSamples[0].BackendToClientBytes.Value);
+        Assert.AreEqual(70m, detail.ResourceSamples[0].GpuTemperatureCelsius.Value);
         Assert.AreEqual(70m, detail.ResourceSamples[1].CpuPercent.Value);
         Assert.AreEqual(TimeSpan.FromMilliseconds(40), detail.ToolEvents[1].Duration);
         Assert.AreEqual(MetricQuality.Calculated, detail.ToolEvents[1].DurationMetric.Quality);
@@ -348,7 +378,7 @@ public sealed class SqliteTechnicalHistoryStoreTests
             await verification.OpenAsync();
             await using SqliteCommand versionCommand = verification.CreateCommand();
             versionCommand.CommandText = "SELECT MAX(version) FROM schema_migrations;";
-            Assert.AreEqual(3L, await versionCommand.ExecuteScalarAsync());
+            Assert.AreEqual(4L, await versionCommand.ExecuteScalarAsync());
         }
         finally
         {
@@ -581,6 +611,9 @@ public sealed class SqliteTechnicalHistoryStoreTests
     private static MetricValue Count(decimal value) =>
         MetricValue.Exact(value, MetricUnit.Count, MetricSource.Inspector, "agent-operation-fixture-v1");
 
+    private static MetricValue ResourceMetric(decimal value, MetricUnit unit, MetricSource source) =>
+        MetricValue.Exact(value, unit, source, "resource-store-fixture-v1");
+
     private static TechnicalIdentifier Id(string value) =>
         TechnicalIdentifier.FromBackend(value) ?? throw new InvalidOperationException("Invalid test identifier.");
 
@@ -636,6 +669,10 @@ public sealed class SqliteTechnicalHistoryStoreTests
 
         public Task RecordOperationGraphAsync(
             TechnicalOperationGraph graph,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task RecordResourceSamplesAsync(
+            IReadOnlyList<TechnicalResourceSampleRecord> samples,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(

@@ -9,6 +9,26 @@ public interface ITechnicalOperationSink
         CancellationToken cancellationToken = default);
 }
 
+public interface ITechnicalResourceSampleSink
+{
+    Task RecordResourceSamplesAsync(
+        IReadOnlyList<TechnicalResourceSampleRecord> samples,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NullTechnicalResourceSampleSink : ITechnicalResourceSampleSink
+{
+    public static NullTechnicalResourceSampleSink Instance { get; } = new();
+
+    private NullTechnicalResourceSampleSink()
+    {
+    }
+
+    public Task RecordResourceSamplesAsync(
+        IReadOnlyList<TechnicalResourceSampleRecord> samples,
+        CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
 public sealed class NullTechnicalOperationSink : ITechnicalOperationSink
 {
     public static NullTechnicalOperationSink Instance { get; } = new();
@@ -22,7 +42,7 @@ public sealed class NullTechnicalOperationSink : ITechnicalOperationSink
         CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
-public interface ITechnicalHistoryStore : IProxyObservationSink, ITechnicalOperationSink
+public interface ITechnicalHistoryStore : IProxyObservationSink, ITechnicalOperationSink, ITechnicalResourceSampleSink
 {
     Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(
         HistoryFilter filter,

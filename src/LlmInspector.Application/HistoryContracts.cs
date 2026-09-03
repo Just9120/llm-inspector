@@ -121,7 +121,77 @@ public sealed record TechnicalResourceSampleRecord(
     Guid? OperationId,
     DateTimeOffset CapturedAt,
     MetricValue CpuPercent,
-    MetricValue MemoryPercent);
+    MetricValue MemoryPercent)
+{
+    private const string UnavailableSourceVersion = "resource-monitor-unavailable-v1";
+
+    public Guid? RequestId { get; init; }
+
+    public RequestStageValue? Stage { get; init; }
+
+    public TechnicalProcessAssociation? RelatedProcess { get; init; }
+
+    public TechnicalIdentifier? GpuDeviceId { get; init; }
+
+    public int DroppedSampleCount { get; init; }
+
+    public MetricValue MemoryUsedBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue ProcessCpuPercent { get; init; } = Unavailable(MetricUnit.Percent);
+
+    public MetricValue ProcessMemoryBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue DiskReadBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue DiskWriteBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue ClientToBackendBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue BackendToClientBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue GpuUtilizationPercent { get; init; } = Unavailable(MetricUnit.Percent);
+
+    public MetricValue GpuVramUsedBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue GpuVramTotalBytes { get; init; } = Unavailable(MetricUnit.Bytes);
+
+    public MetricValue GpuTemperatureCelsius { get; init; } = Unavailable(MetricUnit.Celsius);
+
+    public MetricValue GpuPowerWatts { get; init; } = Unavailable(MetricUnit.Watts);
+
+    private static MetricValue Unavailable(MetricUnit unit) =>
+        MetricValue.Unavailable(unit, MetricSource.Inspector, UnavailableSourceVersion);
+}
+
+public sealed record TechnicalProcessAssociation
+{
+    public TechnicalProcessAssociation(
+        int processId,
+        DateTimeOffset processStartedAt,
+        TechnicalIdentifier imageName,
+        string sourceVersion)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(processId, 1);
+        ArgumentNullException.ThrowIfNull(imageName);
+        if (string.IsNullOrWhiteSpace(sourceVersion))
+        {
+            throw new ArgumentException("Process-association source version is required.", nameof(sourceVersion));
+        }
+
+        ProcessId = processId;
+        ProcessStartedAt = processStartedAt;
+        ImageName = imageName;
+        SourceVersion = sourceVersion;
+    }
+
+    public int ProcessId { get; }
+
+    public DateTimeOffset ProcessStartedAt { get; }
+
+    public TechnicalIdentifier ImageName { get; }
+
+    public string SourceVersion { get; }
+}
 
 public sealed record TechnicalOperationGraph(
     TechnicalSessionRecord? Session,

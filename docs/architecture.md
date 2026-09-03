@@ -84,9 +84,9 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry`, `Storage.Sqlite` и `App` содержат product code; `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
+`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry`, `Storage.Sqlite`, `Resources.Windows` и `App` содержат product code; `Diagnostics` пока представлен marker type. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-Active EPIC-01 candidate добавляет в `App` только UI-level technical diagnostics summary поверх already allowlisted runtime state; versioned diagnostic rules и error taxonomy в `LlmInspector.Diagnostics` остаются scope EPIC-07. Это разделение не выдаёт navigation surface за полную diagnostic implementation.
+EPIC-06 candidate добавляет per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. Versioned diagnostic rules и error taxonomy в `LlmInspector.Diagnostics` остаются scope EPIC-07; resource Evidence само по себе не классифицирует root cause.
 
 ## 5. Runtime/process model
 
@@ -167,7 +167,7 @@ Release configuration не отправляет telemetry, history или settin
 | Diagnostic logs | Structured safe logger | Size-bounded rolling files under `%LOCALAPPDATA%\LLM Inspector\logs`, default retention 7 days |
 | User-created snapshot | `LlmInspector.Diagnostics` | User-selected local path; not auto-uploaded and not silently indexed |
 
-Текущая schema v3 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples` и `schema_migrations`. Migration v2 добавляет request correlation/model-load fields; forward-only transaction migration v3 добавляет к turns available/invoked tool counts с quality/provenance, а к tool events — duration quality/provenance. Legacy rows остаются `unavailable` либо versioned calculated backfill. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
+Текущая schema v4 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples`, normalized `resource_sample_metrics` и `schema_migrations`. Migration v2 добавляет request correlation/model-load fields; migration v3 — turn/tool quality/provenance; forward-only transaction migration v4 — request/stage/process/GPU correlation, explicit dropped-sample counter и allowlisted resource metric rows. Legacy rows остаются `unavailable` либо versioned calculated backfill. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
 
 SQLite rules:
 
@@ -226,15 +226,15 @@ Adapters не переключают client с OpenAI-compatible protocol на n
 
 ## 11. Resource collectors
 
-`Resources.Windows` exposes independent capability ports for system CPU/RAM, process CPU/RAM/I/O, disk/network and GPU/VRAM/temperature/power. Provider implementations may use supported Windows performance APIs or vendor APIs only after a focused compatibility/security review.
+`Resources.Windows` implements a per-request monitor behind Application capability ports. Host CPU/RAM and exact process CPU/RAM/read-write counters come from Windows APIs; process association is accepted only when the configured literal-loopback backend listener has one exact TCP owner PID plus process start time/image identity. Gateway-relayed request/response byte counters provide request-scoped network traffic. A fixed-path, bounded-time `nvidia-smi` provider selects the lowest-index available GPU and reports utilization, VRAM, temperature and power; absent executable/device/field becomes `unavailable`.
 
 - System-wide sample может быть exact для host, но не автоматически attributed конкретному request.
 - Process association требует exact PID/start-time/backend identity; name/time heuristics недостаточны.
 - GPU metric содержит device/adapter identity и source. Unsupported counter/driver/device yields `unavailable`.
-- Sampling starts/stops from active-request reference count with low-frequency background baseline only when product behavior needs it.
-- Collector queues lossy under pressure: sample drop increments a safe gap counter and quality marker; it never backpressures model streaming.
+- Sampling starts with each request, follows the versioned request stage and stops at its terminal outcome; samples carry exact request/operation IDs and timestamps.
+- Each request is bounded to `2048` samples. Overflow increments an explicit persisted gap counter; collector, sink and UI failures remain best-effort and never backpressure model streaming.
 
-Конкретный GPU provider и sampling interval остаются implementation spike decisions. Они не блокируют repository bootstrap, но обязательны до `EPIC-06 READY` и performance validation.
+Default sampling interval — versioned implementation constant `1 s`; tests inject a shorter interval and deterministic sources. NVIDIA is the currently supported primary GPU source; other vendors remain `unavailable`, not inferred. Cross-device display remains separate `BACKLOG-05` scope.
 
 ## 12. Failure isolation и error ownership
 
@@ -315,7 +315,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя GOAL-004 validation на Windows подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `125/125` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. Suites покрывают SQLite schema allowlist/runtime canaries, history filters, ordered operation detail, aggregates/P95/minimum-sample boundaries, comparisons, bounded writer, retention, two-phase clear, pseudonymous correlation и LM Studio native telemetry. PR #9 CI `33720248633` и exact-main CI `33720428488` завершились успешно.
+Последняя terminal merged-main validation для EPIC-05 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `142/142` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #11 CI `33724914481` и exact-main CI `33725139103` завершились успешно. Active EPIC-06 candidate прошёл тот же полный local pipeline с `150/150` tests без skips; exact-revision GitHub CI ещё не заявлен до PR gate.
 
 Configured CI foundation:
 
@@ -343,7 +343,7 @@ Production signing identity and distribution channel remain external gates: Micr
 | Risk / decision | State | Gate |
 |---|---|---|
 | Full process crash interrupts proxy | Accepted for initial modular-monolith baseline | Reconsider sidecar only if crash/fault tests or uptime requirements justify IPC complexity |
-| GPU/provider coverage and trustworthy process attribution | `DEFER` | Focused Windows collector spike before `EPIC-06` implementation promise |
+| Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Numeric overhead/idle/throughput budgets | `BLOCKER` for `EPIC-12 READY`, not for repository bootstrap | Explicit owner approval after baseline measurements |
 | Production signing identity/certificate | `PENDING_EXTERNAL_GATE` for release | Owner selects Store vs trusted direct-signing route |
 | Distribution/update channel | `PENDING_EXTERNAL_GATE` for release | Explicit release Goal; no hidden external network behavior |

@@ -4,7 +4,11 @@ using LlmInspector.Domain;
 
 namespace LlmInspector.Storage.Sqlite;
 
-public sealed class BufferedTechnicalHistorySink : IProxyObservationSink, ITechnicalOperationSink, IAsyncDisposable
+public sealed class BufferedTechnicalHistorySink :
+    IProxyObservationSink,
+    ITechnicalOperationSink,
+    ITechnicalResourceSampleSink,
+    IAsyncDisposable
 {
     public const int DefaultCapacity = 256;
 
@@ -43,7 +47,8 @@ public sealed class BufferedTechnicalHistorySink : IProxyObservationSink, ITechn
     public ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(observation);
-        if (Volatile.Read(ref _disposed) != 0 || !_channel.Writer.TryWrite(new HistoryWrite(observation, null)))
+        if (Volatile.Read(ref _disposed) != 0 ||
+            !_channel.Writer.TryWrite(new HistoryWrite(observation, null, null)))
         {
             Interlocked.Increment(ref _droppedCount);
         }
@@ -56,7 +61,27 @@ public sealed class BufferedTechnicalHistorySink : IProxyObservationSink, ITechn
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        if (Volatile.Read(ref _disposed) != 0 || !_channel.Writer.TryWrite(new HistoryWrite(null, graph)))
+        if (Volatile.Read(ref _disposed) != 0 ||
+            !_channel.Writer.TryWrite(new HistoryWrite(null, graph, null)))
+        {
+            Interlocked.Increment(ref _droppedCount);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task RecordResourceSamplesAsync(
+        IReadOnlyList<TechnicalResourceSampleRecord> samples,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(samples);
+        if (samples.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (Volatile.Read(ref _disposed) != 0 ||
+            !_channel.Writer.TryWrite(new HistoryWrite(null, null, samples.ToArray())))
         {
             Interlocked.Increment(ref _droppedCount);
         }
@@ -90,6 +115,11 @@ public sealed class BufferedTechnicalHistorySink : IProxyObservationSink, ITechn
                     await _store.RecordOperationGraphAsync(write.Operation, CancellationToken.None)
                         .ConfigureAwait(false);
                 }
+                else if (write.ResourceSamples is not null)
+                {
+                    await _store.RecordResourceSamplesAsync(write.ResourceSamples, CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
             }
             catch (Exception exception)
             {
@@ -101,5 +131,6 @@ public sealed class BufferedTechnicalHistorySink : IProxyObservationSink, ITechn
 
     private sealed record HistoryWrite(
         ProxyObservation? Observation,
-        TechnicalOperationGraph? Operation);
+        TechnicalOperationGraph? Operation,
+        IReadOnlyList<TechnicalResourceSampleRecord>? ResourceSamples);
 }
