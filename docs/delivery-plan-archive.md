@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T20:59:53Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; decision ratification had no product AC credit. Archived when EPIC-01 produced a newer current/previous pair.
 - `2026-09-03T10:37:48Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; BACKLOG-05 local candidate had implemented `B05-AC01..03`, exact-revision CI was pending. Archived when EPIC-12 produced a newer current/previous pair.
 - `2026-09-03T10:02:16Z`: initial release `132/139 = 95.0%`, full roadmap `132/164 = 80.5%`; terminal EPIC-12 state before BACKLOG-06. Archived after BACKLOG-06 terminal Evidence and the independent BACKLOG-05 calculation produced a newer current/previous pair.
 - `2026-09-03T09:20:19Z`: initial release `125/139 = 89.9%`, full roadmap `125/164 = 76.2%`; terminal EPIC-11 state before EPIC-12 implementation. Archived after terminal EPIC-12 Evidence and the independent BACKLOG-06 calculation produced a newer current/previous pair.
@@ -22,6 +23,16 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / EPIC-12 — Performance profiles and release gate harness
+
+- **Product outcome:** still partial `7/13`; `E12-AC01..06` remain uncredited until controlled measurements pass for every built-in profile.
+- **Pull Request:** [#20](https://github.com/Just9120/llm-inspector/pull/20), head `5b041ec0ac1b56831671bb4a897ddb0b800d6569`, PR CI `33810069610` success.
+- **Merge/exact-main Evidence:** merge `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`; exact-main CI `33810329608` success with every required step.
+- **Delivered:** persisted Russian-labeled Saver/Balanced/Detailed/Custom profiles with schema migration and atomic sampling switch; exact budgets, fail-closed evaluator and SHA-frozen synthetic workload corpus.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `221/221` tests without skips, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/20#issuecomment-5532656301).
 
 ## GOAL-005 / Decision ratification
 

@@ -3,6 +3,14 @@
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
@@ -17,4 +25,12 @@
     <ProjectReference Include="../LlmInspector.Resources.Windows/LlmInspector.Resources.Windows.csproj" />
     <ProjectReference Include="../LlmInspector.Diagnostics/LlmInspector.Diagnostics.csproj" />
   </ItemGroup>
+  <Target Name="RemoveSymbolsFromPortablePublish"
+          BeforeTargets="_ComputeFilesToBundle"
+          DependsOnTargets="_HandleFileConflictsForPublish"
+          Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64' and '$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
 </Project>
