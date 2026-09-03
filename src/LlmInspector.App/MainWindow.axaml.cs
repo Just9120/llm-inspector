@@ -11,6 +11,8 @@ public partial class MainWindow : Window
     private readonly ILiveRequestSnapshotSource? _liveRequestState;
     private readonly IProxyObservationSnapshotSource? _observationSource;
     private readonly ITechnicalHistoryStore? _history;
+    private readonly AppRuntimeStatus _runtimeStatus;
+    private readonly string _historyState;
     private readonly DispatcherTimer? _liveRefreshTimer;
     private HistoryClearPreview? _clearPreview;
 
@@ -30,6 +32,8 @@ public partial class MainWindow : Window
         _liveRequestState = liveRequestState;
         _observationSource = observationSource;
         _history = history;
+        _runtimeStatus = runtimeStatus;
+        _historyState = historyState ?? "Technical history state is unavailable.";
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -42,10 +46,11 @@ public partial class MainWindow : Window
                 category => $"{category.Name}: {category.Fields}. Retention: {category.Retention}."));
         PersistentDataText.Text = TechnicalDataDisclosure.PersistentDataStatement;
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
-        HistoryStateText.Text = historyState ?? "Technical history state is unavailable.";
+        HistoryStateText.Text = _historyState;
         ConfigureHistoryControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
+        RefreshDiagnostics();
 
         if (_liveRequestState is not null || _observationSource is not null)
         {
@@ -57,6 +62,7 @@ public partial class MainWindow : Window
             {
                 RefreshLiveRequests();
                 RefreshRequestDetail();
+                RefreshDiagnostics();
             };
             _liveRefreshTimer.Start();
             Closed += (_, _) => _liveRefreshTimer.Stop();
@@ -247,6 +253,14 @@ public partial class MainWindow : Window
     private void RefreshRequestDetail()
     {
         RequestDetailText.Text = RequestDetailTextPresenter.Format(_observationSource?.Latest);
+    }
+
+    private void RefreshDiagnostics()
+    {
+        DiagnosticsSummaryText.Text = DiagnosticsSummaryTextPresenter.Format(
+            _runtimeStatus,
+            _observationSource?.Latest,
+            _historyState);
     }
 
     private static string CreateClientEndpointText(AppRuntimeStatus runtimeStatus)

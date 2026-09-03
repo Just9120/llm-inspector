@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -126,6 +126,18 @@
       </Border>
 
       <Border Grid.Row="6"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Diagnostics" />
+          <TextBlock x:Name="DiagnosticsSummaryText" TextWrapping="Wrap" />
+          <TextBlock Text="This surface reports only technical state; prompt, response, reasoning and tool content are excluded."
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="7"
               Padding="20"
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
