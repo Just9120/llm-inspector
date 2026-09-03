@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T09:50:10Z`
+> Updated: `2026-09-03T10:14:05Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `9b2933fe802842e60b089a37b1352f393ad94a56`; exact-main CI [33738059071](https://github.com/Just9120/llm-inspector/actions/runs/33738059071) succeeded.
+- **Verified base:** `origin/main` / local `main` = `7c5528ec3c33396ce1068162fc0b6961a0dfe553`; exact-main CI [33741928312](https://github.com/Just9120/llm-inspector/actions/runs/33741928312) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T09:55:50Z` |
+| Updated UTC | `2026-09-03T10:14:05Z` |
 | Expected base branch | `main` |
-| Base SHA | `9b2933fe802842e60b089a37b1352f393ad94a56` — verified local/`origin/main`; exact-main CI `33738059071` success |
-| Working branch | `codex/goal-005-epic-12` |
-| Last verified revision | `e9689e5` — complete EPIC-12 candidate passed the full exact-SDK local CI-equivalent |
-| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-11 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
-| Completed work | EPIC-11 terminal: PR #15 and exact-main CI succeeded. EPIC-12 adds typed Inspector/client/backend/model/unknown error origin, schema v5 runtime/version facts, fail-closed NVIDIA driver capture, statistically guarded runtime configuration correlation, startup SQLite integrity check, full collector lifecycle isolation and child-process kill recovery. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `207/207` tests with zero skips, locked `win-x64` RID restore, clean self-contained publish and smoke exit `0` all passed |
-| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
-| Next exact action | Commit this checkpoint, verify the branch diff, perform the one initial push, create the EPIC-12 PR and wait for required exact-head CI |
-| PR / CI | EPIC-11 terminal: PR #15, head `2d015d3adc76b9be3938f79d2637cdcdae9e40b3`, PR CI `33737811632`, merge `9b2933fe802842e60b089a37b1352f393ad94a56`, exact-main CI `33738059071`, all success. EPIC-12 has not been pushed; exact-revision CI pending |
+| Base SHA | `7c5528ec3c33396ce1068162fc0b6961a0dfe553` — verified local/`origin/main`; exact-main CI `33741928312` success |
+| Working branch | `codex/goal-005-backlog-06` |
+| Last verified revision | `915f372` — BACKLOG-06 implementation passed Release build, format and focused Unit/Privacy/Windows checks; current documentation update is not committed |
+| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-12 exact-main success and safe local/remote branch cleanup; no unrelated changes |
+| Current worktree state | Only expected README/architecture/canonical operational/delivery updates after implementation commit; no unrelated changes |
+| Completed work | EPIC-12 terminal partial: PR #16, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553` and exact-main CI `33741928312` succeeded. BACKLOG-06 adds `analytics-export-v1`, exact UTC range selection, shared bounded anonymized history projection, request/resource aggregate categories, `n`/mean/median/P95, fail-closed truncation, exact preview/SHA-256/atomic local save and the same end-to-end negative content corpus as diagnostic snapshot. Release build: zero warnings/errors; focused Unit `69/69`, Privacy `7/7`, Windows `61/61`; format passed |
+| Current step | Synchronize BACKLOG-06 operational documentation and run the full exact-SDK local CI-equivalent from the complete candidate tree |
+| Next exact action | Commit documentation, then run locked restore → format → Release build → full tests → RID restore → clean self-contained publish → smoke; push only after all pass |
+| PR / CI | EPIC-12 terminal: PR #16, head `c43564bad67b0dda17c4faf347051da8c8243c41`, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`, exact-main CI `33741928312`, all success. BACKLOG-06 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | `E12-AC01..06` require owner-approved numeric performance/idle budgets and frozen reference hardware/workload; they remain uncredited. No blocker for this partial reliability PR |
-| Unverified assumptions | Backend/client version sources are not yet available in production composition and remain null rather than inferred; persistence/correlation is tested with typed supplied facts. Numeric performance results are intentionally absent |
+| Blockers | No blocker for BACKLOG-06. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |
+| Unverified assumptions | Export completeness is guaranteed by fail-closed rejection when the shared bounded history projection reports truncation; a wider range must be narrowed by the user rather than silently producing partial data |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T09:44:08Z` | `132/139 = 95.0%` | `132/164 = 80.5%` | Independent AC-by-AC calculation credits only E12-AC07..13 from collector failure injection, typed origin, actual process-kill SQLite recovery/new write, persisted runtime facts and sufficient/insufficient correlation paths; exact-revision CI remains open |
-| Previous | `2026-09-03T09:20:19Z` | `125/139 = 89.9%` | `125/164 = 76.2%` | EPIC-11 `10/10`; terminal PR #15 and exact-main CI `33738059071` confirmed required CI Evidence |
+| Current | `2026-09-03T10:14:05Z` | `132/139 = 95.0%` | `135/164 = 82.3%` | Independent AC-by-AC calculation credits B06-AC01..03 from exact range delegation, allowlisted history/aggregate export, preview/save UX and the shared end-to-end negative content corpus; exact-revision CI remains open |
+| Previous | `2026-09-03T10:02:16Z` | `132/139 = 95.0%` | `132/164 = 80.5%` | EPIC-12 `7/13`; terminal PR #16 and exact-main CI `33741928312` confirmed required CI Evidence; numeric AC01..06 remained uncredited |
 
-Delta: `+5.1 п.п.` initial release и `+4.3 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `7` atomic EPIC-12 criteria.
+Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `3` atomic BACKLOG-06 criteria.
 
 ## Epic readiness и Evidence
 
@@ -103,15 +103,15 @@ Delta: `+5.1 п.п.` initial release и `+4.3 п.п.` full roadmap. Denominators
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ✅ | N/A | N/A |
 | **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **132/164** | **80.5%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| BACKLOG-06 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| **Full roadmap** | **🟦 IN PROGRESS** | **135/164** | **82.3%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -216,6 +216,14 @@ Delta: `+5.1 п.п.` initial release и `+4.3 п.п.` full roadmap. Denominators
 | `E12-AC11` | Тот же normal/process-kill restart test после recovery сохраняет третий request и читает все три records; new-write acceptance подтверждён фактическим SQLite store |
 | `E12-AC12` | Typed `TechnicalRuntimeFacts` содержит configuration fingerprint и allowlisted Inspector/framework/OS/adapter/backend/client/model/GPU-driver versions; schema v5 сохраняет available values, production gateway пишет local/config facts и model, NVIDIA source добавляет driver version. Reflection/schema privacy allowlists исключают free-form carrier |
 | `E12-AC13` | Period analytics группирует полную комбинацию runtime/version facts, сравнивает earliest/latest distinct cohorts по latency/throughput/error rate только при `n >= 3`, сохраняет typed recurring-error deltas и явно различает no facts/single config/undersampled data; unit, SQLite integration и UI presenter paths покрыты tests |
+
+### BACKLOG-06 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `B06-AC01` | `AnalyticsExportService` передаёт exact UTC range в shared SQLite-backed diagnostic projection и сериализует только выбранные pseudonymous request/resource records; truncation отклоняется fail-closed, а UI требует preview до atomic local save |
+| `B06-AC02` | Export группирует все available request и resource metrics по UTC day и отдельной category, публикует unit, exact sample count, minimum-sample sufficiency, arithmetic mean, median и nearest-rank P95; error rate и model-load counts включены отдельно |
+| `B06-AC03` | Export повторно использует versioned diagnostic snapshot DTO allowlists; end-to-end Privacy test прогоняет общий corpus prompt/response/reasoning/tool arguments/results/user code/credentials/raw headers через proxy, SQLite, snapshot и export, затем подтверждает zero occurrences во всех persisted files |
 
 ## Current blockers и decisions
 

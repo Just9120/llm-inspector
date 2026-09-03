@@ -383,7 +383,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-06 — Export analytics
 
-**Status:** ⬜ BACKLOG
+**Status:** 🟦 IN PROGRESS
 
 - `B06-AC01`: Пользователь экспортирует выбранный range anonymized technical history. [source: `UP-C09-04`]
 - `B06-AC02`: Пользователь экспортирует aggregate metrics за выбранный range. [source: `UP-C09-04`]
@@ -393,7 +393,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `9b2933fe802842e60b089a37b1352f393ad94a56` подтверждает EPIC-01 `3/4` и EPIC-02–EPIC-11 полностью. Active EPIC-12 candidate выполняет `E12-AC07..13`: collector/metric failure isolation, typed error origin, SQLite normal/process-kill recovery, new-write-after-restart, version/runtime facts и statistically guarded runtime-change correlation. `E12-AC01..06`, `E01-AC01` и другие product AC без фактического Evidence не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `7c5528ec3c33396ce1068162fc0b6961a0dfe553` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью и EPIC-12 `E12-AC07..13`. Active BACKLOG-06 candidate выполняет `B06-AC01..03`: selected-range anonymized technical history, aggregate metrics и общий со snapshot negative content corpus. `E12-AC01..06`, `E01-AC01` и другие product AC без фактического Evidence не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
@@ -408,15 +408,15 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ✅ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **132/164** | **80.5%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| BACKLOG-06 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **135/164** | **82.3%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
 
@@ -436,16 +436,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T09:44:08Z`.
+- Last recalculation: `2026-09-03T10:14:05Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`; all completed successfully.
-- Code/tests/runtime: merged baseline содержит terminal EPIC-11 local snapshot flow. Active EPIC-12 candidate adds schema v5 error-origin/runtime facts, NVIDIA driver version capture, configuration-cohort analytics, startup integrity check, full collector lifecycle isolation and an actual child-process kill/restart recovery fixture. Full exact SDK `10.0.400` local CI-equivalent passed: locked normal/RID restores, format verification, Release build with zero warnings/errors, `207/207` tests with zero skips, clean self-contained `win-x64` publish and smoke exit `0`. Exact-revision GitHub CI pending.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 PR/main runs `33741679566`/`33741928312`; all completed successfully.
+- Code/tests/runtime: merged baseline through EPIC-12 is exact-main CI verified. Active BACKLOG-06 candidate adds versioned selected-range local export, reuses the bounded diagnostic history allowlist, separates request/resource aggregates, requires exact preview before atomic save and runs through the same end-to-end negative content corpus. Release build, format verification and focused Unit `69/69`, Privacy `7/7`, Windows `61/61` passed; full local pipeline and exact-revision CI pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; exact-revision CI pending).
-- Full agreed roadmap readiness: `132/164 = 80.5%`.
+- Full agreed roadmap readiness: `135/164 = 82.3%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-11 delivered through PR [#15](https://github.com/Just9120/llm-inspector/pull/15), merge `9b2933fe802842e60b089a37b1352f393ad94a56`, exact-main CI `33738059071`; active EPIC-12 branch is `codex/goal-005-epic-12` from that base.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-12 partial delivered through PR [#16](https://github.com/Just9120/llm-inspector/pull/16), merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`, exact-main CI `33741928312`; active BACKLOG-06 branch is `codex/goal-005-backlog-06` from that base.
