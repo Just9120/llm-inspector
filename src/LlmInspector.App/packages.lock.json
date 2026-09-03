@@ -227,6 +227,7 @@
       "llminspector.adapters": {
         "type": "Project",
         "dependencies": {
+          "LlmInspector.Application": "[1.0.0, )",
           "LlmInspector.Domain": "[1.0.0, )"
         }
       },
