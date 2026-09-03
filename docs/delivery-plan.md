@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T23:34:29Z`
+> Updated: `2026-09-03T23:38:00Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T23:34:29Z` |
+| Updated UTC | `2026-09-03T23:38:00Z` |
 | Expected base branch | `main` |
 | Base SHA | `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479` — verified local/`origin/main`; exact-main CI `33814980537` and release `33815294790` success |
 | Working branch | `codex/goal-005-backlog-01-lifecycle` |
-| Last verified revision | `327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5` — build and focused Unit/Contract/Windows tests succeeded; this checkpoint commit will not self-reference its own containing revision |
+| Last verified revision | `1319b37299b0827a4c5a990d538bedb79f678d62` — full local CI-equivalent succeeded; this checkpoint commit will not self-reference its own containing revision |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | EPIC-01 forward-fix PR #22 head `5ef5f56`, PR CI `33814760385`, merge `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, exact-main CI `33814980537`; immutable `v1.0.0-rc.2` release run `33815294790` полностью успешен, exact downloaded artifact/sums/manifest/SPDX/Sigstore attestations verified. B01 code commit `327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5` implements confirmation-first start/stop/restart/model-load/parameter flows for three built-ins, exact owned-process runtime, compatibility matrix and tests |
-| Current step | Reconcile docs/compatibility evidence, create checkpoint commit, then run full local CI-equivalent on final head |
-| Next exact action | Finish documentation commit, run locked restore → format → build → all tests → RID restore → publish → smoke, fetch-check unchanged base, then one initial push and B01 PR |
+| Current step | Create final checkpoint commit, revalidate exact local head, fetch-check unchanged base, then one initial push and B01 PR |
+| Next exact action | Re-run full CI-equivalent on final checkpoint head, verify `origin/main` remains `8aae2fb…`, push once and open B01 PR |
 | PR / CI | B01 PR not created; exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | `v1.0.0-rc.2` has 6 exact assets; executable SHA-256 `4e78ee7…e683`, manifest source SHA exact, SPDX 2.3 `32` packages/`1` file, both bundles parse, `gh attestation verify` and downloaded smoke pass. B01 at `327bdd3`: build clean; focused Unit `84/84`, Contract `27/27`, Windows `67/67`, zero skips. Final canonical CI-equivalent remains pending after docs |
+| Validation | `v1.0.0-rc.2` has 6 exact assets; executable SHA-256 `4e78ee7…e683`, manifest source SHA exact, SPDX 2.3 `32` packages/`1` file, both bundles parse, `gh attestation verify` and downloaded smoke pass. B01 at `1319b37`: exact SDK `10.0.400`, locked normal/RID restores, format, build `0` warnings/errors, full `244/244` tests with zero skips, clean one-file self-contained publish (`62,806,564` bytes) and smoke pass |
 | Blockers | None for safe B01 PR. llama.cpp `b10516` and LM Studio/lms actual runtime tests remain manual gates and are not marked verified. Windows Home/Pro exact release checks remain an E01 gate. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until explicit CI/CD policy-document request |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
