@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#7 реализовали privacy/proxy core, backend/client adapters, live state и partial token/context/timing surface. Текущая EPIC-08 branch добавляет локальную SQLite history/analytics/retention surface; до PR/main CI это только local candidate, а не terminal CI Evidence.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#9 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing и SQLite history/analytics/retention. Exact-main CI `33720428488` подтвердил этот baseline на merge SHA `7110c70b6975c939915273b005f05eedfcd2eb14`.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -84,7 +84,7 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry` и `App` содержат product code; `Storage.Sqlite`, `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
+`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry`, `Storage.Sqlite` и `App` содержат product code; `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
 ## 5. Runtime/process model
 
@@ -311,7 +311,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя локальная EPIC-08 validation на Windows подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `112/112` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. Новые suites покрывают SQLite schema allowlist/runtime canaries, все history filters, ordered operation detail, aggregates/P95/minimum-sample boundaries, four comparison dimensions, bounded writer, short-batch retention boundaries и two-phase manual clear. Это local Evidence; GitHub CI отсутствует до initial PR push.
+Последняя GOAL-004 validation на Windows подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `125/125` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. Suites покрывают SQLite schema allowlist/runtime canaries, history filters, ordered operation detail, aggregates/P95/minimum-sample boundaries, comparisons, bounded writer, retention, two-phase clear, pseudonymous correlation и LM Studio native telemetry. PR #9 CI `33720248633` и exact-main CI `33720428488` завершились успешно.
 
 Configured CI foundation:
 

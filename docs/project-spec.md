@@ -393,19 +393,19 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. EPIC-02 выполняет `E02-AC01..15`, EPIC-03 — `E03-AC01..13`, а EPIC-08/09 были подтверждены terminal PR #8 и exact-merge `main` CI. Текущий fix-кандидат локально доводит EPIC-04 до `E04-AC01..12`: explicit pseudonymous session/turn headers дают fail-closed adjacent context delta, а отдельный LM Studio `/api/v1/chat` adapter даёт versioned cold/warm evidence из terminal stats/model-load events. Изменения затрагивают SQLite/privacy surfaces EPIC-08/09, поэтому их прежнее terminal Evidence сохраняется как baseline, но CI exact revision текущего fix ещё отсутствует. Другие product AC не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC на exact merged `main` `7110c70b6975c939915273b005f05eedfcd2eb14`. EPIC-02 выполняет `E02-AC01..15`, EPIC-03 — `E03-AC01..13`, EPIC-04 — `E04-AC01..12`, EPIC-08 — `E08-AC01..18`, EPIC-09 — `E09-AC01..14`. PR #9 и exact-main CI подтвердили pseudonymous correlation, LM Studio native telemetry, SQLite v2 migration/privacy и все ранее выполненные surfaces. Другие product AC не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-04 | 🟦 IN PROGRESS | 12/12 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-09 | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
@@ -436,16 +436,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T05:32:19Z`.
+- Last recalculation: `2026-09-03T06:01:33Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298` and EPIC-08 PR/main runs `33702613336`/`33702791561` completed successfully. Exact-revision CI for the active fix branch is pending.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR run `33720248633` and exact-main run `33720428488` completed successfully.
 - Code/tests/runtime: loopback streaming gateway, versioned backend adapters including LM Studio native v1, privacy-safe observation/correlation contract, live/token/context/timing UI и SQLite schema v2 history/analytics/retention. Exact SDK `10.0.400` full local pipeline passed: locked normal/RID restores, format, Release build with zero warnings/errors, `125/125` tests with zero skips, clean self-contained `win-x64` publish and smoke `exit 0`.
-- EPIC-09 completion: `14/14`; the active fix updates the real SQLite schema and disclosure/privacy corpus, so exact-revision CI is pending.
+- EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `72/139 = 51.8%`.
 - Full agreed roadmap readiness: `72/164 = 43.9%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-004 IN_PROGRESS`; `72/72` selected product AC complete locally. EPIC-04 was merged as an honest `10/12` partial increment in PR [#7](https://github.com/Just9120/llm-inspector/pull/7); the active bounded fix implements `E04-AC03`/`E04-AC12` on branch `codex/fix-epic-04-correlation-lmstudio` from verified base `5757652943753e549ef85f81308c0fc0c6d83686`. Full local validation is green; Goal delivery remains open until fix PR CI, merge and exact-main CI.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; exact denominator — remaining `92` atomic product AC. GOAL-004 closed `DONE 72/72` through PR [#9](https://github.com/Just9120/llm-inspector/pull/9), merge `7110c70b6975c939915273b005f05eedfcd2eb14`, exact-main CI `33720428488`.
