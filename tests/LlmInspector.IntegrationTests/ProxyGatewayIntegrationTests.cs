@@ -1057,6 +1057,44 @@ public sealed class ProxyGatewayIntegrationTests
         }
     }
 
+    [TestMethod]
+    public async Task ResourceMonitorReceivesRequestStageTrafficAndPersistsCorrelatedSampleBatch()
+    {
+        const string requestBody = "{\"model\":\"fixture\",\"messages\":[]}";
+        const string responseBody = "{\"choices\":[{\"message\":{\"content\":\"ok\"}}]}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            using StreamReader reader = new(context.Request.Body, Encoding.UTF8);
+            _ = await reader.ReadToEndAsync(context.RequestAborted);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(responseBody, context.RequestAborted);
+        });
+        CapturingResourceMonitor monitor = new();
+        CollectingResourceSink resourceSink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            resourceSink: resourceSink,
+            resourceMonitor: monitor);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent(requestBody, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        _ = await response.Content.ReadAsStringAsync();
+        IReadOnlyList<TechnicalResourceSampleRecord> samples =
+            await resourceSink.Next.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.HasCount(1, samples);
+        TechnicalResourceSampleRecord sample = samples[0];
+        Assert.AreEqual(monitor.Context?.RequestId, sample.RequestId);
+        Assert.AreEqual(RequestStage.Completed, sample.Stage?.Stage);
+        Assert.AreEqual(Encoding.UTF8.GetByteCount(requestBody), sample.ClientToBackendBytes.Value);
+        Assert.AreEqual(Encoding.UTF8.GetByteCount(responseBody), sample.BackendToClientBytes.Value);
+        Assert.AreEqual(backend.Address, monitor.Context?.BackendBaseAddress);
+    }
+
     private static HttpClient CreateProxyClient(Uri address)
     {
         SocketsHttpHandler handler = new()
@@ -1173,6 +1211,80 @@ public sealed class ProxyGatewayIntegrationTests
 
         public async Task<TechnicalOperationGraph> ReadAsync() =>
             await _operations.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    private sealed class CollectingResourceSink : ITechnicalResourceSampleSink
+    {
+        public TaskCompletionSource<IReadOnlyList<TechnicalResourceSampleRecord>> Next { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task RecordResourceSamplesAsync(
+            IReadOnlyList<TechnicalResourceSampleRecord> samples,
+            CancellationToken cancellationToken = default)
+        {
+            Next.TrySetResult(samples);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class CapturingResourceMonitor : IRequestResourceMonitor
+    {
+        public RequestResourceContext? Context { get; private set; }
+
+        public IRequestResourceSession Start(RequestResourceContext context)
+        {
+            Context = context;
+            return new Session(context);
+        }
+
+        private sealed class Session(RequestResourceContext context) : IRequestResourceSession
+        {
+            private RequestStageValue _stage = RequestStageValue.ProtocolObserved(
+                RequestStage.QueueWaiting,
+                "resource-gateway-test-v1");
+            private long _requestBytes;
+            private long _responseBytes;
+
+            public void StageChanged(RequestStageValue stage) => _stage = stage;
+
+            public void AddClientToBackendBytes(int count) => _requestBytes += count;
+
+            public void AddBackendToClientBytes(int count) => _responseBytes += count;
+
+            public Task<IReadOnlyList<TechnicalResourceSampleRecord>> CompleteAsync(
+                CancellationToken cancellationToken = default)
+            {
+                TechnicalResourceSampleRecord sample = new(
+                    Guid.NewGuid(),
+                    context.OperationId,
+                    DateTimeOffset.UtcNow,
+                    MetricValue.Unavailable(
+                        MetricUnit.Percent,
+                        MetricSource.Inspector,
+                        "resource-gateway-test-v1"),
+                    MetricValue.Unavailable(
+                        MetricUnit.Percent,
+                        MetricSource.Inspector,
+                        "resource-gateway-test-v1"))
+                {
+                    RequestId = context.RequestId,
+                    Stage = _stage,
+                    ClientToBackendBytes = MetricValue.Exact(
+                        _requestBytes,
+                        MetricUnit.Bytes,
+                        MetricSource.GatewayTraffic,
+                        "resource-gateway-test-v1"),
+                    BackendToClientBytes = MetricValue.Exact(
+                        _responseBytes,
+                        MetricUnit.Bytes,
+                        MetricSource.GatewayTraffic,
+                        "resource-gateway-test-v1"),
+                };
+                return Task.FromResult<IReadOnlyList<TechnicalResourceSampleRecord>>([sample]);
+            }
+
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     private sealed class ThrowingObservationSink : IProxyObservationSink

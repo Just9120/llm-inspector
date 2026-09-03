@@ -38,6 +38,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private readonly ProxyGatewayOptions _options;
     private readonly IProxyObservationSink _observationSink;
     private readonly ITechnicalOperationSink _operationSink;
+    private readonly ITechnicalResourceSampleSink _resourceSink;
+    private readonly IRequestResourceMonitor _resourceMonitor;
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly IBackendTelemetryAdapter? _lmStudioNativeTelemetryAdapter;
@@ -52,6 +54,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyGatewayOptions options,
         IProxyObservationSink observationSink,
         ITechnicalOperationSink operationSink,
+        ITechnicalResourceSampleSink resourceSink,
+        IRequestResourceMonitor resourceMonitor,
         ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter,
@@ -61,6 +65,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         _options = options;
         _observationSink = observationSink;
         _operationSink = operationSink;
+        _resourceSink = resourceSink;
+        _resourceMonitor = resourceMonitor;
         _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
         _lmStudioNativeTelemetryAdapter = lmStudioNativeTelemetryAdapter;
@@ -76,7 +82,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         IBackendTelemetryAdapter? telemetryAdapter = null,
         ILiveRequestStateSink? liveRequestStateSink = null,
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter = null,
-        ITechnicalOperationSink? operationSink = null)
+        ITechnicalOperationSink? operationSink = null,
+        ITechnicalResourceSampleSink? resourceSink = null,
+        IRequestResourceMonitor? resourceMonitor = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -134,6 +142,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             options,
             observationSink ?? NullProxyObservationSink.Instance,
             operationSink ?? NullTechnicalOperationSink.Instance,
+            resourceSink ?? NullTechnicalResourceSampleSink.Instance,
+            resourceMonitor ?? NullRequestResourceMonitor.Instance,
             liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
             lmStudioNativeTelemetryAdapter,
@@ -272,6 +282,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         BackendResponseTelemetry backendTelemetry = telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
         RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
+        await using IRequestResourceSession resourceSession = StartResourceMonitoringSafely(
+            new RequestResourceContext(
+                requestId,
+                correlation?.OperationId,
+                _options.Backend,
+                _options.BackendBaseAddress,
+                startedAt));
         using BoundedBodyCapture requestCapture = new();
         using BoundedBodyCapture responseCapture = new();
         string? responseMediaType = null;
@@ -279,12 +296,17 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
         try
         {
-            NotifyLiveStateSafely(sink => sink.StageChanged(
-                requestId,
-                RequestStageValue.ProtocolObserved(
-                    RequestStage.PromptProcessing,
-                    lifecycleSourceVersion)));
-            using CapturingReadStream capturedRequestBody = new(context.Request.Body, requestCapture);
+            RequestStageValue promptStage = RequestStageValue.ProtocolObserved(
+                RequestStage.PromptProcessing,
+                lifecycleSourceVersion);
+            NotifyLiveStateSafely(sink => sink.StageChanged(requestId, promptStage));
+            NotifyResourceSafely(resourceSession, session => session.StageChanged(promptStage));
+            using CapturingReadStream capturedRequestBody = new(
+                context.Request.Body,
+                requestCapture,
+                count => NotifyResourceSafely(
+                    resourceSession,
+                    session => session.AddClientToBackendBytes(count)));
             using HttpRequestMessage outboundRequest = CreateOutboundRequest(
                 context,
                 HttpMethod.Post,
@@ -306,13 +328,19 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 backendResponse.Content,
                 telemetryAdapter,
                 context.Response.Body,
-                () => NotifyLiveStateSafely(sink => sink.StageChanged(
-                    requestId,
-                    RequestStageValue.ProtocolObserved(
+                () =>
+                {
+                    RequestStageValue generationStage = RequestStageValue.ProtocolObserved(
                         RequestStage.ReasoningGeneration,
-                        lifecycleSourceVersion))),
+                        lifecycleSourceVersion);
+                    NotifyLiveStateSafely(sink => sink.StageChanged(requestId, generationStage));
+                    NotifyResourceSafely(resourceSession, session => session.StageChanged(generationStage));
+                },
                 () => firstOutputTimestamp ??= Stopwatch.GetTimestamp(),
                 responseCapture,
+                count => NotifyResourceSafely(
+                    resourceSession,
+                    session => session.AddBackendToClientBytes(count)),
                 context.RequestAborted).ConfigureAwait(false);
 
             outcome = ProxyOutcome.Completed;
@@ -345,6 +373,18 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         finally
         {
             NotifyLiveStateSafely(sink => sink.RequestFinished(requestId, outcome));
+            RequestStage terminalStage = outcome switch
+            {
+                ProxyOutcome.Completed => RequestStage.Completed,
+                ProxyOutcome.ClientCancelled => RequestStage.Cancelled,
+                ProxyOutcome.BackendUnavailable or ProxyOutcome.RelayFailed => RequestStage.Error,
+                _ => RequestStage.Error,
+            };
+            NotifyResourceSafely(
+                resourceSession,
+                session => session.StageChanged(RequestStageValue.ProtocolObserved(terminalStage, lifecycleSourceVersion)));
+            IReadOnlyList<TechnicalResourceSampleRecord> resourceSamples =
+                await CompleteResourceMonitoringSafely(resourceSession).ConfigureAwait(false);
             ProxyObservation observation = new(
                 requestId,
                 startedAt,
@@ -372,6 +412,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             {
                 await RecordOperationSafelyAsync(operation).ConfigureAwait(false);
             }
+
+            await RecordResourcesSafelyAsync(resourceSamples).ConfigureAwait(false);
         }
     }
 
@@ -419,6 +461,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         Action responseBodyObserved,
         Action outputContentObserved,
         BoundedBodyCapture responseCapture,
+        Action<int> responseBytesObserved,
         CancellationToken cancellationToken)
     {
         IBackendTelemetrySession? telemetrySession;
@@ -451,6 +494,14 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 }
 
                 responseCapture.Observe(buffer.AsSpan(0, bytesRead));
+                try
+                {
+                    responseBytesObserved(bytesRead);
+                }
+                catch (Exception)
+                {
+                    // Resource counters are best-effort and cannot interrupt body relay.
+                }
 
                 if (!responseBodyStageObserved)
                 {
@@ -652,6 +703,63 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         catch (Exception)
         {
             // Operation telemetry is best-effort and must never affect request forwarding.
+        }
+    }
+
+    private async Task RecordResourcesSafelyAsync(IReadOnlyList<TechnicalResourceSampleRecord> samples)
+    {
+        if (samples.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _resourceSink.RecordResourceSamplesAsync(samples, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Resource telemetry is best-effort and must never affect request forwarding.
+        }
+    }
+
+    private IRequestResourceSession StartResourceMonitoringSafely(RequestResourceContext context)
+    {
+        try
+        {
+            return _resourceMonitor.Start(context);
+        }
+        catch (Exception)
+        {
+            return NullRequestResourceMonitor.Instance.Start(context);
+        }
+    }
+
+    private static async Task<IReadOnlyList<TechnicalResourceSampleRecord>> CompleteResourceMonitoringSafely(
+        IRequestResourceSession session)
+    {
+        try
+        {
+            return await session.CompleteAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    private static void NotifyResourceSafely(
+        IRequestResourceSession session,
+        Action<IRequestResourceSession> notification)
+    {
+        try
+        {
+            notification(session);
+        }
+        catch (Exception)
+        {
+            // Resource telemetry is best-effort and must never affect request forwarding.
         }
     }
 

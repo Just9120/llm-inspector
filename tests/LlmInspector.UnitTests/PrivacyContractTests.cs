@@ -138,4 +138,44 @@ public sealed class PrivacyContractTests
         StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "30 days", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.ForbiddenContentStatement, "never retained", StringComparison.Ordinal);
     }
+
+    [TestMethod]
+    public void ResourceTelemetryContractContainsOnlyTechnicalAllowlistedFields()
+    {
+        string[] actual = typeof(TechnicalResourceSampleRecord)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        string[] expected =
+        [
+            "BackendToClientBytes",
+            "CapturedAt",
+            "ClientToBackendBytes",
+            "CpuPercent",
+            "DiskReadBytes",
+            "DiskWriteBytes",
+            "DroppedSampleCount",
+            "GpuDeviceId",
+            "GpuPowerWatts",
+            "GpuTemperatureCelsius",
+            "GpuUtilizationPercent",
+            "GpuVramTotalBytes",
+            "GpuVramUsedBytes",
+            "MemoryPercent",
+            "MemoryUsedBytes",
+            "OperationId",
+            "ProcessCpuPercent",
+            "ProcessMemoryBytes",
+            "RelatedProcess",
+            "RequestId",
+            "SampleId",
+            "Stage",
+        ];
+
+        CollectionAssert.AreEqual(expected, actual);
+        string[] forbiddenFragments = ["Content", "Prompt", "Response", "Argument", "Result", "Header"];
+        Assert.IsFalse(actual.Any(name => forbiddenFragments.Any(
+            fragment => name.Contains(fragment, StringComparison.OrdinalIgnoreCase))));
+    }
 }

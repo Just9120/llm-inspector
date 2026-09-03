@@ -35,6 +35,9 @@ public enum MetricUnit
     TokensPerSecond,
     Percent,
     Count,
+    Bytes,
+    Celsius,
+    Watts,
 }
 
 public enum MetricSource
@@ -42,6 +45,9 @@ public enum MetricSource
     OpenAiUsage,
     BackendExtension,
     Inspector,
+    WindowsApi,
+    NvidiaSmi,
+    GatewayTraffic,
 }
 
 public enum BackendMetricKey

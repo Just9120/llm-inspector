@@ -39,7 +39,10 @@ internal sealed class BoundedBodyCapture : IDisposable
     public void Dispose() => _buffer.Dispose();
 }
 
-internal sealed class CapturingReadStream(Stream inner, BoundedBodyCapture capture) : Stream
+internal sealed class CapturingReadStream(
+    Stream inner,
+    BoundedBodyCapture capture,
+    Action<int>? bytesObserved = null) : Stream
 {
     public override bool CanRead => inner.CanRead;
 
@@ -111,6 +114,14 @@ internal sealed class CapturingReadStream(Stream inner, BoundedBodyCapture captu
         else
         {
             capture.Observe(bytes);
+            try
+            {
+                bytesObserved?.Invoke(read);
+            }
+            catch (Exception)
+            {
+                // Resource counters are best-effort and cannot interrupt body relay.
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ namespace LlmInspector.Storage.Sqlite;
 
 public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsyncDisposable
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
     private const int MaximumQueryLimit = 1_000;
     private readonly string _connectionString;
     private readonly string _readConnectionString;
@@ -94,6 +94,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 persistedVersion = 3;
             }
 
+            if (persistedVersion == 3)
+            {
+                await ExecuteNonQueryAsync(connection, transaction, Migration4Sql, cancellationToken)
+                    .ConfigureAwait(false);
+                await RecordSchemaVersionAsync(connection, transaction, 4, cancellationToken).ConfigureAwait(false);
+                persistedVersion = 4;
+            }
+
             if (persistedVersion != SchemaVersion)
             {
                 throw new InvalidDataException(
@@ -174,6 +182,43 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             }
 
             foreach (TechnicalResourceSampleRecord sample in graph.ResourceSamples.OrderBy(item => item.CapturedAt))
+            {
+                await InsertResourceSampleAsync(connection, transaction, sample, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writerLock.Release();
+        }
+    }
+
+    public async Task RecordResourceSamplesAsync(
+        IReadOnlyList<TechnicalResourceSampleRecord> samples,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(samples);
+        if (samples.Count == 0)
+        {
+            return;
+        }
+
+        if (samples.Select(item => item.SampleId).Distinct().Count() != samples.Count)
+        {
+            throw new ArgumentException("Resource sample identifiers must be unique within a batch.", nameof(samples));
+        }
+
+        await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+        await _writerLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            await using SqliteTransaction transaction = (SqliteTransaction)await connection
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false);
+            foreach (TechnicalResourceSampleRecord sample in samples.OrderBy(item => item.CapturedAt))
             {
                 await InsertResourceSampleAsync(connection, transaction, sample, cancellationToken)
                     .ConfigureAwait(false);
@@ -796,23 +841,69 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             throw new ArgumentException("Resource load metrics must use percent units.", nameof(sample));
         }
 
-        ValidateMetricMetadata(sample.CpuPercent);
-        ValidateMetricMetadata(sample.MemoryPercent);
+        foreach ((_, MetricValue metric) in ResourceMetrics(sample))
+        {
+            ValidateMetricMetadata(metric);
+        }
+
         await using SqliteCommand command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
             INSERT INTO resource_samples(
-                sample_id, operation_id, captured_at_utc,
+                sample_id, operation_id, request_id, captured_at_utc,
+                stage, stage_evidence, stage_source_version,
+                process_id, process_started_at_utc, process_image_name, process_association_source_version,
+                gpu_device_id, dropped_sample_count,
                 cpu_percent, cpu_quality, cpu_source, cpu_source_version, cpu_derivation_version,
                 memory_percent, memory_quality, memory_source, memory_source_version, memory_derivation_version)
             VALUES(
-                $id, $operation, $captured,
+                $id, $operation, $request, $captured,
+                $stage, $stage_evidence, $stage_source_version,
+                $process_id, $process_started, $process_image, $process_source_version,
+                $gpu_device_id, $dropped_sample_count,
                 $cpu, $cpu_quality, $cpu_source, $cpu_source_version, $cpu_derivation_version,
-                $memory, $memory_quality, $memory_source, $memory_source_version, $memory_derivation_version);
+                $memory, $memory_quality, $memory_source, $memory_source_version, $memory_derivation_version)
+            ON CONFLICT(sample_id) DO UPDATE SET
+                operation_id = excluded.operation_id,
+                request_id = excluded.request_id,
+                captured_at_utc = excluded.captured_at_utc,
+                stage = excluded.stage,
+                stage_evidence = excluded.stage_evidence,
+                stage_source_version = excluded.stage_source_version,
+                process_id = excluded.process_id,
+                process_started_at_utc = excluded.process_started_at_utc,
+                process_image_name = excluded.process_image_name,
+                process_association_source_version = excluded.process_association_source_version,
+                gpu_device_id = excluded.gpu_device_id,
+                dropped_sample_count = excluded.dropped_sample_count,
+                cpu_percent = excluded.cpu_percent,
+                cpu_quality = excluded.cpu_quality,
+                cpu_source = excluded.cpu_source,
+                cpu_source_version = excluded.cpu_source_version,
+                cpu_derivation_version = excluded.cpu_derivation_version,
+                memory_percent = excluded.memory_percent,
+                memory_quality = excluded.memory_quality,
+                memory_source = excluded.memory_source,
+                memory_source_version = excluded.memory_source_version,
+                memory_derivation_version = excluded.memory_derivation_version;
             """;
         command.Parameters.AddWithValue("$id", sample.SampleId.ToString("N"));
         command.Parameters.AddWithValue("$operation", DbValue(sample.OperationId?.ToString("N")));
+        command.Parameters.AddWithValue("$request", DbValue(sample.RequestId?.ToString("N")));
         command.Parameters.AddWithValue("$captured", ToDbTime(sample.CapturedAt));
+        command.Parameters.AddWithValue("$stage", DbValue(sample.Stage is null ? null : (int)sample.Stage.Stage));
+        command.Parameters.AddWithValue(
+            "$stage_evidence",
+            DbValue(sample.Stage is null ? null : (int)sample.Stage.Evidence));
+        command.Parameters.AddWithValue("$stage_source_version", DbValue(sample.Stage?.SourceVersion));
+        command.Parameters.AddWithValue("$process_id", DbValue(sample.RelatedProcess?.ProcessId));
+        command.Parameters.AddWithValue(
+            "$process_started",
+            DbValue(sample.RelatedProcess is null ? null : ToDbTime(sample.RelatedProcess.ProcessStartedAt)));
+        command.Parameters.AddWithValue("$process_image", DbValue(sample.RelatedProcess?.ImageName.Value));
+        command.Parameters.AddWithValue("$process_source_version", DbValue(sample.RelatedProcess?.SourceVersion));
+        command.Parameters.AddWithValue("$gpu_device_id", DbValue(sample.GpuDeviceId?.Value));
+        command.Parameters.AddWithValue("$dropped_sample_count", sample.DroppedSampleCount);
         command.Parameters.AddWithValue("$cpu", DbValue(sample.CpuPercent.Value));
         command.Parameters.AddWithValue("$cpu_quality", (int)sample.CpuPercent.Quality);
         command.Parameters.AddWithValue("$cpu_source", (int)sample.CpuPercent.Source);
@@ -823,6 +914,50 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue("$memory_source", (int)sample.MemoryPercent.Source);
         command.Parameters.AddWithValue("$memory_source_version", sample.MemoryPercent.SourceVersion);
         command.Parameters.AddWithValue("$memory_derivation_version", DbValue(sample.MemoryPercent.DerivationVersion));
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach ((string key, MetricValue metric) in ResourceMetrics(sample))
+        {
+            await InsertResourceMetricAsync(
+                connection,
+                transaction,
+                sample.SampleId,
+                key,
+                metric,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task InsertResourceMetricAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        Guid sampleId,
+        string key,
+        MetricValue metric,
+        CancellationToken cancellationToken)
+    {
+        await using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO resource_sample_metrics(
+                sample_id, metric_key, value, unit, quality, source, source_version, derivation_version)
+            VALUES($sample, $key, $value, $unit, $quality, $source, $source_version, $derivation)
+            ON CONFLICT(sample_id, metric_key) DO UPDATE SET
+                value = excluded.value,
+                unit = excluded.unit,
+                quality = excluded.quality,
+                source = excluded.source,
+                source_version = excluded.source_version,
+                derivation_version = excluded.derivation_version;
+            """;
+        command.Parameters.AddWithValue("$sample", sampleId.ToString("N"));
+        command.Parameters.AddWithValue("$key", key);
+        command.Parameters.AddWithValue("$value", DbValue(metric.Value));
+        command.Parameters.AddWithValue("$unit", (int)metric.Unit);
+        command.Parameters.AddWithValue("$quality", (int)metric.Quality);
+        command.Parameters.AddWithValue("$source", (int)metric.Source);
+        command.Parameters.AddWithValue("$source_version", metric.SourceVersion);
+        command.Parameters.AddWithValue("$derivation", DbValue(metric.DerivationVersion));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -1116,13 +1251,16 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.CommandText = """
             SELECT sample_id, operation_id, captured_at_utc,
                    cpu_percent, cpu_quality, cpu_source, cpu_source_version, cpu_derivation_version,
-                   memory_percent, memory_quality, memory_source, memory_source_version, memory_derivation_version
+                   memory_percent, memory_quality, memory_source, memory_source_version, memory_derivation_version,
+                   request_id, stage, stage_evidence, stage_source_version,
+                   process_id, process_started_at_utc, process_image_name, process_association_source_version,
+                   gpu_device_id, dropped_sample_count
             FROM resource_samples
             WHERE operation_id = $id
             ORDER BY captured_at_utc, sample_id;
             """;
         command.Parameters.AddWithValue("$id", operationId.ToString("N"));
-        return await ReadResourcesAsync(command, cancellationToken).ConfigureAwait(false);
+        return await ReadResourcesAsync(connection, command, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<TechnicalResourceSampleRecord>> QueryResourcesAsync(
@@ -1145,29 +1283,45 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             command.Parameters.AddWithValue("$to", ToDbTime(filter.To.Value));
         }
 
-        AddEnumPredicate(command, predicates, "o.client", "$client", filter.Client);
-        AddEnumPredicate(command, predicates, "o.backend", "$backend", filter.Backend);
+        AddEnumPredicate(command, predicates, "COALESCE(o.client, r.client)", "$client", filter.Client);
+        AddEnumPredicate(command, predicates, "COALESCE(o.backend, r.backend)", "$backend", filter.Backend);
         if (filter.Model is not null)
         {
-            predicates.Add("o.model = $model");
+            predicates.Add("COALESCE(o.model, r.model) = $model");
             command.Parameters.AddWithValue("$model", filter.Model.Value);
         }
 
         if (filter.SessionId is not null)
         {
-            predicates.Add("o.session_id = $session");
+            predicates.Add("COALESCE(o.session_id, r.session_id) = $session");
             command.Parameters.AddWithValue("$session", filter.SessionId.Value.ToString("N"));
         }
 
         if (filter.Status is not null)
         {
-            predicates.Add("EXISTS(SELECT 1 FROM requests r WHERE r.operation_id = s.operation_id AND r.outcome = $status)");
+            predicates.Add("""
+                EXISTS (
+                    SELECT 1
+                    FROM requests filtered_request
+                    WHERE (filtered_request.request_id = s.request_id
+                           OR (s.request_id IS NULL AND filtered_request.operation_id = s.operation_id))
+                      AND filtered_request.outcome = $status
+                )
+                """);
             command.Parameters.AddWithValue("$status", (int)filter.Status.Value);
         }
 
         if (filter.ErrorType is not null)
         {
-            predicates.Add("EXISTS(SELECT 1 FROM requests r WHERE r.operation_id = s.operation_id AND r.error_type = $error)");
+            predicates.Add("""
+                EXISTS (
+                    SELECT 1
+                    FROM requests filtered_request
+                    WHERE (filtered_request.request_id = s.request_id
+                           OR (s.request_id IS NULL AND filtered_request.operation_id = s.operation_id))
+                      AND filtered_request.error_type = $error
+                )
+                """);
             command.Parameters.AddWithValue("$error", (int)filter.ErrorType.Value);
         }
 
@@ -1175,33 +1329,132 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             SELECT s.sample_id, s.operation_id, s.captured_at_utc,
                    s.cpu_percent, s.cpu_quality, s.cpu_source, s.cpu_source_version, s.cpu_derivation_version,
                    s.memory_percent, s.memory_quality, s.memory_source, s.memory_source_version,
-                   s.memory_derivation_version
+                   s.memory_derivation_version,
+                   s.request_id, s.stage, s.stage_evidence, s.stage_source_version,
+                   s.process_id, s.process_started_at_utc, s.process_image_name,
+                   s.process_association_source_version, s.gpu_device_id, s.dropped_sample_count
             FROM resource_samples s
             LEFT JOIN operations o ON o.operation_id = s.operation_id
+            LEFT JOIN requests r ON r.request_id = s.request_id
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
             ORDER BY s.captured_at_utc, s.sample_id;
             """;
-        return await ReadResourcesAsync(command, cancellationToken).ConfigureAwait(false);
+        return await ReadResourcesAsync(connection, command, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<IReadOnlyList<TechnicalResourceSampleRecord>> ReadResourcesAsync(
+        SqliteConnection connection,
         SqliteCommand command,
         CancellationToken cancellationToken)
     {
         List<TechnicalResourceSampleRecord> result = [];
-        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        await using (SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
-            result.Add(new TechnicalResourceSampleRecord(
-                Guid.ParseExact(reader.GetString(0), "N"),
-                reader.IsDBNull(1) ? null : Guid.ParseExact(reader.GetString(1), "N"),
-                ParseDbTime(reader.GetString(2)),
-                CreateStoredPercentMetric(reader, 3, 4, 5, 6, 7),
-                CreateStoredPercentMetric(reader, 8, 9, 10, 11, 12)));
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                RequestStageValue? stage = reader.IsDBNull(14)
+                    ? null
+                    : new RequestStageValue(
+                        (RequestStage)reader.GetInt32(14),
+                        (RequestStageEvidence)reader.GetInt32(15),
+                        reader.GetString(16));
+                TechnicalProcessAssociation? process = reader.IsDBNull(17)
+                    ? null
+                    : new TechnicalProcessAssociation(
+                        reader.GetInt32(17),
+                        ParseDbTime(reader.GetString(18)),
+                        ReadIdentifier(reader.GetString(19)),
+                        reader.GetString(20));
+                result.Add(new TechnicalResourceSampleRecord(
+                    Guid.ParseExact(reader.GetString(0), "N"),
+                    reader.IsDBNull(1) ? null : Guid.ParseExact(reader.GetString(1), "N"),
+                    ParseDbTime(reader.GetString(2)),
+                    CreateStoredPercentMetric(reader, 3, 4, 5, 6, 7),
+                    CreateStoredPercentMetric(reader, 8, 9, 10, 11, 12))
+                {
+                    RequestId = reader.IsDBNull(13) ? null : Guid.ParseExact(reader.GetString(13), "N"),
+                    Stage = stage,
+                    RelatedProcess = process,
+                    GpuDeviceId = reader.IsDBNull(21) ? null : ReadIdentifier(reader.GetString(21)),
+                    DroppedSampleCount = reader.GetInt32(22),
+                });
+            }
         }
 
-        return result;
+        return await HydrateResourceMetricsAsync(connection, result, cancellationToken).ConfigureAwait(false);
     }
+
+    private static async Task<IReadOnlyList<TechnicalResourceSampleRecord>> HydrateResourceMetricsAsync(
+        SqliteConnection connection,
+        List<TechnicalResourceSampleRecord> samples,
+        CancellationToken cancellationToken)
+    {
+        const int batchSize = 400;
+        Dictionary<Guid, Dictionary<string, MetricValue>> metricsBySample = [];
+        for (int offset = 0; offset < samples.Count; offset += batchSize)
+        {
+            TechnicalResourceSampleRecord[] batch = samples.Skip(offset).Take(batchSize).ToArray();
+            await using SqliteCommand command = connection.CreateCommand();
+            string[] parameterNames = new string[batch.Length];
+            for (int index = 0; index < batch.Length; index++)
+            {
+                parameterNames[index] = $"$sample_{index}";
+                command.Parameters.AddWithValue(parameterNames[index], batch[index].SampleId.ToString("N"));
+            }
+
+            command.CommandText = $"""
+                SELECT sample_id, metric_key, value, unit, quality, source, source_version, derivation_version
+                FROM resource_sample_metrics
+                WHERE sample_id IN ({string.Join(", ", parameterNames)});
+                """;
+            await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                Guid sampleId = Guid.ParseExact(reader.GetString(0), "N");
+                if (!metricsBySample.TryGetValue(sampleId, out Dictionary<string, MetricValue>? metrics))
+                {
+                    metrics = new Dictionary<string, MetricValue>(StringComparer.Ordinal);
+                    metricsBySample.Add(sampleId, metrics);
+                }
+
+                metrics[reader.GetString(1)] = CreateStoredMetric(
+                    reader,
+                    (MetricUnit)reader.GetInt32(3),
+                    2,
+                    4,
+                    5,
+                    6,
+                    7);
+            }
+        }
+
+        return samples.Select(sample => ApplyResourceMetrics(
+            sample,
+            metricsBySample.TryGetValue(sample.SampleId, out Dictionary<string, MetricValue>? metrics)
+                ? metrics
+                : [])).ToArray();
+    }
+
+    private static TechnicalResourceSampleRecord ApplyResourceMetrics(
+        TechnicalResourceSampleRecord sample,
+        Dictionary<string, MetricValue> metrics) =>
+        sample with
+        {
+            CpuPercent = GetResourceMetric(metrics, ResourceMetricSystemCpu, sample.CpuPercent),
+            MemoryPercent = GetResourceMetric(metrics, ResourceMetricSystemMemory, sample.MemoryPercent),
+            MemoryUsedBytes = GetResourceMetric(metrics, ResourceMetricSystemMemoryUsed, sample.MemoryUsedBytes),
+            ProcessCpuPercent = GetResourceMetric(metrics, ResourceMetricProcessCpu, sample.ProcessCpuPercent),
+            ProcessMemoryBytes = GetResourceMetric(metrics, ResourceMetricProcessMemory, sample.ProcessMemoryBytes),
+            DiskReadBytes = GetResourceMetric(metrics, ResourceMetricDiskRead, sample.DiskReadBytes),
+            DiskWriteBytes = GetResourceMetric(metrics, ResourceMetricDiskWrite, sample.DiskWriteBytes),
+            ClientToBackendBytes = GetResourceMetric(metrics, ResourceMetricClientToBackend, sample.ClientToBackendBytes),
+            BackendToClientBytes = GetResourceMetric(metrics, ResourceMetricBackendToClient, sample.BackendToClientBytes),
+            GpuUtilizationPercent = GetResourceMetric(metrics, ResourceMetricGpuUtilization, sample.GpuUtilizationPercent),
+            GpuVramUsedBytes = GetResourceMetric(metrics, ResourceMetricGpuVramUsed, sample.GpuVramUsedBytes),
+            GpuVramTotalBytes = GetResourceMetric(metrics, ResourceMetricGpuVramTotal, sample.GpuVramTotalBytes),
+            GpuTemperatureCelsius = GetResourceMetric(metrics, ResourceMetricGpuTemperature, sample.GpuTemperatureCelsius),
+            GpuPowerWatts = GetResourceMetric(metrics, ResourceMetricGpuPower, sample.GpuPowerWatts),
+        };
 
     private async Task<IReadOnlyList<decimal>> ReadMetricSamplesAsync(
         HistoryFilter filter,
@@ -1477,6 +1730,31 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue($"${prefix}_source_version", metric.SourceVersion);
         command.Parameters.AddWithValue($"${prefix}_derivation_version", DbValue(metric.DerivationVersion));
     }
+
+    private static IEnumerable<(string Key, MetricValue Metric)> ResourceMetrics(
+        TechnicalResourceSampleRecord sample)
+    {
+        yield return (ResourceMetricSystemCpu, sample.CpuPercent);
+        yield return (ResourceMetricSystemMemory, sample.MemoryPercent);
+        yield return (ResourceMetricSystemMemoryUsed, sample.MemoryUsedBytes);
+        yield return (ResourceMetricProcessCpu, sample.ProcessCpuPercent);
+        yield return (ResourceMetricProcessMemory, sample.ProcessMemoryBytes);
+        yield return (ResourceMetricDiskRead, sample.DiskReadBytes);
+        yield return (ResourceMetricDiskWrite, sample.DiskWriteBytes);
+        yield return (ResourceMetricClientToBackend, sample.ClientToBackendBytes);
+        yield return (ResourceMetricBackendToClient, sample.BackendToClientBytes);
+        yield return (ResourceMetricGpuUtilization, sample.GpuUtilizationPercent);
+        yield return (ResourceMetricGpuVramUsed, sample.GpuVramUsedBytes);
+        yield return (ResourceMetricGpuVramTotal, sample.GpuVramTotalBytes);
+        yield return (ResourceMetricGpuTemperature, sample.GpuTemperatureCelsius);
+        yield return (ResourceMetricGpuPower, sample.GpuPowerWatts);
+    }
+
+    private static MetricValue GetResourceMetric(
+        Dictionary<string, MetricValue> metrics,
+        string key,
+        MetricValue fallback) =>
+        metrics.TryGetValue(key, out MetricValue? metric) ? metric : fallback;
 
     private static MetricValue CreateStoredMetric(
         SqliteDataReader reader,
@@ -1784,4 +2062,59 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             DEFAULT 'legacy-tool-duration-v1'
             CHECK(duration_derivation_version IS NULL OR length(duration_derivation_version) BETWEEN 1 AND 128);
         """;
+
+    private const string Migration4Sql = """
+        ALTER TABLE resource_samples ADD COLUMN request_id TEXT NULL
+            REFERENCES requests(request_id) ON DELETE CASCADE;
+        ALTER TABLE resource_samples ADD COLUMN stage INTEGER NULL
+            CHECK(stage IS NULL OR stage BETWEEN 0 AND 7);
+        ALTER TABLE resource_samples ADD COLUMN stage_evidence INTEGER NULL
+            CHECK(stage_evidence IS NULL OR stage_evidence BETWEEN 0 AND 1);
+        ALTER TABLE resource_samples ADD COLUMN stage_source_version TEXT NULL
+            CHECK(stage_source_version IS NULL OR length(stage_source_version) BETWEEN 1 AND 128);
+        ALTER TABLE resource_samples ADD COLUMN process_id INTEGER NULL CHECK(process_id > 0);
+        ALTER TABLE resource_samples ADD COLUMN process_started_at_utc TEXT NULL;
+        ALTER TABLE resource_samples ADD COLUMN process_image_name TEXT NULL
+            CHECK(process_image_name IS NULL OR length(process_image_name) BETWEEN 1 AND 128);
+        ALTER TABLE resource_samples ADD COLUMN process_association_source_version TEXT NULL
+            CHECK(process_association_source_version IS NULL OR length(process_association_source_version) BETWEEN 1 AND 128);
+        ALTER TABLE resource_samples ADD COLUMN gpu_device_id TEXT NULL
+            CHECK(gpu_device_id IS NULL OR length(gpu_device_id) BETWEEN 1 AND 128);
+        ALTER TABLE resource_samples ADD COLUMN dropped_sample_count INTEGER NOT NULL DEFAULT 0
+            CHECK(dropped_sample_count >= 0);
+
+        CREATE TABLE resource_sample_metrics(
+            sample_id TEXT NOT NULL REFERENCES resource_samples(sample_id) ON DELETE CASCADE,
+            metric_key TEXT NOT NULL CHECK(metric_key IN (
+                'system_cpu_percent', 'system_memory_percent', 'system_memory_used_bytes',
+                'process_cpu_percent', 'process_memory_bytes', 'disk_read_bytes', 'disk_write_bytes',
+                'client_to_backend_bytes', 'backend_to_client_bytes', 'gpu_utilization_percent',
+                'gpu_vram_used_bytes', 'gpu_vram_total_bytes', 'gpu_temperature_celsius', 'gpu_power_watts')),
+            value REAL NULL,
+            unit INTEGER NOT NULL,
+            quality INTEGER NOT NULL CHECK(quality BETWEEN 0 AND 3),
+            source INTEGER NOT NULL,
+            source_version TEXT NOT NULL CHECK(length(source_version) BETWEEN 1 AND 128),
+            derivation_version TEXT NULL CHECK(derivation_version IS NULL OR length(derivation_version) BETWEEN 1 AND 128),
+            PRIMARY KEY(sample_id, metric_key)
+        ) STRICT;
+
+        CREATE INDEX ix_resource_samples_request ON resource_samples(request_id, captured_at_utc);
+        CREATE INDEX ix_resource_samples_operation_stage ON resource_samples(operation_id, stage, captured_at_utc);
+        """;
+
+    private const string ResourceMetricSystemCpu = "system_cpu_percent";
+    private const string ResourceMetricSystemMemory = "system_memory_percent";
+    private const string ResourceMetricSystemMemoryUsed = "system_memory_used_bytes";
+    private const string ResourceMetricProcessCpu = "process_cpu_percent";
+    private const string ResourceMetricProcessMemory = "process_memory_bytes";
+    private const string ResourceMetricDiskRead = "disk_read_bytes";
+    private const string ResourceMetricDiskWrite = "disk_write_bytes";
+    private const string ResourceMetricClientToBackend = "client_to_backend_bytes";
+    private const string ResourceMetricBackendToClient = "backend_to_client_bytes";
+    private const string ResourceMetricGpuUtilization = "gpu_utilization_percent";
+    private const string ResourceMetricGpuVramUsed = "gpu_vram_used_bytes";
+    private const string ResourceMetricGpuVramTotal = "gpu_vram_total_bytes";
+    private const string ResourceMetricGpuTemperature = "gpu_temperature_celsius";
+    private const string ResourceMetricGpuPower = "gpu_power_watts";
 }

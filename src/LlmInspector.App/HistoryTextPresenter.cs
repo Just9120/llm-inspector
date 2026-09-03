@@ -71,8 +71,23 @@ public static class HistoryTextPresenter
         foreach (TechnicalResourceSampleRecord resource in detail.ResourceSamples)
         {
             text.Append("Resource ").Append(resource.CapturedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture))
+                .Append(" | request=").Append(FullId(resource.RequestId))
+                .Append(" | stage=").Append(resource.Stage?.Stage.ToString() ?? "unavailable")
+                .Append(" | gaps=").Append(resource.DroppedSampleCount.ToString(CultureInfo.InvariantCulture))
                 .Append(" | CPU=").Append(FormatMetric(resource.CpuPercent))
                 .Append(" | memory=").Append(FormatMetric(resource.MemoryPercent))
+                .Append(" | process=").Append(resource.RelatedProcess?.ImageName.Value ?? "unavailable")
+                .Append(" | process CPU=").Append(FormatMetric(resource.ProcessCpuPercent))
+                .Append(" | disk read/write=").Append(FormatMetric(resource.DiskReadBytes))
+                .Append('/').Append(FormatMetric(resource.DiskWriteBytes))
+                .Append(" | traffic in/out=").Append(FormatMetric(resource.ClientToBackendBytes))
+                .Append('/').Append(FormatMetric(resource.BackendToClientBytes))
+                .Append(" | GPU=").Append(resource.GpuDeviceId?.Value ?? "unavailable")
+                .Append(" | GPU load=").Append(FormatMetric(resource.GpuUtilizationPercent))
+                .Append(" | VRAM=").Append(FormatMetric(resource.GpuVramUsedBytes))
+                .Append('/').Append(FormatMetric(resource.GpuVramTotalBytes))
+                .Append(" | temperature=").Append(FormatMetric(resource.GpuTemperatureCelsius))
+                .Append(" | power=").Append(FormatMetric(resource.GpuPowerWatts))
                 .AppendLine();
         }
 

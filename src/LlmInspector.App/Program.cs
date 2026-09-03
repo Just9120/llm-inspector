@@ -3,6 +3,7 @@ using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
+using LlmInspector.Resources.Windows;
 using LlmInspector.Storage.Sqlite;
 using LlmInspector.Telemetry;
 using Microsoft.Data.Sqlite;
@@ -22,6 +23,8 @@ public static class Program
     public static LiveRequestTracker LiveStateTracker { get; private set; } = new();
 
     public static ITechnicalHistoryStore? HistoryStore { get; private set; }
+
+    public static WindowsRequestResourceMonitor ResourceMonitor { get; private set; } = new();
 
     public static string HistoryState { get; private set; } = "Technical history has not started.";
 
@@ -61,6 +64,7 @@ public static class Program
         BufferedTechnicalHistorySink? historySink = null;
         ObservationStore = new LatestProxyObservationStore();
         LiveStateTracker = new LiveRequestTracker();
+        ResourceMonitor = new WindowsRequestResourceMonitor();
         HistoryStore = null;
         HistoryState = "Technical history is unavailable.";
 
@@ -94,7 +98,9 @@ public static class Program
                 lmStudioNativeTelemetryAdapter: options.Backend == BackendKind.LmStudio
                     ? BackendTelemetryAdapters.CreateLmStudioNative()
                     : null,
-                operationSink: historySink);
+                operationSink: historySink,
+                resourceSink: historySink,
+                resourceMonitor: ResourceMonitor);
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(
                 gateway.ListeningAddress!,

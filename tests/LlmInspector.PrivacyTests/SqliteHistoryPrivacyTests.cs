@@ -146,6 +146,13 @@ public sealed class SqliteHistoryPrivacyTests
                     "sample_id", "operation_id", "captured_at_utc",
                     "cpu_percent", "cpu_quality", "cpu_source", "cpu_source_version", "cpu_derivation_version",
                     "memory_percent", "memory_quality", "memory_source", "memory_source_version", "memory_derivation_version",
+                    "request_id", "stage", "stage_evidence", "stage_source_version",
+                    "process_id", "process_started_at_utc", "process_image_name",
+                    "process_association_source_version", "gpu_device_id", "dropped_sample_count",
+                ],
+                ["resource_sample_metrics"] = [
+                    "sample_id", "metric_key", "value", "unit", "quality", "source",
+                    "source_version", "derivation_version",
                 ],
             };
             await using SqliteConnection connection = new($"Data Source={databasePath};Mode=ReadOnly");
