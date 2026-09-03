@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T09:13:53Z`
+> Updated: `2026-09-03T09:50:10Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `a349b1d36d929324c8e9102c2d9650b483172319`; exact-main CI [33735585399](https://github.com/Just9120/llm-inspector/actions/runs/33735585399) succeeded.
+- **Verified base:** `origin/main` / local `main` = `9b2933fe802842e60b089a37b1352f393ad94a56`; exact-main CI [33738059071](https://github.com/Just9120/llm-inspector/actions/runs/33738059071) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T09:13:53Z` |
+| Updated UTC | `2026-09-03T09:50:10Z` |
 | Expected base branch | `main` |
-| Base SHA | `a349b1d36d929324c8e9102c2d9650b483172319` — verified local/`origin/main`; exact-main CI `33735585399` success |
-| Working branch | `codex/goal-005-epic-11` |
-| Last verified revision | `72dee92` — complete EPIC-11 candidate tree covered by the full local CI-equivalent; this final checkpoint update is docs-only |
-| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-10 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
-| Completed work | EPIC-10 terminal: PR #14 and exact-main CI succeeded. `2cfa6ac` adds bounded SQLite range/operation snapshot slices, `diagnostic-snapshot-v1` allowlist DTO/serializer, availability-marked OS/driver/backend/client versions, model/runtime/error/system records, exact local preview hash/save and desktop UI; `72dee92` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `193/193` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-11 PR |
-| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-11` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | EPIC-10 terminal: PR #14, head `e2458a24eff69a9e57f5c5410b4ed4b3b574b3ea`, PR CI `33735289296`, merge `a349b1d36d929324c8e9102c2d9650b483172319`, exact-main CI `33735585399`, all success. EPIC-11 has not been pushed; exact-revision CI pending |
+| Base SHA | `9b2933fe802842e60b089a37b1352f393ad94a56` — verified local/`origin/main`; exact-main CI `33738059071` success |
+| Working branch | `codex/goal-005-epic-12` |
+| Last verified revision | `f6c0c7c` — implementation plus fail-closed GPU/UI Evidence fix; `e889d11` tree passed `207/207`, then final fix passed Release build and focused `60/60` Windows tests; current documentation update is not yet committed |
+| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-11 exact-main success and safe local/remote branch cleanup; no unrelated changes |
+| Current worktree state | Only expected README/canonical operational/architecture/delivery updates after implementation commit; no unrelated changes |
+| Completed work | EPIC-11 terminal: PR #15 and exact-main CI succeeded. `e889d11` adds typed Inspector/client/backend/model/unknown error origin, schema v5 runtime/version facts, NVIDIA driver capture, statistically guarded runtime configuration correlation, startup SQLite integrity check, full collector lifecycle isolation and child-process kill recovery. `f6c0c7c` makes NVIDIA `N/A` driver facts unavailable and adds UI correlation assertions. Release build: zero warnings/errors; local tests: `207/207`, zero skips before final focused fix |
+| Current step | Synchronize EPIC-12 operational documentation, commit it, then run the full exact-SDK CI-equivalent from the complete candidate tree |
+| Next exact action | Commit documentation, run locked restore → format → Release build → `207/207` tests → RID restore → clean self-contained publish → smoke; push only after all pass |
+| PR / CI | EPIC-11 terminal: PR #15, head `2d015d3adc76b9be3938f79d2637cdcdae9e40b3`, PR CI `33737811632`, merge `9b2933fe802842e60b089a37b1352f393ad94a56`, exact-main CI `33738059071`, all success. EPIC-12 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | None for bounded EPIC-11 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
-| Unverified assumptions | GPU driver, backend and client versions are not collected by current trusted sources and therefore render explicit `unavailable`; no value is inferred. Clean-install interactive file sharing remains release/manual Evidence, while local preview/save is automated |
+| Blockers | `E12-AC01..06` require owner-approved numeric performance/idle budgets and frozen reference hardware/workload; they remain uncredited. No blocker for this partial reliability PR |
+| Unverified assumptions | Backend/client version sources are not yet available in production composition and remain null rather than inferred; persistence/correlation is tested with typed supplied facts. Numeric performance results are intentionally absent |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T09:09:24Z` | `125/139 = 89.9%` | `125/164 = 76.2%` | Independent AC-by-AC calculation credits E11-AC01..10 from local versioned snapshot CODE, SQLite selection, preview/save UI and focused negative privacy/TEST Evidence; exact-revision CI remains open |
-| Previous | `2026-09-03T08:53:36Z` | `115/139 = 82.7%` | `115/164 = 70.1%` | EPIC-10 `8/8`; terminal PR #14 and exact-main CI `33735585399` confirmed required CI Evidence |
+| Current | `2026-09-03T09:44:08Z` | `132/139 = 95.0%` | `132/164 = 80.5%` | Independent AC-by-AC calculation credits only E12-AC07..13 from collector failure injection, typed origin, actual process-kill SQLite recovery/new write, persisted runtime facts and sufficient/insufficient correlation paths; exact-revision CI remains open |
+| Previous | `2026-09-03T09:20:19Z` | `125/139 = 89.9%` | `125/164 = 76.2%` | EPIC-11 `10/10`; terminal PR #15 and exact-main CI `33738059071` confirmed required CI Evidence |
 
-Delta: `+7.2 п.п.` initial release и `+6.1 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `10` atomic EPIC-11 criteria.
+Delta: `+5.1 п.п.` initial release и `+4.3 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `7` atomic EPIC-12 criteria.
 
 ## Epic readiness и Evidence
 
@@ -102,16 +102,16 @@ Delta: `+7.2 п.п.` initial release и `+6.1 п.п.` full roadmap. Denominators
 | EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-11 | 🟦 IN PROGRESS | 10/10 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **125/139** | **89.9%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ◐ | N/A | N/A |
+| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **125/164** | **76.2%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **132/164** | **80.5%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -198,6 +198,24 @@ Delta: `+7.2 п.п.` initial release и `+6.1 п.п.` full roadmap. Denominators
 | `E11-AC08` | Typed UI parser requires explicit ISO-8601 UTC range; SQLite request and resource queries use the same selection |
 | `E11-AC09` | Typed UI parser accepts an exact non-empty operation GUID; SQLite filters both request and resource rows by that operation, covered by integration tests |
 | `E11-AC10` | Root schema is `diagnostic-snapshot-v1`; every DTO shape has an executable field allowlist, output is bounded to 1000 requests/5000 samples with truncation markers, and reflection/privacy tests prevent silent field growth |
+
+### EPIC-12 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E12-AC01` | Не выполнен: CPU budget и frozen reference workload/hardware не утверждены; single scaffold performance test не является measurement Evidence |
+| `E12-AC02` | Не выполнен: RAM budget и frozen reference workload/hardware не утверждены |
+| `E12-AC03` | Не выполнен: GPU budget и frozen reference GPU/driver/workload не утверждены |
+| `E12-AC04` | Не выполнен: disk budget и frozen storage/workload fixture не утверждены |
+| `E12-AC05` | Не выполнен: acceptable paired throughput delta и immutable backend/model benchmark fixture не утверждены |
+| `E12-AC06` | Не выполнен: idle CPU/RAM/disk-wakeup budget и measurement window не утверждены |
+| `E12-AC07` | `ProxyGateway` изолирует resource collector start, stage/traffic callbacks, completion, persistence и disposal; integration test injects failures во все lifecycle seams и подтверждает неизменённый successful response |
+| `E12-AC08` | Windows probe failure создаёт request-correlated sample с affected OS/GPU metrics `unavailable` и exact gateway traffic; gateway integration подтверждает, что unavailable metric не влияет на response |
+| `E12-AC09` | `HistoryErrorOrigin` различает `Inspector`, `Client`, `Backend`, `Model`, `Unknown`, а success — `NotApplicable`; ambiguous relay/legacy failure остаётся `Unknown`. Schema v5 сохраняет origin, UI его показывает, mapping/backfill покрыты tests |
+| `E12-AC10` | Startup выполняет SQLite `quick_check(1)` до migration/write. Integration test сохраняет committed row, подтверждает normal restart, запускает отдельный child testhost, ждёт commit marker, убивает весь process tree без disposal и затем подтверждает обе committed rows после reopen |
+| `E12-AC11` | Тот же normal/process-kill restart test после recovery сохраняет третий request и читает все три records; new-write acceptance подтверждён фактическим SQLite store |
+| `E12-AC12` | Typed `TechnicalRuntimeFacts` содержит configuration fingerprint и allowlisted Inspector/framework/OS/adapter/backend/client/model/GPU-driver versions; schema v5 сохраняет available values, production gateway пишет local/config facts и model, NVIDIA source добавляет driver version. Reflection/schema privacy allowlists исключают free-form carrier |
+| `E12-AC13` | Period analytics группирует полную комбинацию runtime/version facts, сравнивает earliest/latest distinct cohorts по latency/throughput/error rate только при `n >= 3`, сохраняет typed recurring-error deltas и явно различает no facts/single config/undersampled data; unit, SQLite integration и UI presenter paths покрыты tests |
 
 ## Current blockers и decisions
 

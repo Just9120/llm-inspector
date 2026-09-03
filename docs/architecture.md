@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#14 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics и Windows background runtime. Exact-main CI `33735585399` подтвердил terminal EPIC-10 baseline на merge SHA `a349b1d36d929324c8e9102c2d9650b483172319`; EPIC-11 snapshot candidate пока имеет local CODE/focused TEST Evidence.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#15 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime и local diagnostic snapshot. Exact-main CI `33738059071` подтвердил terminal EPIC-11 baseline на merge SHA `9b2933fe802842e60b089a37b1352f393ad94a56`; active EPIC-12 candidate добавляет failure isolation, typed error origin, restart recovery и runtime-change correlation.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -86,7 +86,7 @@ App (composition/UI)
 
 Все девять production boundaries содержат product code. `Diagnostics` владеет versioned explainable rules и typed conclusion/evidence contracts, но получает только allowlisted Domain/Application projections. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 candidate читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX.
+EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX. EPIC-12 candidate расширяет Domain только typed runtime facts, Application — origin/correlation policy, а SQLite v5 остаётся единственным durable owner.
 
 ## 5. Runtime/process model
 
@@ -171,7 +171,7 @@ Release configuration не отправляет telemetry, history или settin
 | Diagnostic logs | Structured safe logger | Size-bounded rolling files under `%LOCALAPPDATA%\LLM Inspector\logs`, default retention 7 days |
 | User-created snapshot | `LlmInspector.Diagnostics` | User-selected local path; not auto-uploaded and not silently indexed |
 
-Текущая schema v4 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples`, normalized `resource_sample_metrics` и `schema_migrations`. Migration v2 добавляет request correlation/model-load fields; migration v3 — turn/tool quality/provenance; forward-only transaction migration v4 — request/stage/process/GPU correlation, explicit dropped-sample counter и allowlisted resource metric rows. Legacy rows остаются `unavailable` либо versioned calculated backfill. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
+Текущая schema v5 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples`, normalized `resource_sample_metrics` и `schema_migrations`. Migration v2 добавляет request correlation/model-load fields; migration v3 — turn/tool quality/provenance; migration v4 — request/stage/process/GPU correlation и allowlisted resource metrics; forward-only transaction migration v5 добавляет typed error origin, runtime configuration fingerprint и optional Inspector/framework/OS/adapter/backend/client/model/GPU-driver version facts. Legacy error origin backfill использует только typed error category, а неоднозначный relay failure остаётся `unknown`. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
 
 SQLite rules:
 
@@ -179,17 +179,17 @@ SQLite rules:
 - short transactions; UI analytics uses read-only connections/snapshots;
 - schema migrations versioned, forward-only and transactional; listener may run in explicit `history unavailable` degraded mode if migration/storage fails;
 - destructive migration требует отдельной Goal, verified backup/recovery path и stop criteria;
-- WAL checkpoint выполняется после idle/threshold signal, не на request critical path;
-- startup runs integrity diagnostics; повреждённая DB quarantined read-only, не перезаписывается автоматически;
+- SQLite восстанавливает committed WAL transactions после process termination; explicit idle/threshold checkpoint остаётся release-hardening debt и не выполняется на request critical path;
+- startup выполняет `quick_check(1)` до migration/write transaction и при failure переводит composition root в `history unavailable`; automatic overwrite отсутствует, отдельный read-only quarantine UI ещё не реализован;
 - DB/WAL/SHM backup рассматривается как единый state set; live file copy без SQLite backup mechanism запрещён.
 
 History default retention — `30 days`; user options точно соответствуют `7 days`, `30 days`, `90 days`, `indefinite`. Один cutoff применяется к request/session/operation/tool/resource/derived history, чтобы не оставлять orphan records. Cleanup выполняется bounded batches oldest-first и не блокирует forwarding. Manual clear требует preview scope, confirmation и transaction. Settings, release metadata и user-exported snapshots не удаляются history cleanup.
 
 Текущий writer использует bounded channel capacity `256`, single reader и non-blocking `TryWrite`; full queue увеличивает drop counter, а storage failure — failure counter с типом ошибки, не задерживая proxy response. Read models открывают read-only connections. Finite retention удаляет oldest records батчами по `500`, каждая batch имеет отдельную transaction; default cleanup выполняется при startup и сразу после сохранения нового retention setting.
 
-Analytics группирует trends по UTC day. Arithmetic mean и median считаются по точным sample values. P95 использует nearest-rank: для отсортированного массива из `n` samples выбирается индекс `ceil(0.95 × n) - 1`. Aggregate статистически достаточен только при `n >= 3`; меньшая выборка отображается с values, но явно маркируется `insufficient` и не подтверждает degradation. Comparison считает `candidate mean - baseline mean`; рост latency/load/error и падение throughput считаются degradation только при достаточной выборке обеих сторон. Token-count delta сам по себе не классифицируется как performance degradation.
+Analytics группирует trends по UTC day. Arithmetic mean и median считаются по точным sample values. P95 использует nearest-rank: для отсортированного массива из `n` samples выбирается индекс `ceil(0.95 × n) - 1`. Aggregate статистически достаточен только при `n >= 3`; меньшая выборка отображается с values, но явно маркируется `insufficient` и не подтверждает degradation. Comparison считает `candidate mean - baseline mean`; рост latency/load/error и падение throughput считаются degradation только при достаточной выборке обеих сторон. Runtime correlation группирует полные typed configuration/version facts, сравнивает earliest и latest distinct cohorts и отдельно показывает недостаточность no/single/undersampled configuration data. Token-count delta сам по себе не классифицируется как performance degradation.
 
-Не реализованные в EPIC-08 reliability surfaces: explicit idle/threshold WAL checkpoint, startup integrity/quarantine workflow, backup mechanism и restart/corruption fault injection. Они остаются требованиями EPIC-12/release hardening и не считаются Evidence текущего history/analytics DoD.
+EPIC-12 process-kill fault injection подтверждает recovery committed WAL history и приём новой telemetry после normal/crash restart. Не реализованы explicit idle/threshold WAL checkpoint, read-only quarantine UX, SQLite backup mechanism, disk-full fixture и destructive corruption fixture; они остаются release-hardening debt и не используются как Evidence `E12-AC01..06`.
 
 ## 9. Telemetry semantics и quality model
 
@@ -329,7 +329,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-10 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `186/186` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #14 CI `33735289296` и exact-main CI `33735585399` завершились успешно на merge `a349b1d36d929324c8e9102c2d9650b483172319`. Active EPIC-11 candidate прошёл тот же полный local pipeline с `193/193` tests без skips; exact-revision GitHub CI ещё не заявлен.
+Последняя terminal merged-main validation для EPIC-11 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `193/193` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #15 CI `33737811632` и exact-main CI `33738059071` завершились успешно на merge `9b2933fe802842e60b089a37b1352f393ad94a56`. Active EPIC-12 candidate имеет Release build без warnings/errors и `207/207` tests; full local publish pipeline и exact-revision GitHub CI ещё не выполнены.
 
 Configured CI foundation:
 
