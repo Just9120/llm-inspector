@@ -86,6 +86,8 @@ App (composition/UI)
 
 `Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry`, `Storage.Sqlite` и `App` содержат product code; `Resources.Windows` и `Diagnostics` пока представлены marker types. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
+Active EPIC-01 candidate добавляет в `App` только UI-level technical diagnostics summary поверх already allowlisted runtime state; versioned diagnostic rules и error taxonomy в `LlmInspector.Diagnostics` остаются scope EPIC-07. Это разделение не выдаёт navigation surface за полную diagnostic implementation.
+
 ## 5. Runtime/process model
 
 Один per-user process владеет:

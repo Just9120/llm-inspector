@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T06:01:33Z`
+> Updated: `2026-09-03T06:08:39Z`
 
 ## Current Goal
 
@@ -63,19 +63,19 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T06:01:33Z` |
+| Updated UTC | `2026-09-03T06:08:39Z` |
 | Expected base branch | `main` |
 | Base SHA | `7110c70b6975c939915273b005f05eedfcd2eb14` — verified local/`origin/main`; exact-main CI `33720428488` success |
 | Working branch | `codex/goal-005-epic-01` |
-| Last verified revision | `7110c70b6975c939915273b005f05eedfcd2eb14` — clean base before GOAL-005 changes |
+| Last verified revision | `8c4ab10fbd2efa5b5947ead49b015ee1b23c6386` — EPIC-01 code/focused test commit |
 | Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Documentation recovery in progress; only expected GOAL-005 metadata changes |
-| Completed work | Recovered terminal GOAL-004 Evidence from merged PR #9 and exact-main CI; independently confirmed baseline `72/139` and `72/164` |
-| Current step | Audit `EPIC-01` against actual desktop/package/UI/runtime Evidence and implement the safe bounded increment |
-| Next exact action | Synchronize terminal GOAL-004 metadata, commit recovery checkpoint, then add EPIC-01 tests/code without claiming unavailable release-matrix Evidence |
+| Current worktree state | Expected EPIC-01 documentation/readiness updates after committed code; no unrelated changes |
+| Completed work | Commit `9958783` recovered terminal GOAL-004/new Goal metadata. Commit `8c4ab10` adds diagnostics UI and focused boundary tests. `E01-AC02..04` pass; Windows suite `37/37`, zero skips |
+| Current step | Synchronize EPIC-01 `3/4` readiness, then run full local CI-equivalent |
+| Next exact action | Commit documentation, run locked restore → format → Release build → full tests → RID restore → clean publish → smoke; record exact results before initial push |
 | PR / CI | No GOAL-005 PR yet; branch has not been pushed; no CI for this branch |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | `E01-AC01` release-matrix Evidence is outside a feature PR; exact blocker recorded above |
+| Blockers | `E01-AC01` lacks clean install/upgrade/runtime Evidence on Windows 11 25H2 Home/Pro and approved signing/distribution path; safe `3/4` increment may merge without crediting it |
 | Unverified assumptions | None used for readiness; supported Windows matrix and release Evidence are taken only from canonical spec |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
@@ -83,16 +83,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T06:01:33Z` | `72/139 = 51.8%` | `72/164 = 43.9%` | Independent AC-by-AC recovery on exact merged `main`; EPIC-02/03/04/08/09 have terminal CODE/TEST/CI Evidence |
-| Previous | `2026-09-03T05:32:19Z` | `72/139 = 51.8%` | `72/164 = 43.9%` | Independent pre-merge calculation on PR #9 candidate: same product AC, CI still pending |
+| Current | `2026-09-03T06:08:39Z` | `75/139 = 54.0%` | `75/164 = 45.7%` | Independent AC-by-AC calculation credits E01-AC02..04 after focused CODE/TEST Evidence; E01-AC01 and exact-revision CI remain open |
+| Previous | `2026-09-03T06:01:33Z` | `72/139 = 51.8%` | `72/164 = 43.9%` | Exact merged-main recovery before EPIC-01 changes |
 
-Delta: `0.0 п.п.` по обоим denominators. Product completion не изменилась; изменилось качество Evidence — PR/main CI для EPIC-04/08/09 стало terminal `✅`.
+Delta: `+2.2 п.п.` initial release и `+1.8 п.п.` full roadmap; меньше 10 п.п. Причина — локально подтверждены три ранее невыполненных EPIC-01 criteria при неизменных denominators `139`/`164`.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | ⬜ BACKLOG | 0/4 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS ⛔ | 3/4 | 75% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -104,16 +104,25 @@ Delta: `0.0 п.п.` по обоим denominators. Product completion не изм
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **72/139** | **51.8%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **75/139** | **54.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **72/164** | **43.9%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **75/164** | **45.7%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
+
+### EPIC-01 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E01-AC01` | Не выполнен: self-contained `win-x64` validation publish не заменяет clean install/upgrade/launch/tray/proxy/SQLite recovery suite на Windows 11 25H2 Home/Pro; signing/distribution path не утверждён |
+| `E01-AC02` | MainWindow имеет доступные `Live requests`, `History and analytics` и `Diagnostics` surfaces; `DesktopProductBoundaryTests` проверяет headings и named output controls |
+| `E01-AC03` | `AppLaunchConfiguration` принимает только literal IPv4/IPv6 loopback backend URLs; defaults Ollama/llama.cpp/LM Studio и derived gateway options покрыты focused Windows tests |
+| `E01-AC04` | Versioned launch parser отвергает start/stop/restart/model-load/runtime-mutation commands как unknown; UI не содержит lifecycle controls |
 
 ## Current blockers и decisions
 
