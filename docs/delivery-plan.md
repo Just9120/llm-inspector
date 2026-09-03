@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-03T05:32:19Z`
+> Updated: `2026-09-03T05:43:59Z`
 
 ## Current Goal
 
@@ -48,7 +48,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `72/72 = 100%` selected product AC complete locally. EPIC-02/03 имеют terminal exact-revision Evidence; EPIC-04 был доставлен как честный `10/12` partial increment в PR #7, а текущий bounded fix реализует оставшиеся `E04-AC03`/`E04-AC12`. EPIC-08/09 имели terminal PR/main CI до текущих schema/privacy изменений. Goal delivery AC #6 и required CI остаются открыты до полного local pipeline, fix PR, merge и exact-main CI.
+**Current Goal verification:** `72/72 = 100%` selected product AC complete locally. EPIC-02/03 имеют terminal exact-revision Evidence; EPIC-04 был доставлен как честный `10/12` partial increment в PR #7, а текущий bounded fix реализует оставшиеся `E04-AC03`/`E04-AC12`. EPIC-08/09 имели terminal PR/main CI до текущих schema/privacy изменений. Полный local pipeline зелёный; Goal delivery AC #6 и required CI остаются открыты до fix PR, merge и exact-main CI.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -67,16 +67,16 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T05:32:19Z` |
+| Updated UTC | `2026-09-03T05:43:59Z` |
 | Expected base branch | `main` |
 | Base SHA | `5757652943753e549ef85f81308c0fc0c6d83686` — verified local/`origin/main` after PR #8 merge and successful exact-merge CI `33702791561` |
 | Working branch | `codex/fix-epic-04-correlation-lmstudio` |
-| Last verified revision | `7713c3db6ffd990d78fae2910ce1af341e354549` — correlation, native LM Studio JSON/SSE, SQLite v2 persistence/analytics and gateway E2E covered by focused checks |
+| Last verified revision | `85187b7aed4931bdda22664abfbc12475d9c17a3` — complete branch tree passed local CI-equivalent |
 | Initial worktree state | Clean branch created from synchronized local/`origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Expected README/architecture/readiness synchronization only; implementation is committed, no unrelated changes |
-| Completed work | Commits `8dfa561`/`686c206` implement fail-closed correlation and LM Studio native telemetry; `5b8655b` adds SQLite v2 migration plus persisted cold/warm analytics/privacy disclosure; `7713c3d` adds native SSE gateway E2E. Focused Release build: zero warnings/errors; Integration `36/36`, Unit `34/34`, Privacy `5/5`, Windows `29/29` |
-| Current step | Synchronize operational docs, then execute the full local CI-equivalent against the complete branch tree |
-| Next exact action | Commit documentation, run locked restore → format → Release build → all tests → RID restore → self-contained publish → smoke; push only if all gates pass |
+| Current worktree state | Clean at validation checkpoint; this row update is the only expected post-validation metadata change, no unrelated changes |
+| Completed work | Commits `8dfa561`/`686c206` implement fail-closed correlation and LM Studio native telemetry; `5b8655b` adds SQLite v2 migration plus persisted cold/warm analytics/privacy disclosure; `7713c3d` adds native SSE gateway E2E; `85187b7` synchronizes docs. Full pipeline: locked normal/RID restores; format; Release build `0` warnings/errors; `125/125` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record final local checkpoint, then perform the one authorized initial push and create the fix PR |
+| Next exact action | Commit this checkpoint, push `codex/fix-epic-04-correlation-lmstudio` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | Fix PR not created; remote branch does not exist; no CI run for this branch |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
 | Blockers | None currently. PR/main CI is a pending gate, not yet Evidence |
@@ -167,7 +167,7 @@ EPIC-04 baseline Evidence: PR #7 run `33696539694` and exact-merge `main` run `3
 | `E08-AC17` | Startup/save cleanup uses cutoff boundaries, oldest-first batches of 500 and separate short transactions; integration tests cover 7/30/90, indefinite, exact boundary and multi-batch deletion |
 | `E08-AC18` | Clear API/UI requires an explicit all/range scope, exact preview and separate confirmation; preview invalidation/staleness are fail-closed and tested |
 
-Cross-epic Evidence: `SqliteHistoryPrivacyTests` asserts exact schema v2 column allowlists and relays runtime-generated prompt/response/reasoning/tool/credential/raw-header canaries through the gateway before scanning DB/WAL files. PR #8 and exact-main runs `33702613336`/`33702791561` terminally confirmed EPIC-08/09 baseline; current migration/privacy fix has focused green tests and awaits full local/PR CI.
+Cross-epic Evidence: `SqliteHistoryPrivacyTests` asserts exact schema v2 column allowlists and relays runtime-generated prompt/response/reasoning/tool/credential/raw-header canaries through the gateway before scanning DB/WAL files. PR #8 and exact-main runs `33702613336`/`33702791561` terminally confirmed EPIC-08/09 baseline; current migration/privacy fix passed the full local pipeline and awaits PR/main CI.
 
 ## Current blockers и decisions
 
