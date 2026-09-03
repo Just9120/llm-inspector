@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T09:50:10Z` |
+| Updated UTC | `2026-09-03T09:55:50Z` |
 | Expected base branch | `main` |
 | Base SHA | `9b2933fe802842e60b089a37b1352f393ad94a56` — verified local/`origin/main`; exact-main CI `33738059071` success |
 | Working branch | `codex/goal-005-epic-12` |
-| Last verified revision | `f6c0c7c` — implementation plus fail-closed GPU/UI Evidence fix; `e889d11` tree passed `207/207`, then final fix passed Release build and focused `60/60` Windows tests; current documentation update is not yet committed |
+| Last verified revision | `e9689e5` — complete EPIC-12 candidate passed the full exact-SDK local CI-equivalent |
 | Initial worktree state | Clean branch created from verified `origin/main` after EPIC-11 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Only expected README/canonical operational/architecture/delivery updates after implementation commit; no unrelated changes |
-| Completed work | EPIC-11 terminal: PR #15 and exact-main CI succeeded. `e889d11` adds typed Inspector/client/backend/model/unknown error origin, schema v5 runtime/version facts, NVIDIA driver capture, statistically guarded runtime configuration correlation, startup SQLite integrity check, full collector lifecycle isolation and child-process kill recovery. `f6c0c7c` makes NVIDIA `N/A` driver facts unavailable and adds UI correlation assertions. Release build: zero warnings/errors; local tests: `207/207`, zero skips before final focused fix |
-| Current step | Synchronize EPIC-12 operational documentation, commit it, then run the full exact-SDK CI-equivalent from the complete candidate tree |
-| Next exact action | Commit documentation, run locked restore → format → Release build → `207/207` tests → RID restore → clean self-contained publish → smoke; push only after all pass |
+| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
+| Completed work | EPIC-11 terminal: PR #15 and exact-main CI succeeded. EPIC-12 adds typed Inspector/client/backend/model/unknown error origin, schema v5 runtime/version facts, fail-closed NVIDIA driver capture, statistically guarded runtime configuration correlation, startup SQLite integrity check, full collector lifecycle isolation and child-process kill recovery. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `207/207` tests with zero skips, locked `win-x64` RID restore, clean self-contained publish and smoke exit `0` all passed |
+| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
+| Next exact action | Commit this checkpoint, verify the branch diff, perform the one initial push, create the EPIC-12 PR and wait for required exact-head CI |
 | PR / CI | EPIC-11 terminal: PR #15, head `2d015d3adc76b9be3938f79d2637cdcdae9e40b3`, PR CI `33737811632`, merge `9b2933fe802842e60b089a37b1352f393ad94a56`, exact-main CI `33738059071`, all success. EPIC-12 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | `E12-AC01..06` require owner-approved numeric performance/idle budgets and frozen reference hardware/workload; they remain uncredited. No blocker for this partial reliability PR |
