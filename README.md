@@ -16,6 +16,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - локальный `diagnostic-snapshot-v1` создаётся по выбранному UTC range или operation: user сначала просматривает exact allowlist JSON и SHA-256, затем сохраняет тот же preview; upload path отсутствует;
 - локальный `analytics-export-v1` экспортирует выбранный UTC range anonymized technical history и раздельные request/resource aggregates (`n`, mean, median, P95); oversized range отклоняется без неполного export, exact JSON preview обязателен до сохранения и проходит тот же negative content corpus;
 - supported NVIDIA GPUs обнаруживаются списком до 16 distinct devices; live/history показывают device-wide metrics раздельно, а workload-to-device attribution честно остаётся `unavailable` без достоверного source;
+- monitoring sampling настраивается через user-friendly профили `Бережный` (`2 s`), `Сбалансированный` (`1 s`, default/recommended), `Детальный` (`500 ms`) и validated `Свой профиль` (`250 ms`–`10 s`); custom profile явно не является release-performance Evidence;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
@@ -24,7 +25,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness на exact merged `main` `ecdb542281ca5ad989de0540bf59939f42af8eb7`: `132/139 = 95.0%` initial release и `138/164 = 84.1%` full roadmap. PR #18 и exact-main CI `33746269521` подтвердили BACKLOG-05 и `211/211` tests. Следующий активный scope — `21` AC: `E01-AC01`, `E12-AC01..06`, `B01-AC01..05`, `B02-AC01..09`; ratification decisions не считаются выполнением этих AC.
+Текущая readiness на verified base `main` `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`: `132/139 = 95.0%` initial release и `138/164 = 84.1%` full roadmap. PR #19 и exact-main CI `33807628059` подтвердили ратификацию всех remaining decisions без AC credit. Следующий активный scope — `21` AC: `E01-AC01`, `E12-AC01..06`, `B01-AC01..05`, `B02-AC01..09`.
 
 Утверждённый release path: observation-only `v1.0` как unsigned portable self-contained single-file `win-x64` executable в GitHub Releases с SHA-256, SBOM/provenance и документированным SmartScreen warning; lifecycle начинается с `v1.1`. Store/MSIX/signing/automatic updates отложены. Secure remote target использует loopback-only Inspector, private Tailscale Serve и отдельный application token; public exposure запрещён. Linux/macOS и новые API protocols сейчас не реализуются.
 
@@ -53,6 +54,8 @@ dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore -
 ```
 
 Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp|lm-studio`, `--backend-url=http[s]://<literal-loopback>:<port>/` и `--listener-port=1..65535`. Remote host, credentials/path/query/fragment в backend URL, duplicate и неизвестные options fail closed без вывода исходного значения.
+
+Профиль частоты сбора метрик выбирается в разделе «Производительность мониторинга». Настройка сохраняется атомарно в `%LOCALAPPDATA%\LLM Inspector\settings.json`; прежняя schema v1 автоматически читается как рекомендованный `Сбалансированный` профиль. Кнопка «Вернуть рекомендуемый» сбрасывает profile и interval, а некорректное custom value не применяется.
 
 Для attribution настройте штатный OpenAI-compatible `baseURL` клиента:
 
@@ -116,4 +119,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16; BACKLOG-06 — через PR #17; BACKLOG-05 — через [PR #18](https://github.com/Just9120/llm-inspector/pull/18) в verified `main` commit `ecdb542281ca5ad989de0540bf59939f42af8eb7`.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16; BACKLOG-06 — через PR #17; BACKLOG-05 — через PR #18; decision ratification — через [PR #19](https://github.com/Just9120/llm-inspector/pull/19) в verified `main` commit `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`.

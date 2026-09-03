@@ -439,7 +439,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `ecdb542281ca5ad989de0540bf59939f42af8eb7` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`. Ратификация budgets, fixtures и security/release boundaries закрывает SPEC gaps, но сама по себе не выполняет `E12-AC01..06`, `E01-AC01`, `B01-*` или `B02-*`; AC без CODE/TEST/CI и применимого LIVE Evidence не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `97866b3c69d60105bfe57fec94f4dbb6b9981ad7` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`; PR #19 ratified budgets, fixtures и security/release boundaries. Текущий EPIC-12 candidate реализует profiles/fail-closed evaluator/frozen corpus, но не выполняет `E12-AC01..06` без controlled results каждого built-in profile. Остальные `E01-AC01`, `B01-*` и `B02-*` также не кредитуются без required Evidence.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
@@ -470,7 +470,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
 
-1. `EPIC-12`: реализовать user-friendly profiles/measurement harness и выполнить controlled reference runs для `E12-AC01..06`.
+1. `EPIC-12`: profiles/evaluator/frozen corpus реализованы в local candidate; выполнить полный delivery и controlled reference runs для `E12-AC01..06`.
 2. `EPIC-01`: собрать exact portable release candidate и вручную подтвердить Windows 11 `25H2` Home/Pro matrix.
 3. `BACKLOG-01`: llama.cpp и LM Studio exact versions остаются `PENDING_EXTERNAL_GATE` до установки и manual compatibility tests; это не блокирует safe code PR.
 4. `BACKLOG-02`: encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE`; это не блокирует safe code PR.
@@ -485,16 +485,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T20:59:53Z`.
+- Last recalculation: `2026-09-03T21:44:21Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`; all completed successfully.
-- Code/tests/runtime: merged baseline through BACKLOG-05/06 is exact-main CI verified. PR #18 head `d834215da8c31a2331bfee880e2b712379b4844e`, merge `ecdb542281ca5ad989de0540bf59939f42af8eb7` and exact-main CI `33746269521` confirm bounded all-device NVIDIA discovery, separate correlated persistence/UI metrics and explicit unavailable workload attribution. Exact SDK `10.0.400` CI passed `211/211` tests without skips plus locked restores, format, Release build, self-contained `win-x64` publish and smoke.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 partial PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`, decision-ratification PR/main runs `33807351764`/`33807628059`; all completed successfully.
+- Code/tests/runtime: merged base through decision ratification is exact-main CI verified at `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`; ratification PR #19 head `f82ec878986ddbc19b7e93f218f4ebe440683ad8` changed no product readiness. Local EPIC-12 candidate `ccf6a5a` adds profiles/settings/UI/runtime and a fail-closed gate over frozen fixture SHA-256 `1c38874fb393cfe094bf1d44a281859c2a6e340b9acb46b86df3b458a41f3aca`; focused tests pass, full PR CI and controlled measurements remain pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
-- Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; exact-main CI confirmed, `E12-AC01..06` remain pending implementation/controlled measurements and uncredited).
+- Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending full delivery/controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-005 IN_PROGRESS`; BACKLOG-05 delivered through PR [#18](https://github.com/Just9120/llm-inspector/pull/18), merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`, exact-main CI `33746269521`. Decision-ratification branch `codex/goal-005-ratify-decisions` starts from that verified base before E12/E01/B01/B02 implementation PRs.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; decisions delivered through PR [#19](https://github.com/Just9120/llm-inspector/pull/19), merge `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`, exact-main CI `33807628059`. EPIC-12 implementation branch `codex/goal-005-epic-12-performance` starts from that verified base before E01/B01/B02 increments.
