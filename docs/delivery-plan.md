@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T08:07:30Z`
+> Updated: `2026-09-03T08:41:55Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `883ed13bab90c9affa9f6cf26c13161565f27e67`; exact-main CI [33728697717](https://github.com/Just9120/llm-inspector/actions/runs/33728697717) succeeded.
+- **Verified base:** `origin/main` / local `main` = `ea8498efae98adda684dd88d92e52d3401872a5c`; exact-main CI [33732075018](https://github.com/Just9120/llm-inspector/actions/runs/33732075018) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T08:07:30Z` |
+| Updated UTC | `2026-09-03T08:41:55Z` |
 | Expected base branch | `main` |
-| Base SHA | `883ed13bab90c9affa9f6cf26c13161565f27e67` — verified local/`origin/main`; exact-main CI `33728697717` success |
-| Working branch | `codex/goal-005-epic-07` |
-| Last verified revision | `10d5d7303faeb4c6ee8f0a9b52dfff176a388e7e` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
-| Initial worktree state | Clean branch created from verified `origin/main`; EPIC-06 branch already safely removed locally/remotely; no unrelated changes |
-| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
-| Completed work | `7f40e92` adds Evidence-quality-aware versioned diagnostic rules, typed gateway/history errors, metadata-only correlation, recurring error frequency analytics and UI/privacy coverage; `10d5d73` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `172/172` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-07 PR |
-| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-07` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | EPIC-06 terminal: PR #12, head `78f0a985b719c6d9231cf0a65fe9a9c16da921a5`, PR CI `33728471307`, merge `883ed13bab90c9affa9f6cf26c13161565f27e67`, exact-main CI `33728697717`, all success. EPIC-07 has not been pushed; exact-revision CI pending |
+| Base SHA | `ea8498efae98adda684dd88d92e52d3401872a5c` — verified local/`origin/main`; exact-main CI `33732075018` success |
+| Working branch | `codex/goal-005-epic-10` |
+| Last verified revision | `7273967d332f1444aa627879384d78ea3b402b10` — functional EPIC-10 tree covered by format, Release build and focused tests; this operational update is not yet committed |
+| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-07 exact-main success and safe local/remote branch cleanup; no unrelated changes |
+| Current worktree state | Functional commit clean; expected documentation updates in progress; no unrelated changes |
+| Completed work | EPIC-07 terminal: PR #13 and exact-main CI succeeded. `7273967` adds close-to-tray lifecycle, Windows tray commands, HKCU per-user autostart, atomic versioned settings, four independently gated content-free notification rules, silent delivery, bounded observation queue and versioned anti-spam policy. Format passed; Release build has `0` warnings/errors; Unit `53/53` and Windows `58/58` focused tests passed |
+| Current step | Synchronize EPIC-07 terminal Evidence and EPIC-10 local readiness, then run the complete local CI-equivalent |
+| Next exact action | Commit factual documentation, execute locked restore → format → build → all tests → RID restore → clean publish → smoke, then record the final local checkpoint before the one initial push |
+| PR / CI | EPIC-07 terminal: PR #13, head `5b41246b59b447ee1b70beb44d8e101c25388e4b`, PR CI `33731824812`, merge `ea8498efae98adda684dd88d92e52d3401872a5c`, exact-main CI `33732075018`, all success. EPIC-10 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | None for bounded EPIC-07 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
-| Unverified assumptions | No current backend adapter emits an exact typed stall signal, so elapsed active requests remain explicitly insufficient rather than confirmed stalls; CPU-offload detection is intentionally a hypothesis because resource counters cannot prove layer placement |
+| Blockers | None for bounded EPIC-10 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
+| Unverified assumptions | Native tray interaction is compiled on Windows and the routing/lifetime/policy boundaries are automated, but clean-install interactive tray behavior remains part of blocked `E01-AC01` release-matrix Evidence |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T08:00:48Z` | `107/139 = 77.0%` | `107/164 = 65.2%` | Independent AC-by-AC calculation credits E07-AC01..16 from versioned rules/error analytics CODE and focused TEST Evidence; exact-revision CI remains open |
-| Previous | `2026-09-03T07:35:19Z` | `91/139 = 65.5%` | `91/164 = 55.5%` | EPIC-06 `8/8`; terminal PR #12 and exact-main CI `33728697717` confirmed required CI Evidence |
+| Current | `2026-09-03T08:41:55Z` | `115/139 = 82.7%` | `115/164 = 70.1%` | Independent AC-by-AC calculation credits E10-AC01..08 from close-to-tray, persistent-history, autostart, typed notification and anti-spam CODE plus focused TEST Evidence; exact-revision CI remains open |
+| Previous | `2026-09-03T08:14:33Z` | `107/139 = 77.0%` | `107/164 = 65.2%` | EPIC-07 `16/16`; terminal PR #13 and exact-main CI `33732075018` confirmed required CI Evidence |
 
-Delta: `+11.5 п.п.` initial release и `+9.7 п.п.` full roadmap. Initial-release delta превысила 10 п.п., потому что один independently calculated increment выполнил все `16` atomic EPIC-07 criteria при неизменных denominators `139`/`164`; это изменение denominator не отражает.
+Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `8` atomic EPIC-10 criteria.
 
 ## Epic readiness и Evidence
 
@@ -98,20 +98,20 @@ Delta: `+11.5 п.п.` initial release и `+9.7 п.п.` full roadmap. Initial-rel
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-05 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-06 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-07 | 🟦 IN PROGRESS | 16/16 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-07 | 🟩 READY | 16/16 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-10 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **107/139** | **77.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **115/139** | **82.7%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **107/164** | **65.2%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **115/164** | **70.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -170,6 +170,19 @@ Delta: `+11.5 п.п.` initial release и `+9.7 п.п.` full roadmap. Initial-rel
 | `E07-AC14` | Analytics groups errors only by explicit operation/session metadata and includes first/last UTC time; a nearby error without metadata remains uncorrelated and arbitrary body content is excluded |
 | `E07-AC15` | Query window count and UI label distinguish `single failure` from `recurring xN` at the versioned minimum of two occurrences |
 | `E07-AC16` | Error-rate period comparison reports baseline/candidate per-type counts, each period's all-request denominator, rates and percentage-point delta for groups recurring in either period |
+
+### EPIC-10 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E10-AC01` | `BackgroundLifetimeController` turns ordinary close into hide-and-continue while a tray is available; only explicit tray Exit requests process shutdown, and the hidden-window refresh timer is suspended independently of monitoring |
+| `E10-AC02` | Gateway, buffered SQLite sink and history store remain composition-root owned until process exit; a real SQLite test records and reads a new observation after the close action becomes background hide |
+| `E10-AC03` | Native per-user Win32 tray exposes Open, Notification settings, Pause/Resume notifications and Exit; typed router tests verify every command without depending on an interactive desktop fixture |
+| `E10-AC04` | Settings UI enables per-user Windows autostart through exact HKCU Run registration with a quoted executable and `--background` launch mode |
+| `E10-AC05` | The same settings surface disables the exact registration without creating a missing Run key; service tests cover enable/disable and rollback on settings-write failure |
+| `E10-AC06` | Four separate persisted toggles gate backend unavailable, long completion, recurring typed error and exact/calculated high-context candidates; typed rules and independent-toggle tests cover all events |
+| `E10-AC07` | Silent mode is persisted and maps to `NIIF_NOSOUND`; automated dispatch tests confirm every published notification carries the silent flag |
+| `E10-AC08` | UI documents `notification-policy-v1`: same event key suppressed for 15 minutes and maximum three published notifications per rolling 10 minutes; exact-boundary tests cover suppression, expiry and rate-window release |
 
 ## Current blockers и decisions
 

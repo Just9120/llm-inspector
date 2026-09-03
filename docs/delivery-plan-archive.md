@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T07:35:19Z`: initial release `91/139 = 65.5%`, full roadmap `91/164 = 55.5%`; EPIC-06 terminal state before EPIC-07 implementation. Archived after terminal EPIC-07 Evidence and the independent EPIC-10 calculation produced a newer current/previous pair.
 - `2026-09-03T06:40:21Z`: initial release `83/139 = 59.7%`, full roadmap `83/164 = 50.6%`; EPIC-05 terminal state before EPIC-06 implementation. Archived after terminal EPIC-06 Evidence and the independent EPIC-07 calculation produced a newer current/previous pair.
 - `2026-09-03T06:17:58Z`: initial release `75/139 = 54.0%`, full roadmap `75/164 = 45.7%`; terminal EPIC-01 calculation. Archived after EPIC-05 reached terminal delivery and EPIC-06 produced a newer independent calculation.
 - `2026-09-03T06:01:33Z`: initial release `72/139 = 51.8%`, full roadmap `72/164 = 43.9%`; exact merged-main recovery before EPIC-01. Archived after EPIC-01 terminal delivery and the independent EPIC-05 calculation.
@@ -25,6 +26,16 @@
 - **Delivered:** monitoring/analytics/diagnostics UI surfaces, literal-loopback backend boundary and fail-closed absence of backend lifecycle/runtime mutation commands.
 - **Cleanup:** merged branch had zero unique commits and was removed locally/remotely after local `main` synchronized to the exact merge SHA.
 - **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/10#issuecomment-5521422014).
+
+## GOAL-005 / EPIC-07 — Explainable diagnostics and errors
+
+- **Product outcome:** `READY 16/16`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#13](https://github.com/Just9120/llm-inspector/pull/13), head `5b41246b59b447ee1b70beb44d8e101c25388e4b`, PR CI `33731824812` success.
+- **Merge/exact-main Evidence:** merge `ea8498efae98adda684dd88d92e52d3401872a5c`; exact-main CI `33732075018` success with every required step.
+- **Delivered:** versioned Evidence-quality-aware diagnostics, typed gateway/history errors, metadata-only correlation, recurring frequency analytics and explicit FACT/HYPOTHESIS/INSUFFICIENT_DATA UI semantics.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `172/172` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/13#issuecomment-5522699991).
 
 ## GOAL-005 / EPIC-06 — Windows resource telemetry
 
