@@ -15,19 +15,19 @@ rules — в [`../ci-cd-rules.md`](../ci-cd-rules.md). Workflow: `.github/workfl
 2. Exact-main `CI / windows-dotnet` на intended SHA завершён success без required skips.
 3. Intended tag имеет exact SemVer form `vMAJOR.MINOR.PATCH[-prerelease]` и ещё не существует local,
    remote или в GitHub Releases.
-4. Для `v1.0.0-rc.1` source остаётся observation-only: BACKLOG-01 lifecycle code ещё не merged.
+4. Для `v1.0.0-rc.*` source остаётся observation-only: BACKLOG-01 lifecycle code ещё не merged.
 5. GitHub Actions включены, repository public, а actor имеет право создать tag/release.
 
 ## Запуск trusted flow
 
-Пример для первого candidate; `<EXACT_MAIN_SHA>` заменяется только фактически проверенным SHA:
+`v1.0.0-rc.1` уже является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. Не переиспользовать этот version. Пример для следующего forward-fix candidate; `<EXACT_MAIN_SHA>` заменяется только фактически проверенным SHA:
 
 ```powershell
 git fetch origin main --tags
 git switch main
 git merge --ff-only origin/main
-git tag -a v1.0.0-rc.1 <EXACT_MAIN_SHA> -m "LLM Inspector v1.0.0-rc.1"
-git push origin refs/tags/v1.0.0-rc.1
+git tag -a v1.0.0-rc.2 <EXACT_MAIN_SHA> -m "LLM Inspector v1.0.0-rc.2"
+git push origin refs/tags/v1.0.0-rc.2
 ```
 
 Tag считается immutable. Не перемещать и не переиспользовать опубликованный version. При defect
@@ -50,10 +50,10 @@ Build job имеет только `contents: read`. Publish job не checkout-и
 ## Проверка результата
 
 ```powershell
-gh release view v1.0.0-rc.1 --json url,isPrerelease,targetCommitish,assets
-gh release download v1.0.0-rc.1 --dir artifacts/release-verification
-Get-FileHash .\artifacts\release-verification\LlmInspector-1.0.0-rc.1-win-x64.exe -Algorithm SHA256
-gh attestation verify .\artifacts\release-verification\LlmInspector-1.0.0-rc.1-win-x64.exe --repo Just9120/llm-inspector
+gh release view v1.0.0-rc.2 --json url,isPrerelease,targetCommitish,assets
+gh release download v1.0.0-rc.2 --dir artifacts/release-verification
+Get-FileHash .\artifacts\release-verification\LlmInspector-1.0.0-rc.2-win-x64.exe -Algorithm SHA256
+gh attestation verify .\artifacts\release-verification\LlmInspector-1.0.0-rc.2-win-x64.exe --repo Just9120/llm-inspector
 ```
 
 Observed hash обязан совпасть с `SHA256SUMS.txt` и manifest. Зафиксировать tag, source SHA, workflow

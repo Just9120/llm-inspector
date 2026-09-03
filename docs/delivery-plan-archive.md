@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T21:44:21Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; EPIC-12 implementation was local and controlled measurements absent. Archived after PR #21 delivery/release attempt produced a newer current/previous pair.
 - `2026-09-03T20:59:53Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; decision ratification had no product AC credit. Archived when EPIC-01 produced a newer current/previous pair.
 - `2026-09-03T10:37:48Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; BACKLOG-05 local candidate had implemented `B05-AC01..03`, exact-revision CI was pending. Archived when EPIC-12 produced a newer current/previous pair.
 - `2026-09-03T10:02:16Z`: initial release `132/139 = 95.0%`, full roadmap `132/164 = 80.5%`; terminal EPIC-12 state before BACKLOG-06. Archived after BACKLOG-06 terminal Evidence and the independent BACKLOG-05 calculation produced a newer current/previous pair.
@@ -23,6 +24,15 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / EPIC-01 — Portable release automation and failed rc.1 publication
+
+- **Product outcome:** still partial `3/4`; `E01-AC01` remains uncredited until a successful exact GitHub Release and Windows Home/Pro runtime matrix.
+- **Pull Request:** [#21](https://github.com/Just9120/llm-inspector/pull/21), head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8`, PR CI `33812383296` success.
+- **Merge/exact-main Evidence:** merge `ff62f54df4fbd4de443144259ac3d89bddff0044`; exact-main CI `33813413498` success with every required step.
+- **Delivered:** single-file release build, exact checksum/manifest/SPDX payload, immutable pins, split permissions and GitHub/Sigstore attestations.
+- **Release attempt:** immutable tag `v1.0.0-rc.1` points to the merge; run `33813681861` passed build, tests, payload verification, provenance and SBOM attestation, then failed only in `gh release create` because the checkout-free job lacked repository identity. No GitHub Release was created and the tag was not moved/deleted. Downloaded exact executable SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification.
+- **Recovery:** forward-fix uses a new PR and subsequent `v1.0.0-rc.2`; `rc.1` is not rerun or reused.
 
 ## GOAL-005 / EPIC-12 — Performance profiles and release gate harness
 
