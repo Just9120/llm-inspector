@@ -4,6 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using LlmInspector.Adapters;
+using LlmInspector.Application;
+using LlmInspector.Resources.Windows;
 
 namespace LlmInspector.App;
 
@@ -11,6 +14,8 @@ public partial class App : Avalonia.Application, IDisposable
 {
     private ITrayHost? _tray;
     private BackgroundNotificationMonitor? _notificationMonitor;
+    private WindowsBackendLifecycleRuntime? _lifecycleRuntime;
+    private IReadOnlyList<BackendLifecycleManager> _lifecycleManagers = [];
 
     public override void Initialize()
     {
@@ -53,6 +58,10 @@ public partial class App : Avalonia.Application, IDisposable
             }
 
             Program.ResourceMonitor.ApplyProfile(settings.Current.Monitoring.Resolve());
+            _lifecycleRuntime = new WindowsBackendLifecycleRuntime();
+            _lifecycleManagers = BackendLifecycleAdapters.CreateAll()
+                .Select(adapter => new BackendLifecycleManager(adapter, _lifecycleRuntime, Program.LiveStateTracker))
+                .ToArray();
 
             _tray = CreateTrayHost(
                 command => Dispatcher.UIThread.Post(() => trayCommands?.Execute(command)),
@@ -69,7 +78,8 @@ public partial class App : Avalonia.Application, IDisposable
                 Program.HistoryState,
                 settings,
                 createdLifetime,
-                Program.ResourceMonitor.ApplyProfile);
+                Program.ResourceMonitor.ApplyProfile,
+                _lifecycleManagers);
             desktop.ShutdownMode = _tray.IsAvailable
                 ? ShutdownMode.OnExplicitShutdown
                 : ShutdownMode.OnLastWindowClose;
@@ -116,6 +126,14 @@ public partial class App : Avalonia.Application, IDisposable
         _notificationMonitor = null;
         _tray?.Dispose();
         _tray = null;
+        foreach (BackendLifecycleManager manager in _lifecycleManagers)
+        {
+            manager.Dispose();
+        }
+
+        _lifecycleManagers = [];
+        _lifecycleRuntime?.Dispose();
+        _lifecycleRuntime = null;
         GC.SuppressFinalize(this);
     }
 

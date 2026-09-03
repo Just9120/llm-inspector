@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — BACKLOG-05/06 TERMINAL; E12/E01/B01/B02 TARGETS RATIFIED`
+> Status: `DECIDED — E01 RELEASED/PARTIAL; B01 IMPLEMENTED LOCALLY; B02 TARGET RATIFIED`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
-> Evidence reviewed: `2026-09-03`
+> Evidence reviewed: `2026-09-04`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#18 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot, partial EPIC-12 reliability boundary, local analytics export и bounded multi-GPU telemetry. Exact-main CI `33746269521` подтвердил merge SHA `ecdb542281ca5ad989de0540bf59939f42af8eb7` и `211/211` tests.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479` включает core epics, EPIC-12 profiles/harness и успешный trusted `v1.0.0-rc.2` release flow. B01 lifecycle implementation находится на локальном code commit `327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5`; focused Unit/Contract/Windows suites прошли `84/84`, `27/27` и `67/67`, exact-head PR/main CI ещё отсутствует.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -81,7 +81,7 @@ Dependency direction:
 App (composition/UI)
  ├─> Application ─> Domain
  ├─> Gateway ─────> Application ports + Domain
- ├─> Adapters ────> Domain
+ ├─> Adapters ────> Application lifecycle ports + Domain
  ├─> Telemetry ───> Application ports + Domain
  ├─> Storage ─────> Application ports + Domain
  ├─> Resources ───> Application ports + Domain
@@ -113,7 +113,7 @@ Collectors, retention и diagnostics работают как independently super
 
 ## 6. Network boundary и request flow
 
-Inspector — explicit reverse proxy, не system-wide MITM. На текущем merged revision lifecycle manager ещё отсутствует; авторизованный B01 target добавляет отдельную capability boundary только для Inspector-owned backend processes.
+Inspector — explicit reverse proxy, не system-wide MITM. B01 development line добавляет отдельную capability boundary только для Inspector-owned backend processes; gateway launch configuration по-прежнему не принимает lifecycle CLI mutation commands.
 
 Текущий runtime использует default listener `127.0.0.1:5117`. Versioned launch configuration v1 выбирает Ollama, llama.cpp или LM Studio с default ports `11434`, `8080` и `1234`; explicit backend URL/port остаётся literal-loopback-only. Generic и четыре per-client base paths поддерживают transparent `GET /v1/models` и `POST /v1/chat/completions`, а на backend всегда направляются стандартные `/v1/*` paths. При выбранном LM Studio отдельный generic route `POST /api/v1/chat` прозрачно сохраняет native path и получает отдельный telemetry adapter; для других backend route отсутствует. Dynamic listener port `0` разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
 
@@ -241,7 +241,7 @@ Agent-operation correlation добавляет optional `operation ID` того 
 
 Adapters не переключают client с OpenAI-compatible protocol на native generation API и не посылают duplicate prompt ради metrics. LM Studio `/api/v1/chat` является отдельным explicit supported flow: его выбирает сам client, а gateway только relays один исходный request. Другие native generation endpoints остаются вне текущего scope.
 
-### Approved lifecycle/compatibility target (не реализован на текущем revision)
+### Реализованная lifecycle/compatibility boundary
 
 Managed built-ins — Ollama, llama.cpp и LM Studio. Generic literal-loopback OpenAI-compatible runtime получает observation, но lifecycle доступен только через capability adapter и только для Inspector-owned process. Discovery проверяет official standard paths/PATH, показывает exact version/path/endpoint для user confirmation и предоставляет manual executable picker; models перечисляются official API/CLI, а llama.cpp model выбирается explicit `.gguf` path. Download/install/update backend или model не выполняется.
 
@@ -249,7 +249,9 @@ Lifecycle command выполняется без shell и сериализует�
 
 Parameter UI строится из adapter allowlist и native defaults: Ollama — local port, context, keep-alive, parallel requests, max loaded models, max queue; llama.cpp — local port, context, GPU layers `auto/off/all/N`, CPU threads, parallel slots; LM Studio — local port, context, GPU offload `auto/off/max/0..1`, model TTL, model ID. Unsupported control unavailable; reset возвращает backend default; arbitrary args/env, CORS/public bind и privileged service commands отсутствуют.
 
-Canonical version data будет храниться в embedded `config/runtime-compatibility.json`: exact runtime version, operation capabilities, Windows matrix, verification date, Inspector revision, sanitized Evidence, limitations и status. UI переводит status как `Проверено`, `Совместимо`, `Только наблюдение`, `Не поддерживается`. Unknown/newer versions проходят только safe per-operation probes и не считаются verified; community report получает `community-reported` до reproduction. Первые baselines: локально проверенный Ollama `0.33.2`; llama.cpp `b10516` и LM Studio `lms 0.0.47+` остаются target/PENDING_EXTERNAL_GATE, причём exact LM Studio app/runtime фиксируется при первом actual test. Unsigned remote matrix и automatic runtime update запрещены.
+Canonical version data хранится в embedded `config/runtime-compatibility.json`: exact runtime version match, operation capabilities, Windows matrix, verification date, Inspector evidence revision, sanitized Evidence, limitations и status. UI переводит status как `Проверено`, `Совместимо`, `Только наблюдение`, `Не поддерживается`. Unknown/newer versions проходят safe executable/version/readiness probes и не считаются verified. Первые baselines: локально проверенный Ollama `0.33.2`; llama.cpp `b10516` и LM Studio `lms 0.0.47+` остаются target/PENDING_EXTERNAL_GATE, причём exact LM Studio app/runtime фиксируется при первом actual test. Unsigned remote matrix и automatic runtime update запрещены.
+
+`Application` владеет serialized manager/state/active-request gate и typed plans; `Adapters` — official flags, environment allowlist, readiness/model confirmation и embedded compatibility matrix; `Resources.Windows` — no-shell process execution, TCP listener ownership, exact executable identity и bounded stop; `App` — confirmation-first Russian UX. Detached LM Studio ownership принимается только если endpoint был свободен до official `lms server start`, а после него появился единственный allowlisted listener owner.
 
 ## 11. Resource collectors
 
@@ -298,6 +300,7 @@ Lifecycle events use a higher-priority bounded queue than resource samples. If e
 | Automated privacy negative corpus | canary prompt/response/reasoning/tool args/results/code across DB/WAL/logs/snapshot/crash artifacts | `E09-AC01..07`, `E11-AC06`, `E11-AC10` |
 | SQLite integration/fault injection | migration, WAL checkpoint, concurrent readers, cutoff boundaries, manual clear, disk-full/locked/corrupt/restart | `E08-AC16..18`, `E12-AC10..12` |
 | Windows integration | actual OS collectors, unavailable semantics, install/upgrade/uninstall, tray/background/autostart/notifications | `E01-AC01`, `E06-*`, `E10-*` |
+| Lifecycle unit/contract/Windows tests | serialization, active-request gates, exact process identity, official CLI/API plans, compatibility matrix, crash/manual recovery | `B01-AC01..05` |
 | Paired performance benchmark | baseline vs Inspector, idle and active workloads, throughput/latency/resource deltas | `E12-AC01..06` |
 | End-to-end client/backend matrix | at least one supported client fixture against each pinned backend version | `E01-AC02..04`, `E02-*`, `E03-*`, `E04-*`, `E05-*` |
 
@@ -369,7 +372,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-01 release automation подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `224/224` tests без skips, single-file self-contained `win-x64` publish и smoke. PR #21 CI `33812383296` и exact-main CI `33813413498` завершились успешно на merge `ff62f54df4fbd4de443144259ac3d89bddff0044`.
+Последняя terminal merged-main validation для EPIC-01 release fix подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `224/224` tests без skips, single-file self-contained `win-x64` publish и smoke. PR #22 CI `33814760385` и exact-main CI `33814980537` завершились успешно на merge `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`; trusted-tag run `33815294790` затем опубликовал exact release.
 
 Configured CI foundation:
 
@@ -382,7 +385,7 @@ Configured CI foundation:
 - artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
-EPIC-01 release automation добавляет отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer/main ancestry, выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` подтвердил все build/payload/attestation stages, но final publication failed: checkout-free job не получил repository identity для `gh`. Forward-fix передаёт `GH_REPO` только final step; новый immutable candidate будет `v1.0.0-rc.2`. Защищённый Project CI/CD profile в `ci-cd-rules.md` намеренно не изменён без отдельного explicit CI/CD policy request; фактическое расхождение записано в delivery checkpoint.
+EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer/main ancestry, выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` полностью успешен и опубликовал exact executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. Защищённый Project CI/CD profile в `ci-cd-rules.md` намеренно не изменён без отдельного explicit CI/CD policy request; фактическое расхождение записано в delivery checkpoint.
 
 Release design:
 
@@ -402,10 +405,11 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `FORWARD-FIX IN PROGRESS` | PR #21 merged; `rc.1` build/attestations succeeded but publication failed, so `rc.2` release and Windows Home/Pro exact-artifact runs remain pending |
+| Portable distribution | `RELEASED / MANUAL MATRIX PENDING` | `v1.0.0-rc.2` publication/SBOM/provenance pass; Windows Home/Pro exact-artifact runs remain E01 gate |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Secure remote | `APPROVED, NOT IMPLEMENTED` | Tailscale Serve + application token; actual Windows↔VPS/second-PC LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
+| Lifecycle implementation | `IMPLEMENTED_LOCALLY / CI_PENDING` | Code commit `327bdd3`; all five B01 AC covered by unit/contract/Windows tests; exact-head PR/main CI pending |
 | Lifecycle compatibility versions | `PENDING_EXTERNAL_GATE` for two adapters | Ollama `0.33.2` verified locally; llama.cpp `b10516` and LM Studio/lms target versions require actual-runtime Evidence |
 
 ## 18. Primary evidence sources
@@ -421,6 +425,8 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 - [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) and [native chat fields](https://docs.ollama.com/api/chat) — streaming/tools/usage request support and native timing counters.
 - [OpenAI Chat Completions API reference](https://developers.openai.com/api/reference/cli/resources/chat/subresources/completions) — canonical `usage`, streaming `choices[].delta.content` и technical token-detail semantics для compatible wire contract.
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) — OpenAI-compatible flow, tools, timings and optional metrics.
+- [Ollama FAQ](https://docs.ollama.com/faq) and [generate API](https://docs.ollama.com/api/generate) — documented lifecycle environment allowlist and native model preload/keep-alive operation.
+- [LM Studio CLI](https://lmstudio.ai/docs/cli), [server start](https://lmstudio.ai/docs/cli/serve/server-start) and [model load](https://lmstudio.ai/docs/cli/load) — official local server/model lifecycle commands and typed parameters.
 - [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools), [native chat](https://lmstudio.ai/docs/developer/rest/chat) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls, terminal stats and exact model-load lifecycle signals.
 - [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve) and [Funnel](https://tailscale.com/docs/features/tailscale-funnel) — private tailnet HTTPS exposure versus explicitly forbidden public exposure.
 - [OpenCode custom provider](https://opencode.ai/docs/providers/#custom-provider), [Hermes providers](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md) and [Open WebUI OpenAI-compatible connections](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/) — configuration surfaces for the existing `/v1/models` and `/v1/chat/completions` contract; actual client compatibility remains a manual gate.

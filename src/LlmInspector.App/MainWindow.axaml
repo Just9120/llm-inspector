@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -258,6 +258,52 @@
           <TextBlock x:Name="ForbiddenContentText" TextWrapping="Wrap" />
           <TextBlock Text="Request and response bodies are relayed in memory and are not added to technical observations."
                      TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="13"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="9">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Управление локальным backend" />
+          <TextBlock Text="Inspector управляет только процессом, который сам запустил после вашего подтверждения exact path, version и loopback endpoint."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="LifecycleBackendCombo" Width="190" Margin="0,0,8,8" />
+            <TextBox x:Name="LifecycleExecutablePathText"
+                     Width="470"
+                     Margin="0,0,8,8"
+                     PlaceholderText="Полный путь к runtime .exe (необязательно)" />
+            <Button x:Name="DiscoverBackendButton" Margin="0,0,8,8" Content="Найти и проверить" />
+          </WrapPanel>
+          <TextBlock x:Name="LifecycleTargetText" TextWrapping="Wrap" />
+          <CheckBox x:Name="ConfirmLifecycleTargetCheckBox"
+                    Content="Я проверил точный путь, версию и локальный endpoint" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="StartBackendButton" Margin="0,0,8,8" Content="Запустить" />
+            <Button x:Name="StopBackendButton" Margin="0,0,8,8" Content="Остановить" />
+            <Button x:Name="RestartBackendButton" Margin="0,0,8,8" Content="Перезапустить" />
+          </WrapPanel>
+          <TextBlock FontWeight="SemiBold" Text="Безопасные параметры" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="LifecycleParameterCombo" Width="250" Margin="0,0,8,8" />
+            <TextBox x:Name="LifecycleParameterValueText"
+                     Width="270"
+                     Margin="0,0,8,8"
+                     PlaceholderText="Оставьте пустым для native default" />
+            <Button x:Name="ApplyLifecycleParameterButton" Margin="0,0,8,8" Content="Сохранить параметр" />
+            <Button x:Name="ResetLifecycleParametersButton" Margin="0,0,8,8" Content="Сбросить к defaults" />
+          </WrapPanel>
+          <TextBlock x:Name="LifecycleParameterHelpText" TextWrapping="Wrap" />
+          <TextBlock FontWeight="SemiBold" Text="Модель" />
+          <TextBlock Text="Для Ollama/LM Studio укажите model ID; для llama.cpp — полный путь к существующему .gguf."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <TextBox x:Name="LifecycleModelText" Width="550" Margin="0,0,8,8" PlaceholderText="Model ID или C:\models\model.gguf" />
+            <Button x:Name="LoadLifecycleModelButton" Margin="0,0,8,8" Content="Загрузить модель" />
+          </WrapPanel>
+          <TextBlock x:Name="LifecycleStateText" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
     </Grid>

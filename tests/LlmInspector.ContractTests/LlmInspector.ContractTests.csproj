@@ -13,6 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
+    <ProjectReference Include="../../src/LlmInspector.Application/LlmInspector.Application.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Adapters/LlmInspector.Adapters.csproj" />
   </ItemGroup>
   <ItemGroup>
