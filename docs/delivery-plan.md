@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T06:08:39Z`
+> Updated: `2026-09-03T06:11:45Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T06:08:39Z` |
+| Updated UTC | `2026-09-03T06:11:45Z` |
 | Expected base branch | `main` |
 | Base SHA | `7110c70b6975c939915273b005f05eedfcd2eb14` — verified local/`origin/main`; exact-main CI `33720428488` success |
 | Working branch | `codex/goal-005-epic-01` |
-| Last verified revision | `8c4ab10fbd2efa5b5947ead49b015ee1b23c6386` — EPIC-01 code/focused test commit |
+| Last verified revision | `bb664d0f4c29dc01d15f3d728f5557a5bf00c8de` — complete branch tree covered by full local CI-equivalent |
 | Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Expected EPIC-01 documentation/readiness updates after committed code; no unrelated changes |
-| Completed work | Commit `9958783` recovered terminal GOAL-004/new Goal metadata. Commit `8c4ab10` adds diagnostics UI and focused boundary tests. `E01-AC02..04` pass; Windows suite `37/37`, zero skips |
-| Current step | Synchronize EPIC-01 `3/4` readiness, then run full local CI-equivalent |
-| Next exact action | Commit documentation, run locked restore → format → Release build → full tests → RID restore → clean publish → smoke; record exact results before initial push |
+| Current worktree state | Clean at validation checkpoint except this expected post-validation metadata update; no unrelated changes |
+| Completed work | Commits `9958783`/`8c4ab10`/`bb664d0` recover Goal state, add diagnostics UI/boundary tests and record `E01-AC02..04`. Full pipeline: locked normal/RID restores; format; Release build `0` warnings/errors; `133/133` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record final local checkpoint, then perform the one initial push and create EPIC-01 PR |
+| Next exact action | Commit this checkpoint, push `codex/goal-005-epic-01` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | No GOAL-005 PR yet; branch has not been pushed; no CI for this branch |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | `E01-AC01` lacks clean install/upgrade/runtime Evidence on Windows 11 25H2 Home/Pro and approved signing/distribution path; safe `3/4` increment may merge without crediting it |
