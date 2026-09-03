@@ -8,6 +8,24 @@ public sealed record HistoryComparisonFilters(
     HistoryFilter Baseline,
     HistoryFilter Candidate);
 
+public sealed record HistoryRetentionChoice(
+    HistoryRetention Value,
+    string Label)
+{
+    public override string ToString() => Label;
+}
+
+public static class HistoryUiCatalog
+{
+    public static IReadOnlyList<HistoryRetentionChoice> RetentionChoices { get; } =
+    [
+        new(HistoryRetention.SevenDays, "7 days"),
+        new(HistoryRetention.ThirtyDays, "30 days"),
+        new(HistoryRetention.NinetyDays, "90 days"),
+        new(HistoryRetention.Indefinite, "indefinite"),
+    ];
+}
+
 public static class HistoryUiParser
 {
     public static HistoryFilter CreateFilter(

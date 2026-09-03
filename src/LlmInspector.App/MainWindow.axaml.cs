@@ -74,7 +74,8 @@ public partial class MainWindow : Window
 
         await RunHistoryActionAsync(async () =>
         {
-            RetentionCombo.SelectedItem = await _history.GetRetentionAsync();
+            HistoryRetention retention = await _history.GetRetentionAsync();
+            RetentionCombo.SelectedItem = HistoryUiCatalog.RetentionChoices.Single(item => item.Value == retention);
             await LoadHistoryAsync();
         });
     }
@@ -93,8 +94,9 @@ public partial class MainWindow : Window
         ComparisonDimensionCombo.SelectedIndex = 0;
         ComparisonMetricCombo.ItemsSource = Enum.GetValues<HistoryMetric>();
         ComparisonMetricCombo.SelectedItem = HistoryMetric.TimeToFirstTokenMilliseconds;
-        RetentionCombo.ItemsSource = HistoryPolicies.RetentionOptions;
-        RetentionCombo.SelectedItem = HistoryRetention.ThirtyDays;
+        RetentionCombo.ItemsSource = HistoryUiCatalog.RetentionChoices;
+        RetentionCombo.SelectedItem = HistoryUiCatalog.RetentionChoices.Single(
+            item => item.Value == HistoryRetention.ThirtyDays);
 
         LoadHistoryButton.Click += async (_, _) => await RunHistoryActionAsync(LoadHistoryAsync);
         LoadAnalyticsButton.Click += async (_, _) => await RunHistoryActionAsync(LoadAnalyticsAsync);
@@ -161,12 +163,13 @@ public partial class MainWindow : Window
 
     private async Task ApplyRetentionAsync()
     {
-        if (RetentionCombo.SelectedItem is not HistoryRetention retention)
+        if (RetentionCombo.SelectedItem is not HistoryRetentionChoice choice)
         {
             throw new ArgumentException("Select a retention option.");
         }
 
         ITechnicalHistoryStore history = RequireHistory();
+        HistoryRetention retention = choice.Value;
         await history.SetRetentionAsync(retention);
         int deleted = await history.ApplyRetentionAsync(retention, DateTimeOffset.UtcNow);
         RetentionOutputText.Text = $"Retention {retention} saved and applied; deleted {deleted} old technical record(s).";

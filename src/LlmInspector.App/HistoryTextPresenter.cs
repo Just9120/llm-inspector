@@ -25,8 +25,8 @@ public static class HistoryTextPresenter
                 .Append(" | model=").Append(request.Model?.Value ?? "unavailable")
                 .Append(" | status=").Append(request.Outcome)
                 .Append(" | error=").Append(request.ErrorType)
-                .Append(" | session=").Append(ShortId(request.SessionId))
-                .Append(" | operation=").Append(ShortId(request.OperationId))
+                .Append(" | session=").Append(FullId(request.SessionId))
+                .Append(" | operation=").Append(FullId(request.OperationId))
                 .AppendLine();
         }
 
@@ -112,7 +112,7 @@ public static class HistoryTextPresenter
         $"turns={preview.Turns}, tools={preview.ToolEvents}, resource samples={preview.ResourceSamples}. " +
         "Review this exact scope, then confirm.";
 
-    private static string ShortId(Guid? value) => value is Guid id ? id.ToString("N")[..8] : "unavailable";
+    private static string FullId(Guid? value) => value is Guid id ? id.ToString("N") : "unavailable";
 
     private static string FormatScope(HistoryClearScope scope) => scope.AllHistory
         ? "all history"

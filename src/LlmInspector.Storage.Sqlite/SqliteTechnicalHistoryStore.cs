@@ -10,6 +10,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     private const int SchemaVersion = 1;
     private const int MaximumQueryLimit = 1_000;
     private readonly string _connectionString;
+    private readonly string _readConnectionString;
     private readonly SemaphoreSlim _writerLock = new(1, 1);
     private bool _initialized;
     private bool _disposed;
@@ -26,6 +27,13 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         {
             DataSource = fullPath,
             Mode = SqliteOpenMode.ReadWriteCreate,
+            Cache = SqliteCacheMode.Shared,
+            Pooling = true,
+        }.ToString();
+        _readConnectionString = new SqliteConnectionStringBuilder
+        {
+            DataSource = fullPath,
+            Mode = SqliteOpenMode.ReadOnly,
             Cache = SqliteCacheMode.Shared,
             Pooling = true,
         }.ToString();
@@ -171,7 +179,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         CancellationToken cancellationToken = default)
     {
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         TechnicalOperationRecord? operation = await ReadOperationAsync(connection, operationId, cancellationToken)
             .ConfigureAwait(false);
         if (operation is null)
@@ -274,7 +282,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     public async Task<HistoryRetention> GetRetentionAsync(CancellationToken cancellationToken = default)
     {
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = "SELECT retention FROM history_settings WHERE id = 1;";
         object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
@@ -376,7 +384,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     {
         ArgumentNullException.ThrowIfNull(scope);
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         return await ReadClearPreviewAsync(connection, null, scope, cancellationToken).ConfigureAwait(false);
     }
 
@@ -717,7 +725,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     {
         ValidateFilter(filter);
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteCommand command = connection.CreateCommand();
         List<string> predicates = AddFilterParameters(command, filter, "r");
         command.CommandText = $"""
@@ -992,7 +1000,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         CancellationToken cancellationToken)
     {
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteCommand command = connection.CreateCommand();
         List<string> predicates = [];
         if (filter.From is not null)
@@ -1211,6 +1219,15 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
         SqliteConnection connection = new(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await ExecuteNonQueryAsync(connection, null, "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;", cancellationToken)
+            .ConfigureAwait(false);
+        return connection;
+    }
+
+    private async Task<SqliteConnection> OpenReadConnectionAsync(CancellationToken cancellationToken)
+    {
+        SqliteConnection connection = new(_readConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await ExecuteNonQueryAsync(connection, null, "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;", cancellationToken)
             .ConfigureAwait(false);

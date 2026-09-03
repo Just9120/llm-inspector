@@ -142,7 +142,7 @@ public static class Program
             throw new IOException("Windows local application data directory is unavailable.");
         }
 
-        return Path.Combine(localData, "LLM Inspector", "data", "history.db");
+        return Path.Combine(localData, "LLM Inspector", "data", "inspector.db");
     }
 
     private static bool IsExpectedHistoryFailure(Exception exception) => exception is

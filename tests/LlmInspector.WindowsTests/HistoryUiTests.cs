@@ -61,6 +61,16 @@ public sealed class HistoryUiTests
     }
 
     [TestMethod]
+    public void RetentionUiUsesTheFourExactUserFacingOptions()
+    {
+        Assert.HasCount(4, App.HistoryUiCatalog.RetentionChoices);
+        Assert.AreEqual("7 days", App.HistoryUiCatalog.RetentionChoices[0].Label);
+        Assert.AreEqual("30 days", App.HistoryUiCatalog.RetentionChoices[1].Label);
+        Assert.AreEqual("90 days", App.HistoryUiCatalog.RetentionChoices[2].Label);
+        Assert.AreEqual("indefinite", App.HistoryUiCatalog.RetentionChoices[3].Label);
+    }
+
+    [TestMethod]
     public void PresentersExposeHistoryStatisticsOperationDetailAndClearScope()
     {
         Guid sessionId = Guid.NewGuid();
