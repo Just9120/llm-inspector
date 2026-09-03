@@ -7,13 +7,17 @@ namespace LlmInspector.App;
 
 public static class ResourceTelemetryTextPresenter
 {
-    public static string Format(TechnicalResourceSampleRecord? sample)
+    public static string Format(TechnicalResourceSampleRecord? sample) =>
+        sample is null ? FormatLatest([]) : FormatLatest([sample]);
+
+    public static string FormatLatest(IReadOnlyList<TechnicalResourceSampleRecord>? samples)
     {
-        if (sample is null)
+        if (samples is null || samples.Count == 0)
         {
             return "Resource correlation: unavailable; no request sample has been captured.";
         }
 
+        TechnicalResourceSampleRecord sample = samples[0];
         StringBuilder text = new();
         text.Append("Request ").Append(sample.RequestId?.ToString("N") ?? "unavailable")
             .Append(" | operation=").Append(sample.OperationId?.ToString("N") ?? "unavailable")
@@ -38,14 +42,36 @@ public static class ResourceTelemetryTextPresenter
             .Append(Format(sample.ClientToBackendBytes))
             .Append('/').Append(Format(sample.BackendToClientBytes))
             .AppendLine();
-        text.Append("GPU=").Append(sample.GpuDeviceId?.Value ?? "unavailable")
+        TechnicalResourceSampleRecord[] gpuSamples = samples
+            .Where(item => item.GpuDeviceId is not null)
+            .DistinctBy(item => item.GpuDeviceId!.Value, StringComparer.Ordinal)
+            .ToArray();
+        if (gpuSamples.Length == 0)
+        {
+            text.Append("GPU devices=unavailable | workload attribution=unavailable");
+            return text.ToString();
+        }
+
+        text.Append("Detected GPU devices=").Append(gpuSamples.Length.ToString(CultureInfo.InvariantCulture));
+        foreach (TechnicalResourceSampleRecord gpu in gpuSamples)
+        {
+            text.AppendLine();
+            AppendGpu(text, gpu);
+        }
+
+        return text.ToString();
+    }
+
+    private static void AppendGpu(StringBuilder text, TechnicalResourceSampleRecord sample)
+    {
+        text.Append("GPU=").Append(sample.GpuDeviceId!.Value)
             .Append(" | driver=").Append(sample.GpuDriverVersion?.Value ?? "unavailable")
             .Append(" | utilization=").Append(Format(sample.GpuUtilizationPercent))
             .Append(" | VRAM used/total=").Append(Format(sample.GpuVramUsedBytes))
             .Append('/').Append(Format(sample.GpuVramTotalBytes))
             .Append(" | temperature=").Append(Format(sample.GpuTemperatureCelsius))
-            .Append(" | power=").Append(Format(sample.GpuPowerWatts));
-        return text.ToString();
+            .Append(" | power=").Append(Format(sample.GpuPowerWatts))
+            .Append(" | workload attribution=unavailable (device-wide source)");
     }
 
     private static string Format(MetricValue metric)

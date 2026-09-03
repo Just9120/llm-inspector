@@ -30,7 +30,7 @@ public sealed record WindowsResourceSnapshot(
     ulong TotalPhysicalMemoryBytes,
     ulong AvailablePhysicalMemoryBytes,
     ProcessResourceSnapshot? Process,
-    GpuResourceSnapshot? Gpu);
+    IReadOnlyList<GpuResourceSnapshot> Gpus);
 
 public interface IWindowsResourceProbe
 {
@@ -213,7 +213,7 @@ public sealed class WindowsResourceProbe : IWindowsResourceProbe
         }
 
         ProcessResourceSnapshot? processSnapshot = process is null ? null : CaptureProcess(process);
-        GpuResourceSnapshot? gpu = await _gpuProbe.CaptureAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<GpuResourceSnapshot> gpus = await _gpuProbe.CaptureAsync(cancellationToken).ConfigureAwait(false);
         return new WindowsResourceSnapshot(
             DateTimeOffset.UtcNow,
             idle.Value,
@@ -222,7 +222,7 @@ public sealed class WindowsResourceProbe : IWindowsResourceProbe
             memory.TotalPhysical,
             memory.AvailablePhysical,
             processSnapshot,
-            gpu);
+            gpus);
     }
 
     private static ProcessResourceSnapshot? CaptureProcess(TechnicalProcessAssociation association)
@@ -304,6 +304,8 @@ public sealed class WindowsResourceProbe : IWindowsResourceProbe
 
 public sealed class NvidiaSmiGpuProbe
 {
+    public const int MaximumDevices = 16;
+
     private const string Query = "index,uuid,driver_version,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw";
     private readonly string? _executablePath;
     private readonly TimeSpan _timeout;
@@ -314,11 +316,11 @@ public sealed class NvidiaSmiGpuProbe
         _timeout = timeout ?? TimeSpan.FromSeconds(1);
     }
 
-    public async ValueTask<GpuResourceSnapshot?> CaptureAsync(CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<GpuResourceSnapshot>> CaptureAsync(CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsWindows() || _executablePath is null)
         {
-            return null;
+            return [];
         }
 
         ProcessStartInfo start = new()
@@ -337,14 +339,14 @@ public sealed class NvidiaSmiGpuProbe
         {
             if (!process.Start())
             {
-                return null;
+                return [];
             }
 
             using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(_timeout);
             string output = await process.StandardOutput.ReadToEndAsync(timeout.Token).ConfigureAwait(false);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
-            return process.ExitCode == 0 ? ParseCsv(output) : null;
+            return process.ExitCode == 0 ? ParseCsv(output) : [];
         }
         catch (Exception exception) when (exception is
             InvalidOperationException or
@@ -365,31 +367,44 @@ public sealed class NvidiaSmiGpuProbe
             {
             }
 
-            return null;
+            return [];
         }
     }
 
-    public static GpuResourceSnapshot? ParseCsv(string output)
+    public static IReadOnlyList<GpuResourceSnapshot> ParseCsv(string output)
     {
-        string[]? primary = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+        HashSet<string> seenDevices = new(StringComparer.Ordinal);
+        return output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.Split(',', StringSplitOptions.TrimEntries))
-            .Where(fields => fields.Length == 8 && int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
-            .OrderBy(fields => int.Parse(fields[0], CultureInfo.InvariantCulture))
-            .FirstOrDefault();
-        if (primary is null || TechnicalIdentifier.FromBackend(primary[1]) is not TechnicalIdentifier deviceId)
-        {
-            return null;
-        }
-
-        return new GpuResourceSnapshot(
-            deviceId,
-            ParseIdentifier(primary[2]),
-            ParseMetric(primary[3]),
-            ParseMetric(primary[4]),
-            ParseMetric(primary[5]),
-            ParseMetric(primary[6]),
-            ParseMetric(primary[7]));
+            .Select(fields => new
+            {
+                Fields = fields,
+                Index = fields.Length == 8 &&
+                    int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out int index) &&
+                    index >= 0
+                        ? index
+                        : (int?)null,
+            })
+            .Where(item => item.Index is not null)
+            .OrderBy(item => item.Index)
+            .Select(item => CreateGpuSnapshot(item.Fields))
+            .Where(gpu => gpu is not null && seenDevices.Add(gpu.DeviceId.Value))
+            .Select(gpu => gpu!)
+            .Take(MaximumDevices)
+            .ToArray();
     }
+
+    private static GpuResourceSnapshot? CreateGpuSnapshot(string[] fields) =>
+        TechnicalIdentifier.FromBackend(fields[1]) is TechnicalIdentifier deviceId
+            ? new GpuResourceSnapshot(
+                deviceId,
+                ParseIdentifier(fields[2]),
+                ParseMetric(fields[3]),
+                ParseMetric(fields[4]),
+                ParseMetric(fields[5]),
+                ParseMetric(fields[6]),
+                ParseMetric(fields[7]))
+            : null;
 
     private static decimal? ParseMetric(string value) =>
         decimal.TryParse(value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0

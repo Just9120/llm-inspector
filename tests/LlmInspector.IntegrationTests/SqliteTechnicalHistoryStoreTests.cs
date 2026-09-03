@@ -226,6 +226,54 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
+    public async Task MultipleGpuDeviceSamplesPersistAsSeparateTimelineRecords()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTimeOffset capturedAt = new(2026, 2, 2, 10, 0, 0, TimeSpan.Zero);
+        TechnicalResourceSampleRecord primary = new(
+            Guid.NewGuid(),
+            null,
+            capturedAt,
+            Percent(30),
+            Percent(40))
+        {
+            GpuDeviceId = Id("GPU-primary"),
+            GpuDriverVersion = Id("572.83"),
+            GpuUtilizationPercent = ResourceMetric(50, MetricUnit.Percent, MetricSource.NvidiaSmi),
+        };
+        TechnicalResourceSampleRecord secondary = new(
+            Guid.NewGuid(),
+            null,
+            capturedAt,
+            MetricValue.Unavailable(
+                MetricUnit.Percent,
+                MetricSource.WindowsApi,
+                "multi-gpu-store-test-v1"),
+            MetricValue.Unavailable(
+                MetricUnit.Percent,
+                MetricSource.WindowsApi,
+                "multi-gpu-store-test-v1"))
+        {
+            GpuDeviceId = Id("GPU-secondary"),
+            GpuDriverVersion = Id("572.83"),
+            GpuUtilizationPercent = ResourceMetric(75, MetricUnit.Percent, MetricSource.NvidiaSmi),
+        };
+
+        await fixture.Store.RecordResourceSamplesAsync([primary, secondary]);
+        TechnicalHistorySlice slice = await fixture.Store.QuerySnapshotSliceAsync(
+            new HistoryFilter(From: capturedAt, To: capturedAt),
+            null);
+
+        Assert.HasCount(2, slice.ResourceSamples);
+        Assert.IsTrue(slice.ResourceSamples.Any(sample => sample.GpuDeviceId?.Value == "GPU-primary"));
+        Assert.IsTrue(slice.ResourceSamples.Any(sample => sample.GpuDeviceId?.Value == "GPU-secondary"));
+        Assert.AreEqual(
+            75m,
+            slice.ResourceSamples.Single(sample => sample.GpuDeviceId?.Value == "GPU-secondary")
+                .GpuUtilizationPercent.Value);
+    }
+
+    [TestMethod]
     public async Task AnalyticsBuildsTrendsAndComparesPeriodsModelsBackendsAndClients()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();

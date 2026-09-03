@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION; EPIC-02..11 TERMINAL; EPIC-12 PARTIAL TERMINAL; BACKLOG-06 LOCAL CANDIDATE`
+> Status: `DECIDED — FOUNDATION; EPIC-02..11 TERMINAL; EPIC-12 PARTIAL TERMINAL; BACKLOG-06 TERMINAL; BACKLOG-05 LOCAL CANDIDATE`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#16 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot и partial EPIC-12 reliability boundary. Exact-main CI `33741928312` подтвердил merge SHA `7c5528ec3c33396ce1068162fc0b6961a0dfe553`; active BACKLOG-06 candidate добавляет local selected-range analytics export.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#17 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot, partial EPIC-12 reliability boundary и local analytics export. Exact-main CI `33744027574` подтвердил merge SHA `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`; active BACKLOG-05 candidate добавляет bounded multi-GPU telemetry.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -86,7 +86,7 @@ App (composition/UI)
 
 Все девять production boundaries содержат product code. `Diagnostics` владеет versioned explainable rules и typed conclusion/evidence contracts, но получает только allowlisted Domain/Application projections. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX. EPIC-12 расширил Domain только typed runtime facts, Application — origin/correlation policy, а SQLite v5 остаётся единственным durable owner. BACKLOG-06 повторно использует тот же bounded history projection и atomic local writer; export aggregates строятся только из exact projected records, раздельно для request/resource metric categories.
+EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX. EPIC-12 расширил Domain только typed runtime facts, Application — origin/correlation policy, а SQLite v5 остаётся единственным durable owner. BACKLOG-06 повторно использует тот же bounded history projection и atomic local writer; export aggregates строятся только из exact projected records, раздельно для request/resource metric categories. BACKLOG-05 сохраняет один correlated resource record на GPU device; только primary record несёт host/process/traffic metrics, поэтому multi-device rows не искажают их aggregates.
 
 ## 5. Runtime/process model
 
@@ -231,15 +231,15 @@ Adapters не переключают client с OpenAI-compatible protocol на n
 
 ## 11. Resource collectors
 
-`Resources.Windows` implements a per-request monitor behind Application capability ports. Host CPU/RAM and exact process CPU/RAM/read-write counters come from Windows APIs; process association is accepted only when the configured literal-loopback backend listener has one exact TCP owner PID plus process start time/image identity. Gateway-relayed request/response byte counters provide request-scoped network traffic. A fixed-path, bounded-time `nvidia-smi` provider selects the lowest-index available GPU and reports utilization, VRAM, temperature and power; absent executable/device/field becomes `unavailable`.
+`Resources.Windows` implements a per-request monitor behind Application capability ports. Host CPU/RAM and exact process CPU/RAM/read-write counters come from Windows APIs; process association is accepted only when the configured literal-loopback backend listener has one exact TCP owner PID plus process start time/image identity. Gateway-relayed request/response byte counters provide request-scoped network traffic. A fixed-path, bounded-time `nvidia-smi` provider reports utilization, VRAM, temperature and power for up to 16 ordered distinct NVIDIA devices; absent executable/device/field becomes `unavailable`.
 
 - System-wide sample может быть exact для host, но не автоматически attributed конкретному request.
 - Process association требует exact PID/start-time/backend identity; name/time heuristics недостаточны.
-- GPU metric содержит device/adapter identity и source. Unsupported counter/driver/device yields `unavailable`.
+- GPU metric содержит device/adapter identity и source. Каждый supported device получает отдельную timeline row; host/process/traffic fields присутствуют только в primary row, чтобы не дублировать totals. Unsupported counter/driver/device yields `unavailable`.
 - Sampling starts with each request, follows the versioned request stage and stops at its terminal outcome; samples carry exact request/operation IDs and timestamps.
 - Each request is bounded to `2048` samples. Overflow increments an explicit persisted gap counter; collector, sink and UI failures remain best-effort and never backpressure model streaming.
 
-Default sampling interval — versioned implementation constant `1 s`; tests inject a shorter interval and deterministic sources. NVIDIA is the currently supported primary GPU source; other vendors remain `unavailable`, not inferred. Cross-device display remains separate `BACKLOG-05` scope.
+Default sampling interval — versioned implementation constant `1 s`; tests inject a shorter interval and deterministic sources. NVIDIA — текущий supported GPU source; другие vendors остаются `unavailable`, не inferred. `nvidia-smi` даёт device-wide readings, поэтому UI не приписывает request/workload конкретному GPU и явно показывает attribution как `unavailable`.
 
 ### Explainable diagnostics и error analytics
 
@@ -330,7 +330,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-12 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `207/207` tests без skips, self-contained `win-x64` publish и smoke. PR #16 CI `33741679566` и exact-main CI `33741928312` завершились успешно на merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. Active BACKLOG-06 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `210/210` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
+Последняя terminal merged-main validation для BACKLOG-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `210/210` tests без skips, self-contained `win-x64` publish и smoke. PR #17 CI `33743758869` и exact-main CI `33744027574` завершились успешно на merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. Active BACKLOG-05 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `211/211` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
 
 Configured CI foundation:
 

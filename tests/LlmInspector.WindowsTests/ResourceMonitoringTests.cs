@@ -40,12 +40,12 @@ public sealed class ResourceMonitoringTests
         session.AddBackendToClientBytes(456);
         IReadOnlyList<TechnicalResourceSampleRecord> samples = await session.CompleteAsync();
 
-        Assert.IsGreaterThanOrEqualTo(3, samples.Count);
-        TechnicalResourceSampleRecord sample = samples[^1];
+        Assert.IsGreaterThanOrEqualTo(6, samples.Count);
+        TechnicalResourceSampleRecord sample = samples.Last(item => item.GpuDeviceId?.Value == "GPU-primary");
         Assert.AreEqual(requestId, sample.RequestId);
         Assert.AreEqual(operationId, sample.OperationId);
         Assert.AreEqual(RequestStage.ReasoningGeneration, sample.Stage?.Stage);
-        Assert.AreEqual(started.AddSeconds(1), samples[1].CapturedAt);
+        Assert.IsTrue(samples.Any(item => item.CapturedAt == started.AddSeconds(1)));
         Assert.IsGreaterThanOrEqualTo(started.AddSeconds(1), sample.CapturedAt);
         Assert.AreEqual(MetricQuality.Calculated, sample.CpuPercent.Quality);
         Assert.AreEqual(90m, sample.CpuPercent.Value);
@@ -64,6 +64,13 @@ public sealed class ResourceMonitoringTests
         Assert.AreEqual(80m, sample.GpuTemperatureCelsius.Value);
         Assert.AreEqual(125.5m, sample.GpuPowerWatts.Value);
         Assert.AreSame(sample, monitor.Latest);
+        Assert.HasCount(2, monitor.LatestSamples);
+        Assert.IsTrue(monitor.LatestSamples.Any(item => item.GpuDeviceId?.Value == "GPU-secondary"));
+        TechnicalResourceSampleRecord secondary = monitor.LatestSamples.Single(
+            item => item.GpuDeviceId?.Value == "GPU-secondary");
+        Assert.AreEqual(75m, secondary.GpuUtilizationPercent.Value);
+        Assert.AreEqual(MetricQuality.Unavailable, secondary.CpuPercent.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, secondary.ClientToBackendBytes.Quality);
     }
 
     [TestMethod]
@@ -95,22 +102,25 @@ public sealed class ResourceMonitoringTests
     }
 
     [TestMethod]
-    public void NvidiaCsvSelectsLowestIndexAndTreatsUnsupportedFieldsAsUnavailable()
+    public void NvidiaCsvReturnsEveryDistinctDeviceAndTreatsUnsupportedFieldsAsUnavailable()
     {
-        GpuResourceSnapshot? gpu = NvidiaSmiGpuProbe.ParseCsv(
+        IReadOnlyList<GpuResourceSnapshot> gpus = NvidiaSmiGpuProbe.ParseCsv(
             "1, GPU-secondary, 572.83, 80, 200, 300, 70, 90\n" +
-            "0, GPU-primary, 572.83, 50, 100, 250, 65, N/A\n");
+            "0, GPU-primary, 572.83, 50, 100, 250, 65, N/A\n" +
+            "2, GPU-primary, 572.83, 99, 999, 999, 99, 999\n");
 
-        Assert.IsNotNull(gpu);
-        Assert.AreEqual("GPU-primary", gpu.DeviceId.Value);
-        Assert.AreEqual("572.83", gpu.DriverVersion?.Value);
-        Assert.AreEqual(50m, gpu.UtilizationPercent);
-        Assert.AreEqual(100m, gpu.VramUsedMebibytes);
-        Assert.AreEqual(250m, gpu.VramTotalMebibytes);
-        Assert.AreEqual(65m, gpu.TemperatureCelsius);
-        Assert.IsNull(gpu.PowerWatts);
-        Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("0, GPU-primary, N/A, 50, 100, 250, 65, 90")?.DriverVersion);
-        Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("malformed content"));
+        Assert.HasCount(2, gpus);
+        Assert.AreEqual("GPU-primary", gpus[0].DeviceId.Value);
+        Assert.AreEqual("GPU-secondary", gpus[1].DeviceId.Value);
+        Assert.AreEqual("572.83", gpus[0].DriverVersion?.Value);
+        Assert.AreEqual(50m, gpus[0].UtilizationPercent);
+        Assert.AreEqual(100m, gpus[0].VramUsedMebibytes);
+        Assert.AreEqual(250m, gpus[0].VramTotalMebibytes);
+        Assert.AreEqual(65m, gpus[0].TemperatureCelsius);
+        Assert.IsNull(gpus[0].PowerWatts);
+        Assert.IsNull(AssertSingle(NvidiaSmiGpuProbe.ParseCsv(
+            "0, GPU-primary, N/A, 50, 100, 250, 65, 90")).DriverVersion);
+        Assert.IsEmpty(NvidiaSmiGpuProbe.ParseCsv("malformed content"));
     }
 
     [TestMethod]
@@ -162,14 +172,34 @@ public sealed class ResourceMonitoringTests
             Stage = RequestStageValue.ProtocolObserved(RequestStage.PromptProcessing, "test-stage-v1"),
             ClientToBackendBytes = Exact(10, MetricUnit.Bytes, MetricSource.GatewayTraffic),
             BackendToClientBytes = Exact(20, MetricUnit.Bytes, MetricSource.GatewayTraffic),
+            GpuDeviceId = Id("GPU-primary"),
+            GpuUtilizationPercent = Exact(25, MetricUnit.Percent, MetricSource.NvidiaSmi),
+        };
+        TechnicalResourceSampleRecord secondary = sample with
+        {
+            SampleId = Guid.NewGuid(),
+            CpuPercent = MetricValue.Unavailable(
+                MetricUnit.Percent,
+                MetricSource.WindowsApi,
+                "resource-test-v1"),
+            MemoryPercent = MetricValue.Unavailable(
+                MetricUnit.Percent,
+                MetricSource.WindowsApi,
+                "resource-test-v1"),
+            GpuDeviceId = Id("GPU-secondary"),
+            GpuUtilizationPercent = Exact(75, MetricUnit.Percent, MetricSource.NvidiaSmi),
         };
 
-        string text = App.ResourceTelemetryTextPresenter.Format(sample);
+        string text = App.ResourceTelemetryTextPresenter.FormatLatest([sample, secondary]);
 
         StringAssert.Contains(text, "0123456789abcdef0123456789abcdef");
         StringAssert.Contains(text, "stage=PromptProcessing");
         StringAssert.Contains(text, "Related process=unavailable");
         StringAssert.Contains(text, "10 B [exact]/20 B [exact]");
+        StringAssert.Contains(text, "Detected GPU devices=2");
+        StringAssert.Contains(text, "GPU-primary");
+        StringAssert.Contains(text, "GPU-secondary");
+        StringAssert.Contains(text, "workload attribution=unavailable");
         StringAssert.Contains(App.ResourceTelemetryTextPresenter.Format(null), "correlation: unavailable");
     }
 
@@ -189,13 +219,22 @@ public sealed class ResourceMonitoringTests
             1_000,
             at.Second == 0 ? 400UL : 300UL,
             new ProcessResourceSnapshot(TimeSpan.FromMilliseconds(processCpuMs), 250, read, write),
-            new GpuResourceSnapshot(Id("GPU-primary"), Id("572.83"), 50, 100, 250, 80, 125.5m));
+            [
+                new GpuResourceSnapshot(Id("GPU-primary"), Id("572.83"), 50, 100, 250, 80, 125.5m),
+                new GpuResourceSnapshot(Id("GPU-secondary"), Id("572.83"), 75, 200, 300, 70, 90),
+            ]);
 
     private static MetricValue Exact(decimal value, MetricUnit unit, MetricSource source) =>
         MetricValue.Exact(value, unit, source, "resource-test-v1");
 
     private static TechnicalIdentifier Id(string value) =>
         TechnicalIdentifier.FromBackend(value) ?? throw new InvalidOperationException("Invalid fixture identifier.");
+
+    private static T AssertSingle<T>(IReadOnlyList<T> items)
+    {
+        Assert.HasCount(1, items);
+        return items[0];
+    }
 
     private sealed class FakeProbe(params WindowsResourceSnapshot[] snapshots) : IWindowsResourceProbe
     {

@@ -99,6 +99,9 @@ public static class HistoryTextPresenter
                 .Append(" | traffic in/out=").Append(FormatMetric(resource.ClientToBackendBytes))
                 .Append('/').Append(FormatMetric(resource.BackendToClientBytes))
                 .Append(" | GPU=").Append(resource.GpuDeviceId?.Value ?? "unavailable")
+                .Append(" | GPU workload attribution=").Append(resource.GpuDeviceId is null
+                    ? "unavailable"
+                    : "unavailable (device-wide source)")
                 .Append(" | GPU load=").Append(FormatMetric(resource.GpuUtilizationPercent))
                 .Append(" | VRAM=").Append(FormatMetric(resource.GpuVramUsedBytes))
                 .Append('/').Append(FormatMetric(resource.GpuVramTotalBytes))

@@ -583,7 +583,7 @@ public partial class MainWindow : Window
 
     private void RefreshResources()
     {
-        ResourceTelemetryText.Text = ResourceTelemetryTextPresenter.Format(_resourceSource?.Latest);
+        ResourceTelemetryText.Text = ResourceTelemetryTextPresenter.FormatLatest(_resourceSource?.LatestSamples);
     }
 
     private static string CreateClientEndpointText(AppRuntimeStatus runtimeStatus)
