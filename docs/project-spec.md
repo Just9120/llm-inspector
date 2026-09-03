@@ -436,14 +436,14 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T07:24:58Z`.
+- Last recalculation: `2026-09-03T07:29:05Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
 - GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`; all completed successfully.
-- Code/tests/runtime: merged baseline содержит loopback gateway, adapters, live/token/context/timing UI, schema v3 operation/history analytics and EPIC-01 diagnostics surface. Active EPIC-06 candidate adds schema v4 request-correlated Windows/GPU resource sampling and UI. Focused Evidence: Release build zero warnings/errors, format unchanged, Windows `43/43`, Integration `42/42`, Unit `39/39`, Privacy `5/5`; full pipeline and exact-revision CI pending.
+- Code/tests/runtime: merged baseline содержит loopback gateway, adapters, live/token/context/timing UI, schema v3 operation/history analytics and EPIC-01 diagnostics surface. Active EPIC-06 candidate adds schema v4 request-correlated Windows/GPU resource sampling and UI. Exact SDK `10.0.400` full local pipeline passed: locked normal/RID restores, format, Release build with zero warnings/errors, `150/150` tests with zero skips, clean self-contained `win-x64` publish and smoke `exit 0`; exact-revision CI pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `91/139 = 65.5%` (`EPIC-06 8/8` locally; exact-revision CI pending).
 - Full agreed roadmap readiness: `91/164 = 55.5%`.

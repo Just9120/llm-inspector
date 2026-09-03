@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T07:24:58Z`
+> Updated: `2026-09-03T07:29:05Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T07:24:58Z` |
+| Updated UTC | `2026-09-03T07:29:05Z` |
 | Expected base branch | `main` |
 | Base SHA | `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0` — verified local/`origin/main`; exact-main CI `33725139103` success |
 | Working branch | `codex/goal-005-epic-06` |
-| Last verified revision | `625b751fcfcbd66cac15e7a5ac77d3f99408a2b0` — functional resource telemetry commit covered by focused build/test/format Evidence; current docs updates are not yet committed |
+| Last verified revision | `29a517499c7ba8beaa401af6d0663851aa5b3700` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Only expected EPIC-06 documentation updates after committed functional tree; no unrelated changes |
-| Completed work | `625b751` adds request-correlated Windows host/process/disk/gateway/NVIDIA resource telemetry, bounded/gap-aware sampling, schema v4 persistence, UI projection and fail-closed tests. Release build passes with `0` warnings/errors; format unchanged; focused Windows `43/43`, Integration `42/42`, Unit `39/39`, Privacy `5/5` |
-| Current step | Commit operational documentation, then execute the complete local CI-equivalent on the exact candidate tree |
-| Next exact action | Commit EPIC-06 docs/readiness, run locked restore → format → Release build → all tests → RID restore → clean self-contained publish → smoke |
+| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
+| Completed work | `625b751` adds request-correlated Windows host/process/disk/gateway/NVIDIA resource telemetry, bounded/gap-aware sampling, schema v4 persistence, UI projection and fail-closed tests; `29a5174` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `150/150` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-06 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-06` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | EPIC-05 terminal: PR #11, PR CI `33724914481`, merge `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`, exact-main CI `33725139103`, all success. EPIC-06 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | None for bounded EPIC-06 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
