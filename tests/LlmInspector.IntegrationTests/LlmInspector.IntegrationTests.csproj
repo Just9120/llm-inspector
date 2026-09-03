@@ -20,6 +20,7 @@
     <ProjectReference Include="../../src/LlmInspector.Adapters/LlmInspector.Adapters.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Domain/LlmInspector.Domain.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Gateway/LlmInspector.Gateway.csproj" />
+    <ProjectReference Include="../../src/LlmInspector.Storage.Sqlite/LlmInspector.Storage.Sqlite.csproj" />
     <ProjectReference Include="../../src/LlmInspector.Telemetry/LlmInspector.Telemetry.csproj" />
   </ItemGroup>
 </Project>
