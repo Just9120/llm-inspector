@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION IMPLEMENTED; EPIC-09 PARTIALLY IMPLEMENTED`
+> Status: `DECIDED — FOUNDATION AND SELECTED EPIC-02/03 IMPLEMENTED; EPIC-04 PARTIAL; EPIC-08 LOCAL CANDIDATE`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. Первый PR `GOAL-004` реализует EPIC-09 core: explicit IPv4-loopback Kestrel listener, literal-loopback backend validation/normalization, streaming Chat Completions relay, cancellation/failure isolation, privacy-safe observation DTO и disclosure UI. Adapters, rich telemetry и persistence остаются следующими PR этой Goal.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#7 реализовали privacy/proxy core, backend/client adapters, live state и partial token/context/timing surface. Текущая EPIC-08 branch добавляет локальную SQLite history/analytics/retention surface; до PR/main CI это только local candidate, а не terminal CI Evidence.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -165,7 +165,7 @@ Release configuration не отправляет telemetry, history или settin
 | Diagnostic logs | Structured safe logger | Size-bounded rolling files under `%LOCALAPPDATA%\LLM Inspector\logs`, default retention 7 days |
 | User-created snapshot | `LlmInspector.Diagnostics` | User-selected local path; not auto-uploaded and not silently indexed |
 
-History schema families: `requests`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples`, `diagnostic_events`, `version_facts`, `quality_facts`, `schema_migrations`. Raw content/blob columns are forbidden. Derived aggregates are recomputable read models and follow the same privacy/retention boundary.
+Текущий EPIC-08 schema v1 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples` и `schema_migrations`. Планируемые `diagnostic_events`, `version_facts` и `quality_facts` относятся к будущим эпикам и не существуют в текущей schema. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
 
 SQLite rules:
 
@@ -178,6 +178,12 @@ SQLite rules:
 - DB/WAL/SHM backup рассматривается как единый state set; live file copy без SQLite backup mechanism запрещён.
 
 History default retention — `30 days`; user options точно соответствуют `7 days`, `30 days`, `90 days`, `indefinite`. Один cutoff применяется к request/session/operation/tool/resource/derived history, чтобы не оставлять orphan records. Cleanup выполняется bounded batches oldest-first и не блокирует forwarding. Manual clear требует preview scope, confirmation и transaction. Settings, release metadata и user-exported snapshots не удаляются history cleanup.
+
+Текущий writer использует bounded channel capacity `256`, single reader и non-blocking `TryWrite`; full queue увеличивает drop counter, а storage failure — failure counter с типом ошибки, не задерживая proxy response. Read models открывают read-only connections. Finite retention удаляет oldest records батчами по `500`, каждая batch имеет отдельную transaction; default cleanup выполняется при startup и сразу после сохранения нового retention setting.
+
+Analytics группирует trends по UTC day. Arithmetic mean и median считаются по точным sample values. P95 использует nearest-rank: для отсортированного массива из `n` samples выбирается индекс `ceil(0.95 × n) - 1`. Aggregate статистически достаточен только при `n >= 3`; меньшая выборка отображается с values, но явно маркируется `insufficient` и не подтверждает degradation. Comparison считает `candidate mean - baseline mean`; рост latency/load/error и падение throughput считаются degradation только при достаточной выборке обеих сторон. Token-count delta сам по себе не классифицируется как performance degradation.
+
+Не реализованные в EPIC-08 reliability surfaces: explicit idle/threshold WAL checkpoint, startup integrity/quarantine workflow, backup mechanism и restart/corruption fault injection. Они остаются требованиями EPIC-12/release hardening и не считаются Evidence текущего history/analytics DoD.
 
 ## 9. Telemetry semantics и quality model
 
@@ -305,7 +311,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя локальная EPIC-04 validation на Windows подтвердила `dotnet format`, Release build без warnings/errors, 86 tests без skips, self-contained publish и combined Avalonia/gateway smoke. Integration suite покрывает non-streaming/SSE/tool payload pass-through, first-fragment/TTFT streaming, redirects, cancellation, concurrency, backend/sink failures и hostile hosting configuration; privacy suite использует runtime-generated canaries. Отдельный bounded UI-process/listener observation был подтверждён foundation increment и остаётся частью smoke evidence.
+Последняя локальная EPIC-08 validation на Windows подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `112/112` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. Новые suites покрывают SQLite schema allowlist/runtime canaries, все history filters, ordered operation detail, aggregates/P95/minimum-sample boundaries, four comparison dimensions, bounded writer, short-batch retention boundaries и two-phase manual clear. Это local Evidence; GitHub CI отсутствует до initial PR push.
 
 Configured CI foundation:
 

@@ -4,23 +4,23 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, merged privacy/proxy increment `EPIC-09`, готовые `EPIC-02`/`EPIC-03` и начатый отдельным инкрементом `EPIC-04`:
+Проект имеет repository/CI foundation, merged privacy/proxy foundation, готовые `EPIC-02`/`EPIC-03`, partial `EPIC-04` и локально завершённый кандидат `EPIC-08`:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
 - proxy поддерживает transparent `GET /v1/models` и non-streaming/streaming/tool-calling `POST /v1/chat/completions`, не следует redirects и propagates cancellation;
 - bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details и документированные llama.cpp `timings`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
 - UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, а также latest request tokens/context/timings с quality state; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
-- live state и latest allowlisted observation хранятся только в памяти процесса; SQLite persistence/analytics, cross-turn context delta и cold/warm classification ещё не реализованы;
+- SQLite WAL в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, operation detail, daily aggregates, comparisons, retention и explicit clear preview/confirmation;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- для EPIC-09 подтверждены PR/main CI; EPIC-02 прошёл local, PR и exact-merge CI после отдельного transport-safe test fix; EPIC-03 имеет `READY 13/13`; EPIC-04 локально выполняет `10/12`, а `E04-AC03`/`E04-AC12` ждут trustworthy session/analytics evidence;
+- для EPIC-09 core, EPIC-02, EPIC-03 и EPIC-04 подтверждены PR/main CI; EPIC-04 выполняет `10/12`, а `E04-AC03`/`E04-AC12` ждут trustworthy session/model-load evidence; EPIC-08 локально выполняет `18/18`, но не получает `READY` до PR/main CI;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая локальная readiness по независимо проверенным atomic AC: `51/139 = 36.7%` initial release и `51/164 = 31.1%` full roadmap. `EPIC-02` имеет `READY 15/15`, `EPIC-03` — `READY 13/13`; `EPIC-04` — `10/12` с ожидающим PR CI; `EPIC-09` имеет `13/14`, а persistent history allowlist (`E09-AC06`) будет доказан вместе с реальной SQLite schema в `EPIC-08`.
+Текущая локальная readiness по независимо проверенным atomic AC: `70/139 = 50.4%` initial release и `70/164 = 42.7%` full roadmap. `EPIC-02` имеет `READY 15/15`, `EPIC-03` — `READY 13/13`; EPIC-04 остаётся `10/12`; EPIC-08 выполняет `18/18` локально, а его negative SQLite schema/canary tests закрывают последний product AC EPIC-09. CI Evidence нового инкремента появится только после PR.
 
 ## Быстрый старт
 
@@ -60,7 +60,9 @@ Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp
 
 Это explicit endpoint attribution, а не process guessing: запросы через generic URL всегда остаются `Generic/Unknown`. Все base paths поддерживают `GET /models` и `POST /chat/completions`; исходный backend видит стандартные `/v1/models` и `/v1/chat/completions`. Возможность штатно менять base URL подтверждена документацией [OpenCode](https://dev.opencode.ai/docs/providers), [Hermes](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md), [Cline](https://github.com/cline/cline/blob/main/apps/vscode/webview-ui/src/components/settings/providers/OpenAICompatible.tsx) и [Open WebUI](https://github.com/open-webui/open-webui/blob/main/backend/open_webui/routers/openai.py).
 
-Техническое наблюдение остаётся только в памяти процесса, database не создаётся, raw request/response/reasoning/tool content не сохраняется и не логируется.
+Техническое наблюдение сохраняется локально с default retention `30 days`; доступны точные варианты `7 days`, `30 days`, `90 days`, `indefinite`. При старте и после изменения setting применяется bounded oldest-first cleanup. Raw request/response/reasoning/tool content не сохраняется, не индексируется и не логируется; negative runtime canary test проверяет основной DB/WAL surface.
+
+History filters принимают period, client, backend, model, session GUID, status и error type. Comparison dimension выбирается из period/model/backend/client; для period используется формат `<ISO-8601 start>..<ISO-8601 end>`. Aggregates показывают arithmetic mean, median и nearest-rank P95; минимум статистической достаточности — `3` samples. Manual clear выполняется только после preview exact UTC scope и отдельного confirmation.
 
 ## Проверки и сборка
 
