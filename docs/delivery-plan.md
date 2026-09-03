@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T08:00:48Z`
+> Updated: `2026-09-03T08:07:30Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T08:00:48Z` |
+| Updated UTC | `2026-09-03T08:07:30Z` |
 | Expected base branch | `main` |
 | Base SHA | `883ed13bab90c9affa9f6cf26c13161565f27e67` — verified local/`origin/main`; exact-main CI `33728697717` success |
 | Working branch | `codex/goal-005-epic-07` |
-| Last verified revision | `7f40e9247797ea498d000b33c93e591e86f03a10` — functional tree covered by Release build and focused suites; full CI-equivalent pending after documentation synchronization |
+| Last verified revision | `10d5d7303faeb4c6ee8f0a9b52dfff176a388e7e` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main`; EPIC-06 branch already safely removed locally/remotely; no unrelated changes |
-| Current worktree state | Functional commit clean; expected operational documentation updates in progress; no unrelated changes |
-| Completed work | `7f40e92` adds Evidence-quality-aware versioned diagnostic rules, typed gateway/history errors, metadata-only correlation, recurring error frequency analytics and UI/privacy coverage. Release build: `0` warnings/errors; focused Unit `53/53`, Integration `48/48`, Windows `44/44`, Privacy `6/6`, zero skips |
-| Current step | Synchronize architecture, readiness and prior terminal EPIC-06 Evidence, then run the complete local CI-equivalent |
-| Next exact action | Commit the evidence/documentation map, run locked restore → format → Release build → all tests → RID restore → clean self-contained publish → smoke, then record the final local checkpoint |
+| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
+| Completed work | `7f40e92` adds Evidence-quality-aware versioned diagnostic rules, typed gateway/history errors, metadata-only correlation, recurring error frequency analytics and UI/privacy coverage; `10d5d73` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `172/172` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-07 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-07` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | EPIC-06 terminal: PR #12, head `78f0a985b719c6d9231cf0a65fe9a9c16da921a5`, PR CI `33728471307`, merge `883ed13bab90c9affa9f6cf26c13161565f27e67`, exact-main CI `33728697717`, all success. EPIC-07 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | None for bounded EPIC-07 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
