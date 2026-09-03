@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T06:01:33Z`: initial release `72/139 = 51.8%`, full roadmap `72/164 = 43.9%`; exact merged-main recovery before EPIC-01. Archived after EPIC-01 terminal delivery and the independent EPIC-05 calculation.
 - `2026-09-03T05:10:51Z`: initial release `70/139 = 50.4%`, full roadmap `70/164 = 42.7%`; terminal EPIC-08 state before the bounded EPIC-04 fix. Archived when GOAL-004 reached terminal `72/72` with exact-main CI.
 - `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
 - `2026-09-02T21:43:13Z`: initial release `13/139 = 9.4%`, full roadmap `13/164 = 7.9%`; only EPIC-09 core AC were complete after PR #3. Archived when EPIC-02 terminal CI produced a newer snapshot without changing its already credited AC.
@@ -13,6 +14,15 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / EPIC-01 — Windows desktop product boundary
+
+- **Product outcome:** partial `3/4`; `E01-AC02..04` complete, `E01-AC01` intentionally uncredited and blocked on supported Windows release-matrix Evidence plus signing/distribution decisions.
+- **Pull Request:** [#10](https://github.com/Just9120/llm-inspector/pull/10), head `c583550909cf4233916d0c761e31c7be52be033b`, PR CI `33722219199` success.
+- **Merge/exact-main Evidence:** merge `6aaae88e3b24306d1c4c2ec165945436eeee05f2`; exact-main CI `33722434890` success with every required step.
+- **Delivered:** monitoring/analytics/diagnostics UI surfaces, literal-loopback backend boundary and fail-closed absence of backend lifecycle/runtime mutation commands.
+- **Cleanup:** merged branch had zero unique commits and was removed locally/remotely after local `main` synchronized to the exact merge SHA.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/10#issuecomment-5521422014).
 
 ## GOAL-004 — 72-AC core product tranche
 
