@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T06:43:00Z`
+> Updated: `2026-09-03T06:46:30Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T06:43:00Z` |
+| Updated UTC | `2026-09-03T06:46:30Z` |
 | Expected base branch | `main` |
 | Base SHA | `6aaae88e3b24306d1c4c2ec165945436eeee05f2` — verified local/`origin/main`; exact-main CI `33722434890` success |
 | Working branch | `codex/goal-005-epic-05` |
-| Last verified revision | `e3de08ad913b18d547aff93080d55f906b853dde` — CODE plus focused/solution checks; full branch CI-equivalent pending |
+| Last verified revision | `ba6c81a39054280389bb588ae34776fe292b790e` — complete candidate tree covered by full local CI-equivalent; this checkpoint is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Only expected EPIC-05 documentation updates after two code commits; no unrelated changes |
-| Completed work | `eaff62c` adds fail-closed operation graph/domain tracker; `e3de08a` adds bounded JSON/SSE tool projection, ordered SQLite schema v3 persistence/UI and concurrency/privacy coverage. Focused checks: unit `38/38`, integration `41/41`, privacy `5/5`, Windows `37/37`; solution Release build passed |
-| Current step | Finish documentation consistency, then run the complete exact-SDK local CI-equivalent on the candidate tree |
-| Next exact action | Commit AC/readiness documentation, execute restore → format → build → full tests → RID restore → clean publish → smoke, then record exact validated revision |
+| Current worktree state | Clean at full-validation boundary except this expected docs-only checkpoint update; no unrelated changes |
+| Completed work | `eaff62c` adds fail-closed operation graph/domain tracker; `e3de08a` adds bounded JSON/SSE tool projection, ordered SQLite schema v3 persistence/UI and concurrency/privacy coverage; `ba6c81a` maps AC/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `142/142` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-05 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-05` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | No EPIC-05 PR yet; branch has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | None for EPIC-05; `E01-AC01` remains an independent release-matrix blocker and is not credited |
