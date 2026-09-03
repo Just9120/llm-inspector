@@ -17,15 +17,16 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - локальный `analytics-export-v1` экспортирует выбранный UTC range anonymized technical history и раздельные request/resource aggregates (`n`, mean, median, P95); oversized range отклоняется без неполного export, exact JSON preview обязателен до сохранения и проходит тот же negative content corpus;
 - supported NVIDIA GPUs обнаруживаются списком до 16 distinct devices; live/history показывают device-wide metrics раздельно, а workload-to-device attribution честно остаётся `unavailable` без достоверного source;
 - monitoring sampling настраивается через user-friendly профили `Бережный` (`2 s`), `Сбалансированный` (`1 s`, default/recommended), `Детальный` (`500 ms`) и validated `Свой профиль` (`250 ms`–`10 s`); custom profile явно не является release-performance Evidence;
+- B01 development line предоставляет user-confirmed lifecycle для Inspector-owned Ollama, llama.cpp и LM Studio processes: start/stop/restart, model load и только typed allowlisted parameters; чужой listener остаётся observation-only, а crash требует ручного restart;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03/04/05/06/07/08/09/10/11 и BACKLOG-05/06 имеют terminal PR/main CI; EPIC-12 profiles/harness доставлены, но эпик остаётся partial `7/13` до controlled measurements; EPIC-01 — partial `3/4` до exact release и Windows Home/Pro Evidence;
+- EPIC-02/03/04/05/06/07/08/09/10/11 и BACKLOG-05/06 имеют terminal PR/main CI; EPIC-12 profiles/harness доставлены, но эпик остаётся partial `7/13` до controlled measurements; EPIC-01 — partial `3/4` до Windows Home/Pro Evidence; B01 code/tests реализованы в текущей feature branch и ожидают PR/main CI;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness на verified base `main` `ff62f54df4fbd4de443144259ac3d89bddff0044`: `132/139 = 95.0%` initial release и `138/164 = 84.1%` full roadmap. PR #21 и exact-main CI `33813413498` подтвердили EPIC-01 release automation и `224/224` tests без runtime-matrix credit. Первый immutable tag `v1.0.0-rc.1` прошёл build/payload/attestation stages, но GitHub Release не создался из-за отсутствующей checkout-free repository identity; forward-fix готовится для нового `v1.0.0-rc.2`. Весь Goal scope остаётся `21` AC: `E01-AC01`, `E12-AC01..06`, `B01-AC01..05`, `B02-AC01..09`.
+Verified base `main` — `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`. PR #22, exact-main CI `33814980537` и trusted-tag run `33815294790` успешно опубликовали immutable [`v1.0.0-rc.2`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.2); executable SHA-256 — `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. `E01-AC01` всё ещё не кредитуется без Windows Home/Pro manual matrix. На текущем B01 code head `327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5` локально выполнены `B01-AC01..05`, поэтому branch readiness — `143/164 = 87.2%`; exact PR/main CI ещё отсутствует.
 
 Утверждённый release path: observation-only `v1.0` как unsigned portable self-contained single-file `win-x64` executable в GitHub Releases с SHA-256, SBOM/provenance и документированным SmartScreen warning; lifecycle начинается с `v1.1`. Store/MSIX/signing/automatic updates отложены. Secure remote target использует loopback-only Inspector, private Tailscale Serve и отдельный application token; public exposure запрещён. Linux/macOS и новые API protocols сейчас не реализуются.
 
@@ -54,6 +55,8 @@ dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore -
 ```
 
 Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp|lm-studio`, `--backend-url=http[s]://<literal-loopback>:<port>/` и `--listener-port=1..65535`. Remote host, credentials/path/query/fragment в backend URL, duplicate и неизвестные options fail closed без вывода исходного значения.
+
+Lifecycle на development line настраивается в разделе «Управление локальным backend»: выберите runtime, найдите standard executable или укажите полный `.exe` path, проверьте показанные path/version/endpoint и подтвердите target. Только после этого доступны start/stop/restart, загрузка модели и понятные allowlisted parameters. Для llama.cpp model выбирается полным `.gguf` path. Inspector не устанавливает и не обновляет runtimes/models и никогда не останавливает процесс, который не запускал сам. Пошаговая процедура и compatibility states описаны в [`docs/runbooks/backend-lifecycle.md`](docs/runbooks/backend-lifecycle.md).
 
 Профиль частоты сбора метрик выбирается в разделе «Производительность мониторинга». Настройка сохраняется атомарно в `%LOCALAPPDATA%\LLM Inspector\settings.json`; прежняя schema v1 автоматически читается как рекомендованный `Сбалансированный` профиль. Кнопка «Вернуть рекомендуемый» сбрасывает profile и interval, а некорректное custom value не применяется.
 
@@ -103,9 +106,10 @@ Release `win-x64` publish создаёт ровно один self-contained exec
 - [`docs/ci-cd-rules.md`](docs/ci-cd-rules.md) — обязательный CI/CD и production safety contract.
 - [`docs/architecture.md`](docs/architecture.md) — выбранный stack, runtime/data/privacy boundaries, backend capability matrix, test strategy и Windows release design.
 - [`docs/runbooks/windows-release.md`](docs/runbooks/windows-release.md) — approved procedure создания и проверки portable GitHub Release.
+- [`docs/runbooks/backend-lifecycle.md`](docs/runbooks/backend-lifecycle.md) — безопасный user flow для discovery, exact target confirmation, lifecycle, model load и parameters.
 - [Upstream requirements](https://docs.google.com/document/d/1r4o0UiJohJf34j3nL56LWnOxGRi7WDC3jqoDIIjDTnA/edit) — provenance source ратифицированных требований; текущим source of truth остаётся `docs/project-spec.md`.
 
-Optional contracts для `Context Bundle Builder` и AI delivery infrastructure не созданы: соответствующие workstreams отсутствуют. Из operational runbooks сейчас существует только Windows portable release procedure.
+Optional contracts для `Context Bundle Builder` и AI delivery infrastructure не созданы: соответствующие workstreams отсутствуют.
 
 ## Рабочий процесс
 
@@ -120,4 +124,4 @@ Optional contracts для `Context Bundle Builder` и AI delivery infrastructure
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10 и release automation через [PR #21](https://github.com/Just9120/llm-inspector/pull/21); EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16 и profiles/harness через [PR #20](https://github.com/Just9120/llm-inspector/pull/20); BACKLOG-06 — через PR #17; BACKLOG-05 — через PR #18; decision ratification — через PR #19. Verified `main`: `ff62f54df4fbd4de443144259ac3d89bddff0044`.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10, release automation через [PR #21](https://github.com/Just9120/llm-inspector/pull/21) и release fix через [PR #22](https://github.com/Just9120/llm-inspector/pull/22); EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16 и profiles/harness через [PR #20](https://github.com/Just9120/llm-inspector/pull/20); BACKLOG-06 — через PR #17; BACKLOG-05 — через PR #18; decision ratification — через PR #19. Verified `main`: `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`.

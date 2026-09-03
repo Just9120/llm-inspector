@@ -8,7 +8,7 @@
       "capabilities": ["start", "stop", "restart", "model-load", "parameters"],
       "windows": ["Windows 11 25H2 Pro"],
       "verifiedAtUtc": "2026-09-03T00:00:00Z",
-      "inspectorRevision": "8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479",
+      "inspectorRevision": "327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5",
       "evidence": ["local executable version and SHA-256 recorded in project-spec.md"],
       "limitations": ["Windows Home and clean-machine lifecycle checks remain pending"]
     },
@@ -19,7 +19,7 @@
       "capabilities": ["start", "stop", "restart", "model-load", "parameters"],
       "windows": ["Windows 11 25H2 target"],
       "verifiedAtUtc": null,
-      "inspectorRevision": "8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479",
+      "inspectorRevision": "327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5",
       "evidence": ["official llama-server CLI and health contracts"],
       "limitations": ["actual b10516 Windows runtime verification remains pending"]
     },
@@ -30,7 +30,7 @@
       "capabilities": ["start", "stop", "restart", "model-load", "parameters"],
       "windows": ["Windows 11 25H2 target"],
       "verifiedAtUtc": null,
-      "inspectorRevision": "8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479",
+      "inspectorRevision": "327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5",
       "evidence": ["official lms server/load CLI contracts"],
       "limitations": ["exact LM Studio app/runtime pin and Windows verification remain pending"]
     }
