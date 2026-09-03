@@ -21,7 +21,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main`: `107/139 = 77.0%` initial release и `107/164 = 65.2%` full roadmap. Active EPIC-10 candidate локально выполняет ещё `8/8` AC (`115/139 = 82.7%`, `115/164 = 70.1%`); format, Release build, Unit `53/53` и Windows `58/58` focused tests прошли, а full pipeline и terminal CI Evidence остаются следующими gates.
+Текущая readiness baseline на merged `main`: `107/139 = 77.0%` initial release и `107/164 = 65.2%` full roadmap. Active EPIC-10 candidate локально выполняет ещё `8/8` AC (`115/139 = 82.7%`, `115/164 = 70.1%`) и прошёл полный local pipeline (`186/186` tests); terminal CI Evidence остаётся следующим gate.
 
 ## Быстрый старт
 

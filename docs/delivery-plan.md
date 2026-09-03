@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T08:41:55Z`
+> Updated: `2026-09-03T08:46:10Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T08:41:55Z` |
+| Updated UTC | `2026-09-03T08:46:10Z` |
 | Expected base branch | `main` |
 | Base SHA | `ea8498efae98adda684dd88d92e52d3401872a5c` — verified local/`origin/main`; exact-main CI `33732075018` success |
 | Working branch | `codex/goal-005-epic-10` |
-| Last verified revision | `7273967d332f1444aa627879384d78ea3b402b10` — functional EPIC-10 tree covered by format, Release build and focused tests; this operational update is not yet committed |
+| Last verified revision | `817a434` — complete EPIC-10 candidate tree covered by the full local CI-equivalent; this final checkpoint update is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main` after EPIC-07 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Functional commit clean; expected documentation updates in progress; no unrelated changes |
-| Completed work | EPIC-07 terminal: PR #13 and exact-main CI succeeded. `7273967` adds close-to-tray lifecycle, Windows tray commands, HKCU per-user autostart, atomic versioned settings, four independently gated content-free notification rules, silent delivery, bounded observation queue and versioned anti-spam policy. Format passed; Release build has `0` warnings/errors; Unit `53/53` and Windows `58/58` focused tests passed |
-| Current step | Synchronize EPIC-07 terminal Evidence and EPIC-10 local readiness, then run the complete local CI-equivalent |
-| Next exact action | Commit factual documentation, execute locked restore → format → build → all tests → RID restore → clean publish → smoke, then record the final local checkpoint before the one initial push |
+| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
+| Completed work | EPIC-07 terminal: PR #13 and exact-main CI succeeded. `7273967` adds close-to-tray lifecycle, Windows tray commands, HKCU per-user autostart, atomic versioned settings, four independently gated content-free notification rules, silent delivery, bounded observation queue and versioned anti-spam policy; `817a434` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `186/186` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-10 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-10` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | EPIC-07 terminal: PR #13, head `5b41246b59b447ee1b70beb44d8e101c25388e4b`, PR CI `33731824812`, merge `ea8498efae98adda684dd88d92e52d3401872a5c`, exact-main CI `33732075018`, all success. EPIC-10 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | None for bounded EPIC-10 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
