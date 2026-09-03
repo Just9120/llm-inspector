@@ -330,7 +330,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для BACKLOG-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `210/210` tests без skips, self-contained `win-x64` publish и smoke. PR #17 CI `33743758869` и exact-main CI `33744027574` завершились успешно на merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. Active BACKLOG-05 candidate прошёл focused Release build без warnings/errors, Windows `61/61` и integration `53/53` tests; full local CI-equivalent и exact-revision GitHub CI ещё не выполнены.
+Последняя terminal merged-main validation для BACKLOG-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `210/210` tests без skips, self-contained `win-x64` publish и smoke. PR #17 CI `33743758869` и exact-main CI `33744027574` завершились успешно на merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. Active BACKLOG-05 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `211/211` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
 
 Configured CI foundation:
 

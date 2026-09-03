@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T10:37:48Z`
+> Updated: `2026-09-03T10:43:46Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T10:37:48Z` |
+| Updated UTC | `2026-09-03T10:43:46Z` |
 | Expected base branch | `main` |
 | Base SHA | `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4` — verified local/`origin/main`; exact-main CI `33744027574` success |
 | Working branch | `codex/goal-005-backlog-05` |
-| Last verified revision | `cb6a0593d95c8fc036b66ec267d8de88976346ab` — multi-GPU implementation passed focused Release build, `61/61` Windows tests and `53/53` integration tests |
+| Last verified revision | `f9e5d2fae10607e5c81d330683d57eb62082b1ba` — complete BACKLOG-05 candidate passed the full exact-SDK local CI-equivalent |
 | Initial worktree state | Clean branch created from verified `origin/main` after BACKLOG-06 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Documentation update in progress after clean implementation commit; no unrelated changes |
-| Completed work | BACKLOG-06 terminal: PR #17, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574` and terminal Evidence comment succeeded. BACKLOG-05 now discovers up to 16 distinct supported NVIDIA devices, publishes and persists a separate GPU sample per device without duplicating host/traffic metrics, renders each device separately in live/history surfaces and explicitly marks workload attribution unavailable for the device-wide source. Release build has zero warnings/errors; focused Windows `61/61` and integration `53/53` tests passed |
-| Current step | Complete documentation synchronization, then run the full exact-SDK local CI-equivalent for BACKLOG-05 |
-| Next exact action | Commit documentation, run restore → format → build → full tests → RID restore → clean publish → smoke, then record the exact local-validation result |
+| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
+| Completed work | BACKLOG-06 terminal: PR #17, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574` and terminal Evidence comment succeeded. BACKLOG-05 now discovers up to 16 distinct supported NVIDIA devices, publishes and persists a separate GPU sample per device without duplicating host/traffic metrics, renders each device separately in live/history surfaces and explicitly marks workload attribution unavailable for the device-wide source. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `211/211` tests with zero skips, locked RID restore, clean self-contained publish and smoke exit `0` all passed |
+| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
+| Next exact action | Commit this checkpoint, fetch and confirm unchanged `origin/main`, perform the one initial push, create the BACKLOG-05 PR and wait for required exact-head CI |
 | PR / CI | BACKLOG-06 terminal: PR #17, head `6361a4ec361e6104cd30559160a78aff478a9315`, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574`, all success. BACKLOG-05 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | No blocker for BACKLOG-05. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |
