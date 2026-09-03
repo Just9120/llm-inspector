@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T09:09:24Z`
+> Updated: `2026-09-03T09:13:53Z`
 
 ## Current Goal
 
@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T09:09:24Z` |
+| Updated UTC | `2026-09-03T09:13:53Z` |
 | Expected base branch | `main` |
 | Base SHA | `a349b1d36d929324c8e9102c2d9650b483172319` — verified local/`origin/main`; exact-main CI `33735585399` success |
 | Working branch | `codex/goal-005-epic-11` |
-| Last verified revision | `2cfa6acae88eccfa0a937d1ef5786cb3ae6fdc14` — functional EPIC-11 tree covered by format, Release build and focused tests; this operational update is not yet committed |
+| Last verified revision | `72dee92` — complete EPIC-11 candidate tree covered by the full local CI-equivalent; this final checkpoint update is docs-only |
 | Initial worktree state | Clean branch created from verified `origin/main` after EPIC-10 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Functional commit clean; expected documentation updates in progress; no unrelated changes |
-| Completed work | EPIC-10 terminal: PR #14 and exact-main CI succeeded. `2cfa6ac` adds bounded SQLite range/operation snapshot slices, `diagnostic-snapshot-v1` allowlist DTO/serializer, availability-marked OS/driver/backend/client versions, model/runtime/error/system records, exact local preview hash/save and desktop UI. Format passed; Release build has `0` warnings/errors; Unit `57/57`, Integration `48/48`, Privacy `7/7` and Windows `60/60` focused tests passed |
-| Current step | Synchronize EPIC-10 terminal Evidence and EPIC-11 local readiness, then run the complete local CI-equivalent |
-| Next exact action | Commit factual documentation, execute locked restore → format → build → all tests → RID restore → clean publish → smoke, then record the final local checkpoint before the one initial push |
+| Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
+| Completed work | EPIC-10 terminal: PR #14 and exact-main CI succeeded. `2cfa6ac` adds bounded SQLite range/operation snapshot slices, `diagnostic-snapshot-v1` allowlist DTO/serializer, availability-marked OS/driver/backend/client versions, model/runtime/error/system records, exact local preview hash/save and desktop UI; `72dee92` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `193/193` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-11 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-11` once, create PR against `main`, then wait for exact-head required CI |
 | PR / CI | EPIC-10 terminal: PR #14, head `e2458a24eff69a9e57f5c5410b4ed4b3b574b3ea`, PR CI `33735289296`, merge `a349b1d36d929324c8e9102c2d9650b483172319`, exact-main CI `33735585399`, all success. EPIC-11 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | None for bounded EPIC-11 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
