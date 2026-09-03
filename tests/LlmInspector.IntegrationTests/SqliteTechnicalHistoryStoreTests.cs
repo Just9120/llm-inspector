@@ -203,6 +203,21 @@ public sealed class SqliteTechnicalHistoryStoreTests
         Assert.AreEqual(70m, detail.ResourceSamples[1].CpuPercent.Value);
         Assert.AreEqual(TimeSpan.FromMilliseconds(40), detail.ToolEvents[1].Duration);
         Assert.AreEqual(MetricQuality.Calculated, detail.ToolEvents[1].DurationMetric.Quality);
+
+        TechnicalHistorySlice operationSlice = await fixture.Store.QuerySnapshotSliceAsync(
+            new HistoryFilter(),
+            operationId);
+        Assert.HasCount(2, operationSlice.Requests);
+        Assert.HasCount(2, operationSlice.ResourceSamples);
+        Assert.IsTrue(operationSlice.Requests.All(request => request.OperationId == operationId));
+        Assert.IsTrue(operationSlice.ResourceSamples.All(sample => sample.OperationId == operationId));
+
+        TechnicalHistorySlice intervalSlice = await fixture.Store.QuerySnapshotSliceAsync(
+            new HistoryFilter(From: startedAt.AddSeconds(3), To: startedAt.AddSeconds(5)),
+            operationId);
+        Assert.IsEmpty(intervalSlice.Requests);
+        Assert.HasCount(1, intervalSlice.ResourceSamples);
+        Assert.AreEqual(startedAt.AddSeconds(4), intervalSlice.ResourceSamples[0].CapturedAt);
     }
 
     [TestMethod]
@@ -750,6 +765,11 @@ public sealed class SqliteTechnicalHistoryStoreTests
 
         public Task<TechnicalOperationDetail?> GetOperationDetailAsync(
             Guid operationId,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<TechnicalHistorySlice> QuerySnapshotSliceAsync(
+            HistoryFilter filter,
+            Guid? operationId,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<PeriodAnalytics> AnalyzePeriodAsync(

@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -154,6 +154,35 @@
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
         <StackPanel Spacing="8">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Anonymized diagnostic snapshot" />
+          <TextBlock Text="Schema diagnostic-snapshot-v1 contains only the documented technical allowlist. Preview is required before saving; the app never uploads the file."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="SnapshotScopeCombo" Width="150" Margin="0,0,8,8" />
+            <TextBox x:Name="SnapshotFromText" Width="210" Margin="0,0,8,8" PlaceholderText="From UTC (ISO-8601)" />
+            <TextBox x:Name="SnapshotToText" Width="210" Margin="0,0,8,8" PlaceholderText="To UTC (ISO-8601)" />
+            <TextBox x:Name="SnapshotOperationIdText" Width="280" Margin="0,0,8,8" PlaceholderText="Operation GUID" />
+          </WrapPanel>
+          <TextBox x:Name="SnapshotPathText" PlaceholderText="Local .json output path" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="PreviewSnapshotButton" Margin="0,0,8,8" Content="Create local preview" />
+            <Button x:Name="SaveSnapshotButton" Margin="0,0,8,8" Content="Save exact preview" IsEnabled="False" />
+          </WrapPanel>
+          <TextBlock x:Name="SnapshotStateText" TextWrapping="Wrap" />
+          <TextBox x:Name="SnapshotPreviewText"
+                   MinHeight="180"
+                   AcceptsReturn="True"
+                   IsReadOnly="True"
+                   TextWrapping="NoWrap"
+                   PlaceholderText="Previewed JSON appears here" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="9"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="8">
           <TextBlock FontSize="18" FontWeight="SemiBold" Text="Background and notifications" />
           <CheckBox x:Name="AutostartCheckBox" Content="Start LLM Inspector with Windows in background" />
           <TextBlock FontWeight="SemiBold" Text="Notify me when" />
@@ -171,7 +200,7 @@
         </StackPanel>
       </Border>
 
-      <Border Grid.Row="9"
+      <Border Grid.Row="10"
               Padding="20"
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">

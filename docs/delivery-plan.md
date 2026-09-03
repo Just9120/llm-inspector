@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T08:46:10Z`
+> Updated: `2026-09-03T09:13:53Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `ea8498efae98adda684dd88d92e52d3401872a5c`; exact-main CI [33732075018](https://github.com/Just9120/llm-inspector/actions/runs/33732075018) succeeded.
+- **Verified base:** `origin/main` / local `main` = `a349b1d36d929324c8e9102c2d9650b483172319`; exact-main CI [33735585399](https://github.com/Just9120/llm-inspector/actions/runs/33735585399) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T08:46:10Z` |
+| Updated UTC | `2026-09-03T09:13:53Z` |
 | Expected base branch | `main` |
-| Base SHA | `ea8498efae98adda684dd88d92e52d3401872a5c` — verified local/`origin/main`; exact-main CI `33732075018` success |
-| Working branch | `codex/goal-005-epic-10` |
-| Last verified revision | `817a434` — complete EPIC-10 candidate tree covered by the full local CI-equivalent; this final checkpoint update is docs-only |
-| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-07 exact-main success and safe local/remote branch cleanup; no unrelated changes |
+| Base SHA | `a349b1d36d929324c8e9102c2d9650b483172319` — verified local/`origin/main`; exact-main CI `33735585399` success |
+| Working branch | `codex/goal-005-epic-11` |
+| Last verified revision | `72dee92` — complete EPIC-11 candidate tree covered by the full local CI-equivalent; this final checkpoint update is docs-only |
+| Initial worktree state | Clean branch created from verified `origin/main` after EPIC-10 exact-main success and safe local/remote branch cleanup; no unrelated changes |
 | Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
-| Completed work | EPIC-07 terminal: PR #13 and exact-main CI succeeded. `7273967` adds close-to-tray lifecycle, Windows tray commands, HKCU per-user autostart, atomic versioned settings, four independently gated content-free notification rules, silent delivery, bounded observation queue and versioned anti-spam policy; `817a434` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `186/186` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-10 PR |
-| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-10` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | EPIC-07 terminal: PR #13, head `5b41246b59b447ee1b70beb44d8e101c25388e4b`, PR CI `33731824812`, merge `ea8498efae98adda684dd88d92e52d3401872a5c`, exact-main CI `33732075018`, all success. EPIC-10 has not been pushed; exact-revision CI pending |
+| Completed work | EPIC-10 terminal: PR #14 and exact-main CI succeeded. `2cfa6ac` adds bounded SQLite range/operation snapshot slices, `diagnostic-snapshot-v1` allowlist DTO/serializer, availability-marked OS/driver/backend/client versions, model/runtime/error/system records, exact local preview hash/save and desktop UI; `72dee92` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `193/193` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-11 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-11` once, create PR against `main`, then wait for exact-head required CI |
+| PR / CI | EPIC-10 terminal: PR #14, head `e2458a24eff69a9e57f5c5410b4ed4b3b574b3ea`, PR CI `33735289296`, merge `a349b1d36d929324c8e9102c2d9650b483172319`, exact-main CI `33735585399`, all success. EPIC-11 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | None for bounded EPIC-10 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
-| Unverified assumptions | Native tray interaction is compiled on Windows and the routing/lifetime/policy boundaries are automated, but clean-install interactive tray behavior remains part of blocked `E01-AC01` release-matrix Evidence |
+| Blockers | None for bounded EPIC-11 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
+| Unverified assumptions | GPU driver, backend and client versions are not collected by current trusted sources and therefore render explicit `unavailable`; no value is inferred. Clean-install interactive file sharing remains release/manual Evidence, while local preview/save is automated |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T08:41:55Z` | `115/139 = 82.7%` | `115/164 = 70.1%` | Independent AC-by-AC calculation credits E10-AC01..08 from close-to-tray, persistent-history, autostart, typed notification and anti-spam CODE plus focused TEST Evidence; exact-revision CI remains open |
-| Previous | `2026-09-03T08:14:33Z` | `107/139 = 77.0%` | `107/164 = 65.2%` | EPIC-07 `16/16`; terminal PR #13 and exact-main CI `33732075018` confirmed required CI Evidence |
+| Current | `2026-09-03T09:09:24Z` | `125/139 = 89.9%` | `125/164 = 76.2%` | Independent AC-by-AC calculation credits E11-AC01..10 from local versioned snapshot CODE, SQLite selection, preview/save UI and focused negative privacy/TEST Evidence; exact-revision CI remains open |
+| Previous | `2026-09-03T08:53:36Z` | `115/139 = 82.7%` | `115/164 = 70.1%` | EPIC-10 `8/8`; terminal PR #14 and exact-main CI `33735585399` confirmed required CI Evidence |
 
-Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `8` atomic EPIC-10 criteria.
+Delta: `+7.2 п.п.` initial release и `+6.1 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `10` atomic EPIC-11 criteria.
 
 ## Epic readiness и Evidence
 
@@ -101,17 +101,17 @@ Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap. Denominators
 | EPIC-07 | 🟩 READY | 16/16 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-10 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-11 | 🟦 IN PROGRESS | 10/10 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **115/139** | **82.7%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **125/139** | **89.9%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **115/164** | **70.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **125/164** | **76.2%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -183,6 +183,21 @@ Delta: `+5.7 п.п.` initial release и `+4.9 п.п.` full roadmap. Denominators
 | `E10-AC06` | Four separate persisted toggles gate backend unavailable, long completion, recurring typed error and exact/calculated high-context candidates; typed rules and independent-toggle tests cover all events |
 | `E10-AC07` | Silent mode is persisted and maps to `NIIF_NOSOUND`; automated dispatch tests confirm every published notification carries the silent flag |
 | `E10-AC08` | UI documents `notification-policy-v1`: same event key suppressed for 15 minutes and maximum three published notifications per rolling 10 minutes; exact-boundary tests cover suppression, expiry and rate-window release |
+
+### EPIC-11 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E11-AC01` | `DiagnosticSnapshotService` uses only the local `ITechnicalHistoryStore`, in-process serialization and explicit local file write; UI states that nothing is uploaded and no network/upload dependency exists |
+| `E11-AC02` | Environment block always contains OS, GPU driver, backend and client version facts; trusted local OS value is included, while unavailable sources are explicit typed markers rather than guesses |
+| `E11-AC03` | Each selected request carries normalized model availability, backend/client identities, model-load state and quality/source/version-qualified allowlisted runtime metrics |
+| `E11-AC04` | Selected request entries include typed outcome, HTTP status and `HistoryErrorType`; arbitrary exception/error body text has no DTO field |
+| `E11-AC05` | SQLite applies inclusive UTC bounds directly to `resource_samples.captured_at_utc`; integration tests prove samples outside the selected relevant interval are excluded |
+| `E11-AC06` | End-to-end negative corpus passes prompt, response, reasoning, tool arguments/results and user code through proxy/SQLite, then scans the generated snapshot/file and finds zero occurrences |
+| `E11-AC07` | UI renders read-only exact JSON plus SHA-256 locally; Save is disabled until preview and any scope edit invalidates the preview |
+| `E11-AC08` | Typed UI parser requires explicit ISO-8601 UTC range; SQLite request and resource queries use the same selection |
+| `E11-AC09` | Typed UI parser accepts an exact non-empty operation GUID; SQLite filters both request and resource rows by that operation, covered by integration tests |
+| `E11-AC10` | Root schema is `diagnostic-snapshot-v1`; every DTO shape has an executable field allowlist, output is bounded to 1000 requests/5000 samples with truncation markers, and reflection/privacy tests prevent silent field growth |
 
 ## Current blockers и decisions
 

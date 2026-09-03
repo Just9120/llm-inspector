@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T08:14:33Z`: initial release `107/139 = 77.0%`, full roadmap `107/164 = 65.2%`; EPIC-07 terminal state before EPIC-10 implementation. Archived after terminal EPIC-10 Evidence and the independent EPIC-11 calculation produced a newer current/previous pair.
 - `2026-09-03T07:35:19Z`: initial release `91/139 = 65.5%`, full roadmap `91/164 = 55.5%`; EPIC-06 terminal state before EPIC-07 implementation. Archived after terminal EPIC-07 Evidence and the independent EPIC-10 calculation produced a newer current/previous pair.
 - `2026-09-03T06:40:21Z`: initial release `83/139 = 59.7%`, full roadmap `83/164 = 50.6%`; EPIC-05 terminal state before EPIC-06 implementation. Archived after terminal EPIC-06 Evidence and the independent EPIC-07 calculation produced a newer current/previous pair.
 - `2026-09-03T06:17:58Z`: initial release `75/139 = 54.0%`, full roadmap `75/164 = 45.7%`; terminal EPIC-01 calculation. Archived after EPIC-05 reached terminal delivery and EPIC-06 produced a newer independent calculation.
@@ -26,6 +27,16 @@
 - **Delivered:** monitoring/analytics/diagnostics UI surfaces, literal-loopback backend boundary and fail-closed absence of backend lifecycle/runtime mutation commands.
 - **Cleanup:** merged branch had zero unique commits and was removed locally/remotely after local `main` synchronized to the exact merge SHA.
 - **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/10#issuecomment-5521422014).
+
+## GOAL-005 / EPIC-10 — Windows background monitoring and notifications
+
+- **Product outcome:** `READY 8/8`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#14](https://github.com/Just9120/llm-inspector/pull/14), head `e2458a24eff69a9e57f5c5410b4ed4b3b574b3ea`, PR CI `33735289296` success.
+- **Merge/exact-main Evidence:** merge `a349b1d36d929324c8e9102c2d9650b483172319`; exact-main CI `33735585399` success with every required step.
+- **Delivered:** close-to-tray process lifetime, continued SQLite monitoring, native Windows tray controls, per-user HKCU autostart, atomic settings, four typed notification categories, silent mode and boundary-tested anti-spam policy.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `186/186` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/14#issuecomment-5523178441).
 
 ## GOAL-005 / EPIC-07 — Explainable diagnostics and errors
 

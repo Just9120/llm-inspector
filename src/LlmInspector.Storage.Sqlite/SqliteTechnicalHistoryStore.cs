@@ -269,6 +269,34 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         return new TechnicalOperationDetail(operation, turns, tools, resources);
     }
 
+    public async Task<TechnicalHistorySlice> QuerySnapshotSliceAsync(
+        HistoryFilter filter,
+        Guid? operationId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        if (operationId == Guid.Empty)
+        {
+            throw new ArgumentException("Operation identifier cannot be empty.", nameof(operationId));
+        }
+
+        IReadOnlyList<RequestHistoryItem> requestsWithSentinel = await QueryRequestsCoreAsync(
+            filter,
+            TechnicalHistorySnapshotPolicy.MaximumRequests + 1,
+            cancellationToken,
+            operationId).ConfigureAwait(false);
+        IReadOnlyList<TechnicalResourceSampleRecord> resourcesWithSentinel = await QueryResourcesAsync(
+            filter,
+            cancellationToken,
+            operationId,
+            TechnicalHistorySnapshotPolicy.MaximumResourceSamples + 1).ConfigureAwait(false);
+        return new TechnicalHistorySlice(
+            requestsWithSentinel.Take(TechnicalHistorySnapshotPolicy.MaximumRequests).ToArray(),
+            resourcesWithSentinel.Take(TechnicalHistorySnapshotPolicy.MaximumResourceSamples).ToArray(),
+            requestsWithSentinel.Count > TechnicalHistorySnapshotPolicy.MaximumRequests,
+            resourcesWithSentinel.Count > TechnicalHistorySnapshotPolicy.MaximumResourceSamples);
+    }
+
     public async Task<PeriodAnalytics> AnalyzePeriodAsync(
         HistoryFilter filter,
         CancellationToken cancellationToken = default)
@@ -990,13 +1018,20 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
     private async Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsCoreAsync(
         HistoryFilter filter,
         int? limit,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? operationId = null)
     {
         ValidateFilter(filter);
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteCommand command = connection.CreateCommand();
         List<string> predicates = AddFilterParameters(command, filter, "r");
+        if (operationId is Guid selectedOperation)
+        {
+            predicates.Add("r.operation_id = $operation");
+            command.Parameters.AddWithValue("$operation", selectedOperation.ToString("N"));
+        }
+
         command.CommandText = $"""
             SELECT r.request_id, r.session_id, r.operation_id, r.started_at_utc,
                    r.http_status_code, r.outcome, r.error_type, r.client, r.backend, r.model,
@@ -1296,7 +1331,9 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
 
     private async Task<IReadOnlyList<TechnicalResourceSampleRecord>> QueryResourcesAsync(
         HistoryFilter filter,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? operationId = null,
+        int? limit = null)
     {
         await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteConnection connection = await OpenReadConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -1326,6 +1363,12 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         {
             predicates.Add("COALESCE(o.session_id, r.session_id) = $session");
             command.Parameters.AddWithValue("$session", filter.SessionId.Value.ToString("N"));
+        }
+
+        if (operationId is Guid selectedOperation)
+        {
+            predicates.Add("s.operation_id = $operation");
+            command.Parameters.AddWithValue("$operation", selectedOperation.ToString("N"));
         }
 
         if (filter.Status is not null)
@@ -1368,8 +1411,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             LEFT JOIN operations o ON o.operation_id = s.operation_id
             LEFT JOIN requests r ON r.request_id = s.request_id
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
-            ORDER BY s.captured_at_utc, s.sample_id;
+            ORDER BY s.captured_at_utc, s.sample_id
+            {(limit is null ? string.Empty : "LIMIT $limit")};
             """;
+        if (limit is not null)
+        {
+            command.Parameters.AddWithValue("$limit", limit.Value);
+        }
+
         return await ReadResourcesAsync(connection, command, cancellationToken).ConfigureAwait(false);
     }
 

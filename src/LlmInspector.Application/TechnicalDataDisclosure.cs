@@ -21,12 +21,17 @@ public static class TechnicalDataDisclosure
             "Local background preferences",
             "Schema version, Windows autostart selection, four independent notification selections, and silent-mode selection",
             "Until the user changes the settings or deletes the local settings file"),
+        new(
+            "User-created diagnostic snapshot",
+            "Versioned selection, availability-marked environment facts, pseudonymous request/operation IDs, normalized model/backend/client identities, typed errors, allowlisted runtime metrics, and interval-correlated system metrics",
+            "User-selected local JSON file; retained until the user deletes it"),
     ];
 
     public const string PersistentDataStatement =
         "Persistent technical history is stored locally per user in %LOCALAPPDATA%\\LLM Inspector\\data\\inspector.db; " +
         "the default retention is 30 days and the selectable options are 7 days, 30 days, 90 days, or indefinite. " +
-        "Background preferences are stored separately in %LOCALAPPDATA%\\LLM Inspector\\settings.json until changed or deleted.";
+        "Background preferences are stored separately in %LOCALAPPDATA%\\LLM Inspector\\settings.json until changed or deleted. " +
+        "A diagnostic snapshot is stored only at the local path explicitly selected by the user and is not uploaded.";
 
     public const string ForbiddenContentStatement =
         "Prompt, response, reasoning, tool arguments/results, user code, credentials and raw headers are never retained.";

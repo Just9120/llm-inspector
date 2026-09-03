@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using LlmInspector.Adapters;
 using LlmInspector.Application;
+using LlmInspector.Diagnostics;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
 using LlmInspector.Storage.Sqlite;
@@ -25,12 +26,14 @@ public sealed class SqliteHistoryPrivacyTests
             $"reasoning-{Guid.NewGuid():N}",
             $"tool-arguments-{Guid.NewGuid():N}",
             $"tool-result-{Guid.NewGuid():N}",
+            $"user-code-{Guid.NewGuid():N}",
             $"credential-{Guid.NewGuid():N}",
             $"raw-header-{Guid.NewGuid():N}",
         ];
         string requestBody =
             $"{{\"messages\":[{{\"content\":\"{canaries[0]}\",\"reasoning\":\"{canaries[2]}\"}}]," +
-            $"\"tools\":[{{\"arguments\":\"{canaries[3]}\"}}],\"tool_result\":\"{canaries[4]}\"}}";
+            $"\"tools\":[{{\"arguments\":\"{canaries[3]}\"}}],\"tool_result\":\"{canaries[4]}\"," +
+            $"\"user_code\":\"{canaries[5]}\"}}";
         string responseBody =
             $"{{\"choices\":[{{\"message\":{{\"content\":\"{canaries[1]}\",\"reasoning\":\"{canaries[2]}\"," +
             $"\"tool_calls\":[{{\"function\":{{\"arguments\":\"{canaries[3]}\"}}}}]}}}}]," +
@@ -68,8 +71,8 @@ public sealed class SqliteHistoryPrivacyTests
                 {
                     Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
                 };
-                request.Headers.Authorization = new("Bearer", canaries[5]);
-                request.Headers.TryAddWithoutValidation("X-Privacy-Canary", canaries[6]);
+                request.Headers.Authorization = new("Bearer", canaries[6]);
+                request.Headers.TryAddWithoutValidation("X-Privacy-Canary", canaries[7]);
                 request.Headers.TryAddWithoutValidation(
                     InspectorCorrelationHeaders.OperationId,
                     Guid.NewGuid().ToString("N"));
@@ -86,6 +89,18 @@ public sealed class SqliteHistoryPrivacyTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 StringAssert.Contains(relayed, canaries[1], StringComparison.Ordinal);
                 Assert.HasCount(1, await store.QueryRequestsAsync(new HistoryFilter()));
+
+                DiagnosticSnapshotService snapshotService = new(store);
+                DiagnosticSnapshotArtifact snapshot = await snapshotService.CreateAsync(
+                    DiagnosticSnapshotSelection.ForTimeRange(
+                        DateTimeOffset.UtcNow.AddDays(-1),
+                        DateTimeOffset.UtcNow.AddDays(1)),
+                    DiagnosticEnvironmentFacts.CaptureLocal());
+                Assert.AreEqual(DiagnosticSnapshotContract.SchemaVersion1, snapshot.Document.SchemaVersion);
+                Assert.HasCount(1, snapshot.Document.Requests);
+                await DiagnosticSnapshotService.SaveAsync(
+                    snapshot,
+                    Path.Combine(directory, "diagnostic-snapshot.json"));
             }
 
             SqliteConnection.ClearAllPools();
