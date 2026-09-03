@@ -485,14 +485,14 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T22:39:21Z`.
+- Last recalculation: `2026-09-03T22:46:11Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
 - GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 partial PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`, decision-ratification PR/main runs `33807351764`/`33807628059`, EPIC-12 profiles/harness PR/main runs `33810069610`/`33810329608`, EPIC-01 release-automation PR/main runs `33812383296`/`33813413498`; all completed successfully. Release run `33813681861` failed only in final publication after successful build, payload verification and both attestation steps.
-- Code/tests/runtime: merged base through EPIC-01 release automation is exact-main CI verified at `ff62f54df4fbd4de443144259ac3d89bddff0044`; PR #21 head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8` passed full local/PR validation. Failed-publication `rc.1` executable SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification. Local forward-fix `60d15b8` supplies `GH_REPO` to the checkout-free final publish step and adds a policy assertion; focused `74/74` UnitTests and YAML parse pass. Actual successful release remains pending.
+- Code/tests/runtime: merged base through EPIC-01 release automation is exact-main CI verified at `ff62f54df4fbd4de443144259ac3d89bddff0044`; PR #21 head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8` passed full local/PR validation. Failed-publication `rc.1` executable SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification. Local forward-fix through `2044bc09a7dd221c2ac9d69bee76e217b08df672` supplies `GH_REPO` to the checkout-free final publish step and adds a policy assertion; full local `224/224` tests and one-file publish smoke pass. Actual successful release remains pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.

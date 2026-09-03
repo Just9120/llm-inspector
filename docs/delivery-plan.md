@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T22:39:21Z`
+> Updated: `2026-09-03T22:46:11Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T22:39:21Z` |
+| Updated UTC | `2026-09-03T22:46:11Z` |
 | Expected base branch | `main` |
 | Base SHA | `ff62f54df4fbd4de443144259ac3d89bddff0044` — verified local/`origin/main`; exact-main CI `33813413498` success |
 | Working branch | `codex/goal-005-epic-01-release-fix` |
-| Last verified revision | `60d15b8` — focused `74/74` UnitTests and YAML parse succeeded; full CI-equivalent pending |
+| Last verified revision | `2044bc09a7dd221c2ac9d69bee76e217b08df672` — full local CI-equivalent succeeded; this checkpoint commit will not self-reference its own containing revision |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | EPIC-01 PR #21 head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8`, PR CI `33812383296`, merge `ff62f54df4fbd4de443144259ac3d89bddff0044`, exact-main CI `33813413498`. Immutable tag `v1.0.0-rc.1` points to that merge. Release run `33813681861`: build/payload/both attestations success; final publication failed because checkout-free `gh` lacked repository identity; no GitHub Release exists. Downloaded exact artifact SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification. Forward-fix commit `60d15b8` adds final-step `GH_REPO` and policy coverage |
-| Current step | Finish failure/recovery documentation, full local validation, then one grouped initial push and forward-fix PR |
-| Next exact action | Commit docs, run full CI-equivalent on final local head, fetch-check unchanged `origin/main`, push once and open release forward-fix PR |
+| Current step | Create final checkpoint commit, revalidate exact local head, then one grouped initial push and forward-fix PR |
+| Next exact action | Re-run full CI-equivalent on final local head, fetch-check unchanged `origin/main`, push once and open release forward-fix PR |
 | PR / CI | Forward-fix PR not yet created; initial push and exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | PR #21 local/PR/main full `224/224` validation succeeded. Release run `33813681861` independently passed trusted-tag ancestry, locked CI-equivalent, single publish/smoke, exact payload verification/upload, build provenance and SBOM attestation; only `gh release create` failed with `fatal: not a git repository`. Downloaded `rc.1` payload verifier and `gh attestation verify` both pass for SHA-256 `3ea61cd4…f4bd02`. Forward-fix focused `74/74` UnitTests and YAML parse pass |
+| Validation | PR #21 local/PR/main full `224/224` validation succeeded. Release run `33813681861` independently passed trusted-tag ancestry, locked CI-equivalent, single publish/smoke, exact payload verification/upload, build provenance and SBOM attestation; only `gh release create` failed with `fatal: not a git repository`. Downloaded `rc.1` payload verifier and `gh attestation verify` both pass for SHA-256 `3ea61cd4…f4bd02`. Forward-fix at `2044bc0…`: exact SDK `10.0.400`, locked restores, format, build `0` warnings/errors, `224/224` tests with zero skips, exact one-file publish and smoke success |
 | Blockers | None for safe forward-fix PR. Successful `v1.0.0-rc.2` release/attestation verification and Windows Home/Pro exact-artifact tests remain delivery/manual gates. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until an explicit CI/CD policy-document request; safety contract itself is unchanged |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
