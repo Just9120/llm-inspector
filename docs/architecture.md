@@ -330,7 +330,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-12 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `207/207` tests без skips, self-contained `win-x64` publish и smoke. PR #16 CI `33741679566` и exact-main CI `33741928312` завершились успешно на merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. Active BACKLOG-06 candidate прошёл Release build без warnings/errors, format verification и focused Unit `69/69`, Privacy `7/7`, Windows `61/61`; полный local CI-equivalent и exact-revision GitHub CI ещё не выполнены.
+Последняя terminal merged-main validation для EPIC-12 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `207/207` tests без skips, self-contained `win-x64` publish и smoke. PR #16 CI `33741679566` и exact-main CI `33741928312` завершились успешно на merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. Active BACKLOG-06 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `210/210` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
 
 Configured CI foundation:
 

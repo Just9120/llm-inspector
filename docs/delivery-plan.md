@@ -63,16 +63,16 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T10:14:05Z` |
+| Updated UTC | `2026-09-03T10:18:42Z` |
 | Expected base branch | `main` |
 | Base SHA | `7c5528ec3c33396ce1068162fc0b6961a0dfe553` — verified local/`origin/main`; exact-main CI `33741928312` success |
 | Working branch | `codex/goal-005-backlog-06` |
-| Last verified revision | `915f372` — BACKLOG-06 implementation passed Release build, format and focused Unit/Privacy/Windows checks; current documentation update is not committed |
+| Last verified revision | `00977be` — complete BACKLOG-06 candidate passed the full exact-SDK local CI-equivalent |
 | Initial worktree state | Clean branch created from verified `origin/main` after EPIC-12 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Only expected README/architecture/canonical operational/delivery updates after implementation commit; no unrelated changes |
-| Completed work | EPIC-12 terminal partial: PR #16, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553` and exact-main CI `33741928312` succeeded. BACKLOG-06 adds `analytics-export-v1`, exact UTC range selection, shared bounded anonymized history projection, request/resource aggregate categories, `n`/mean/median/P95, fail-closed truncation, exact preview/SHA-256/atomic local save and the same end-to-end negative content corpus as diagnostic snapshot. Release build: zero warnings/errors; focused Unit `69/69`, Privacy `7/7`, Windows `61/61`; format passed |
-| Current step | Synchronize BACKLOG-06 operational documentation and run the full exact-SDK local CI-equivalent from the complete candidate tree |
-| Next exact action | Commit documentation, then run locked restore → format → Release build → full tests → RID restore → clean self-contained publish → smoke; push only after all pass |
+| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
+| Completed work | EPIC-12 terminal partial: PR #16, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553` and exact-main CI `33741928312` succeeded. BACKLOG-06 adds `analytics-export-v1`, exact UTC range selection, shared bounded anonymized history projection, request/resource aggregate categories, `n`/mean/median/P95, fail-closed truncation, exact preview/SHA-256/atomic local save and the same end-to-end negative content corpus as diagnostic snapshot. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `210/210` tests with zero skips, locked RID restore, clean self-contained publish and smoke exit `0` all passed |
+| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
+| Next exact action | Commit this checkpoint, verify the branch diff, perform the one initial push, create the BACKLOG-06 PR and wait for required exact-head CI |
 | PR / CI | EPIC-12 terminal: PR #16, head `c43564bad67b0dda17c4faf347051da8c8243c41`, PR CI `33741679566`, merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`, exact-main CI `33741928312`, all success. BACKLOG-06 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
 | Blockers | No blocker for BACKLOG-06. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |

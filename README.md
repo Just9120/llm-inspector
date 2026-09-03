@@ -23,7 +23,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main` `7c5528ec3c33396ce1068162fc0b6961a0dfe553`: `132/139 = 95.0%` initial release и `132/164 = 80.5%` full roadmap. Active BACKLOG-06 candidate выполняет `B06-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `135/164 = 82.3%`; exact-revision CI для candidate остаётся следующим gate. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
+Текущая readiness baseline на merged `main` `7c5528ec3c33396ce1068162fc0b6961a0dfe553`: `132/139 = 95.0%` initial release и `132/164 = 80.5%` full roadmap. Active BACKLOG-06 candidate выполняет `B06-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `135/164 = 82.3%`; полный local CI-equivalent прошёл `210/210` tests, exact-revision CI остаётся следующим gate. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
 
 ## Быстрый старт
 
