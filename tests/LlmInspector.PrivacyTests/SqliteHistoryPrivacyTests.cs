@@ -25,6 +25,8 @@ public sealed class SqliteHistoryPrivacyTests
             $"reasoning-{Guid.NewGuid():N}",
             $"tool-arguments-{Guid.NewGuid():N}",
             $"tool-result-{Guid.NewGuid():N}",
+            $"credential-{Guid.NewGuid():N}",
+            $"raw-header-{Guid.NewGuid():N}",
         ];
         string requestBody =
             $"{{\"messages\":[{{\"content\":\"{canaries[0]}\",\"reasoning\":\"{canaries[2]}\"}}]," +
@@ -59,9 +61,15 @@ public sealed class SqliteHistoryPrivacyTests
                     BaseAddress = gateway.ListeningAddress,
                     Timeout = TimeSpan.FromSeconds(15),
                 };
-                using HttpResponseMessage response = await client.PostAsync(
-                    ProxyGateway.ChatCompletionsPath,
-                    new StringContent(requestBody, Encoding.UTF8, "application/json"));
+                using HttpRequestMessage request = new(
+                    HttpMethod.Post,
+                    ProxyGateway.ChatCompletionsPath)
+                {
+                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
+                };
+                request.Headers.Authorization = new("Bearer", canaries[5]);
+                request.Headers.TryAddWithoutValidation("X-Privacy-Canary", canaries[6]);
+                using HttpResponseMessage response = await client.SendAsync(request);
                 string relayed = await response.Content.ReadAsStringAsync();
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -105,7 +113,11 @@ public sealed class SqliteHistoryPrivacyTests
                 ["history_settings"] = ["id", "retention"],
                 ["sessions"] = ["session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model"],
                 ["operations"] = ["operation_id", "session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model", "status", "error_type"],
-                ["requests"] = ["request_id", "session_id", "operation_id", "started_at_utc", "http_status_code", "outcome", "error_type", "client", "backend", "model"],
+                ["requests"] = [
+                    "request_id", "session_id", "operation_id", "started_at_utc", "http_status_code", "outcome",
+                    "error_type", "client", "backend", "model", "correlation_turn_id",
+                    "correlation_turn_sequence", "model_load_disposition",
+                ],
                 ["request_metrics"] = ["request_id", "metric_key", "value", "unit", "quality", "source", "source_version", "derivation_version"],
                 ["turns"] = ["turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type"],
                 ["tool_events"] = ["tool_event_id", "operation_id", "turn_sequence", "sequence", "tool_name", "started_at_utc", "duration_ms", "status", "error_type"],

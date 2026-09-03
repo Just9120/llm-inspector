@@ -109,6 +109,8 @@ public sealed class ProxyPrivacyTests
         [
             nameof(ProxyObservation.BackendTelemetry),
             nameof(ProxyObservation.Client),
+            nameof(ProxyObservation.ContextChangeTokens),
+            nameof(ProxyObservation.Correlation),
             nameof(ProxyObservation.Duration),
             nameof(ProxyObservation.HttpStatusCode),
             nameof(ProxyObservation.Outcome),

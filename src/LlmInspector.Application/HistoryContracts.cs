@@ -131,7 +131,10 @@ public sealed record RequestHistoryItem(
     ClientKind Client,
     BackendKind Backend,
     TechnicalIdentifier? Model,
-    IReadOnlyDictionary<HistoryMetric, MetricValue> Metrics);
+    IReadOnlyDictionary<HistoryMetric, MetricValue> Metrics,
+    ModelLoadDisposition ModelLoadDisposition = ModelLoadDisposition.Unavailable,
+    Guid? CorrelatedTurnId = null,
+    int? CorrelatedTurnSequence = null);
 
 public sealed record TechnicalOperationDetail(
     TechnicalOperationRecord Operation,
@@ -150,9 +153,43 @@ public sealed record AnalyticsTrendPoint(
     DateOnly Day,
     IReadOnlyDictionary<HistoryMetric, MetricAggregate> Metrics);
 
+public sealed record ModelLoadBreakdown
+{
+    public ModelLoadBreakdown(int coldRequests, int warmRequests, int unavailableRequests)
+    {
+        if (coldRequests < 0 || warmRequests < 0 || unavailableRequests < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(coldRequests),
+                "Model-load request counts cannot be negative.");
+        }
+
+        ColdRequests = coldRequests;
+        WarmRequests = warmRequests;
+        UnavailableRequests = unavailableRequests;
+    }
+
+    public int ColdRequests { get; }
+
+    public int WarmRequests { get; }
+
+    public int UnavailableRequests { get; }
+
+    public int TotalRequests => checked(ColdRequests + WarmRequests + UnavailableRequests);
+}
+
 public sealed record PeriodAnalytics(
     HistoryFilter Filter,
-    IReadOnlyList<AnalyticsTrendPoint> Trend);
+    IReadOnlyList<AnalyticsTrendPoint> Trend,
+    ModelLoadBreakdown ModelLoads)
+{
+    public PeriodAnalytics(
+        HistoryFilter filter,
+        IReadOnlyList<AnalyticsTrendPoint> trend)
+        : this(filter, trend, new ModelLoadBreakdown(0, 0, 0))
+    {
+    }
+}
 
 public sealed record AnalyticsComparison(
     HistoryMetric Metric,

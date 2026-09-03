@@ -98,13 +98,19 @@ public sealed class PrivacyContractTests
     [TestMethod]
     public void TechnicalDataDisclosureListsFieldsAndRetention()
     {
-        Assert.HasCount(1, TechnicalDataDisclosure.CurrentCategories);
+        Assert.HasCount(2, TechnicalDataDisclosure.CurrentCategories);
 
-        TechnicalDataCategory category = TechnicalDataDisclosure.CurrentCategories[0];
-        Assert.IsFalse(string.IsNullOrWhiteSpace(category.Name));
-        Assert.IsFalse(string.IsNullOrWhiteSpace(category.Fields));
-        StringAssert.Contains(category.Retention, "Process lifetime", StringComparison.Ordinal);
-        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "none", StringComparison.OrdinalIgnoreCase);
+        foreach (TechnicalDataCategory category in TechnicalDataDisclosure.CurrentCategories)
+        {
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Name));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Fields));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(category.Retention));
+        }
+
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[0].Retention, "Process lifetime", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[1].Retention, "30 days (default)", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "%LOCALAPPDATA%", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "30 days", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.ForbiddenContentStatement, "never retained", StringComparison.Ordinal);
     }
 }

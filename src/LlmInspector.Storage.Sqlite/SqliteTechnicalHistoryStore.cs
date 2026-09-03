@@ -7,7 +7,7 @@ namespace LlmInspector.Storage.Sqlite;
 
 public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsyncDisposable
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const int MaximumQueryLimit = 1_000;
     private readonly string _connectionString;
     private readonly string _readConnectionString;
@@ -64,16 +64,34 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false);
             await ExecuteNonQueryAsync(connection, transaction, SchemaSql, cancellationToken).ConfigureAwait(false);
-            await using SqliteCommand versionCommand = connection.CreateCommand();
-            versionCommand.Transaction = transaction;
-            versionCommand.CommandText = """
-                INSERT INTO schema_migrations(version, applied_at_utc)
-                VALUES ($version, $applied)
-                ON CONFLICT(version) DO NOTHING;
-                """;
-            versionCommand.Parameters.AddWithValue("$version", SchemaVersion);
-            versionCommand.Parameters.AddWithValue("$applied", ToDbTime(DateTimeOffset.UtcNow));
-            await versionCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            int persistedVersion = await ReadSchemaVersionAsync(connection, transaction, cancellationToken)
+                .ConfigureAwait(false);
+            if (persistedVersion == 0)
+            {
+                await RecordSchemaVersionAsync(connection, transaction, 1, cancellationToken).ConfigureAwait(false);
+                persistedVersion = 1;
+            }
+
+            if (persistedVersion > SchemaVersion)
+            {
+                throw new InvalidDataException(
+                    $"History schema version {persistedVersion} is newer than supported version {SchemaVersion}.");
+            }
+
+            if (persistedVersion == 1)
+            {
+                await ExecuteNonQueryAsync(connection, transaction, Migration2Sql, cancellationToken)
+                    .ConfigureAwait(false);
+                await RecordSchemaVersionAsync(connection, transaction, 2, cancellationToken).ConfigureAwait(false);
+                persistedVersion = 2;
+            }
+
+            if (persistedVersion != SchemaVersion)
+            {
+                throw new InvalidDataException(
+                    $"History schema version {persistedVersion} has no supported migration path.");
+            }
+
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             _initialized = true;
         }
@@ -250,6 +268,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             HistoryMetric.PromptTokensPerSecond,
             HistoryMetric.GenerationTokensPerSecond,
             HistoryMetric.ContextUsageTokens,
+            HistoryMetric.ModelLoadMilliseconds,
             HistoryMetric.CpuPercent,
             HistoryMetric.MemoryPercent,
             HistoryMetric.ErrorRatePercent,
@@ -263,7 +282,13 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                     metric => HistoryStatistics.Calculate(
                         item.Value.TryGetValue(metric, out List<decimal>? values) ? values : []))))
             .ToArray();
-        return new PeriodAnalytics(filter, trend);
+        return new PeriodAnalytics(
+            filter,
+            trend,
+            new ModelLoadBreakdown(
+                requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Cold),
+                requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Warm),
+                requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Unavailable)));
     }
 
     public async Task<AnalyticsComparison> CompareAsync(
@@ -457,17 +482,36 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         ProxyObservation observation,
         CancellationToken cancellationToken)
     {
+        RequestCorrelation? correlation = observation.Correlation;
+        if (correlation is not null)
+        {
+            await UpsertSessionAsync(
+                connection,
+                transaction,
+                new TechnicalSessionRecord(
+                    correlation.SessionId,
+                    observation.StartedAt,
+                    observation.StartedAt + observation.Duration,
+                    observation.Client,
+                    observation.BackendTelemetry.Backend,
+                    observation.BackendTelemetry.Model),
+                cancellationToken).ConfigureAwait(false);
+        }
+
         await using SqliteCommand command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
             INSERT INTO requests(
                 request_id, session_id, operation_id, started_at_utc, http_status_code,
-                outcome, error_type, client, backend, model)
+                outcome, error_type, client, backend, model,
+                correlation_turn_id, correlation_turn_sequence, model_load_disposition)
             VALUES(
-                $request_id, NULL, NULL, $started_at, $http_status,
-                $outcome, $error_type, $client, $backend, $model);
+                $request_id, $session_id, NULL, $started_at, $http_status,
+                $outcome, $error_type, $client, $backend, $model,
+                $correlation_turn_id, $correlation_turn_sequence, $model_load_disposition);
             """;
         command.Parameters.AddWithValue("$request_id", observation.RequestId.ToString("N"));
+        command.Parameters.AddWithValue("$session_id", DbValue(correlation?.SessionId.ToString("N")));
         command.Parameters.AddWithValue("$started_at", ToDbTime(observation.StartedAt));
         command.Parameters.AddWithValue("$http_status", DbValue(observation.HttpStatusCode));
         command.Parameters.AddWithValue("$outcome", (int)observation.Outcome);
@@ -475,6 +519,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue("$client", (int)observation.Client);
         command.Parameters.AddWithValue("$backend", (int)observation.BackendTelemetry.Backend);
         command.Parameters.AddWithValue("$model", DbValue(observation.BackendTelemetry.Model?.Value));
+        command.Parameters.AddWithValue("$correlation_turn_id", DbValue(correlation?.TurnId.ToString("N")));
+        command.Parameters.AddWithValue("$correlation_turn_sequence", DbValue(correlation?.TurnSequence));
+        command.Parameters.AddWithValue(
+            "$model_load_disposition",
+            (int)observation.BackendTelemetry.ModelLoadDisposition);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         foreach ((HistoryMetric key, MetricValue value) in GetObservationMetrics(observation))
@@ -559,7 +608,12 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             INSERT INTO sessions(session_id, started_at_utc, ended_at_utc, client, backend, model)
             VALUES($id, $started, $ended, $client, $backend, $model)
             ON CONFLICT(session_id) DO UPDATE SET
-                ended_at_utc = excluded.ended_at_utc,
+                started_at_utc = MIN(sessions.started_at_utc, excluded.started_at_utc),
+                ended_at_utc = CASE
+                    WHEN sessions.ended_at_utc IS NULL THEN excluded.ended_at_utc
+                    WHEN excluded.ended_at_utc IS NULL THEN sessions.ended_at_utc
+                    ELSE MAX(sessions.ended_at_utc, excluded.ended_at_utc)
+                END,
                 client = excluded.client,
                 backend = excluded.backend,
                 model = excluded.model;
@@ -730,7 +784,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         List<string> predicates = AddFilterParameters(command, filter, "r");
         command.CommandText = $"""
             SELECT r.request_id, r.session_id, r.operation_id, r.started_at_utc,
-                   r.http_status_code, r.outcome, r.error_type, r.client, r.backend, r.model
+                   r.http_status_code, r.outcome, r.error_type, r.client, r.backend, r.model,
+                   r.model_load_disposition, r.correlation_turn_id, r.correlation_turn_sequence
             FROM requests r
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
             ORDER BY r.started_at_utc DESC, r.request_id DESC
@@ -767,7 +822,10 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             row.Model,
             metrics.TryGetValue(row.RequestId, out Dictionary<HistoryMetric, MetricValue>? values)
                 ? values
-                : new Dictionary<HistoryMetric, MetricValue>())).ToArray();
+                : new Dictionary<HistoryMetric, MetricValue>(),
+            row.ModelLoadDisposition,
+            row.CorrelatedTurnId,
+            row.CorrelatedTurnSequence)).ToArray();
     }
 
     private static async Task<Dictionary<Guid, Dictionary<HistoryMetric, MetricValue>>> ReadRequestMetricsAsync(
@@ -882,7 +940,10 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         (HistoryErrorType)reader.GetInt32(6),
         (ClientKind)reader.GetInt32(7),
         (BackendKind)reader.GetInt32(8),
-        reader.IsDBNull(9) ? null : ReadIdentifier(reader.GetString(9)));
+        reader.IsDBNull(9) ? null : ReadIdentifier(reader.GetString(9)),
+        ReadModelLoadDisposition(reader.GetInt32(10)),
+        reader.IsDBNull(11) ? null : Guid.ParseExact(reader.GetString(11), "N"),
+        reader.IsDBNull(12) ? null : reader.GetInt32(12));
 
     private static async Task<TechnicalOperationRecord?> ReadOperationAsync(
         SqliteConnection connection,
@@ -1392,6 +1453,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         TechnicalIdentifier.FromBackend(value) ??
         throw new InvalidDataException("Persisted technical identifier is invalid.");
 
+    private static ModelLoadDisposition ReadModelLoadDisposition(int value) =>
+        Enum.IsDefined((ModelLoadDisposition)value)
+            ? (ModelLoadDisposition)value
+            : throw new InvalidDataException("Persisted model-load disposition is invalid.");
+
     private static object DbValue(object? value) => value ?? DBNull.Value;
 
     private static string ToDbTime(DateTimeOffset value) =>
@@ -1410,7 +1476,39 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         HistoryErrorType ErrorType,
         ClientKind Client,
         BackendKind Backend,
-        TechnicalIdentifier? Model);
+        TechnicalIdentifier? Model,
+        ModelLoadDisposition ModelLoadDisposition,
+        Guid? CorrelatedTurnId,
+        int? CorrelatedTurnSequence);
+
+    private static async Task<int> ReadSchemaVersionAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        await using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT COALESCE(MAX(version), 0) FROM schema_migrations;";
+        object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
+    }
+
+    private static async Task RecordSchemaVersionAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        int version,
+        CancellationToken cancellationToken)
+    {
+        await using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO schema_migrations(version, applied_at_utc)
+            VALUES ($version, $applied);
+            """;
+        command.Parameters.AddWithValue("$version", version);
+        command.Parameters.AddWithValue("$applied", ToDbTime(DateTimeOffset.UtcNow));
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     private const string SchemaSql = """
         CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -1524,5 +1622,18 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         CREATE INDEX IF NOT EXISTS ix_turns_operation ON turns(operation_id, sequence);
         CREATE INDEX IF NOT EXISTS ix_tool_events_operation ON tool_events(operation_id, turn_sequence, sequence);
         CREATE INDEX IF NOT EXISTS ix_resource_samples_period ON resource_samples(captured_at_utc);
+        """;
+
+    private const string Migration2Sql = """
+        ALTER TABLE requests ADD COLUMN correlation_turn_id TEXT NULL
+            CHECK(correlation_turn_id IS NULL OR length(correlation_turn_id) = 32);
+        ALTER TABLE requests ADD COLUMN correlation_turn_sequence INTEGER NULL
+            CHECK(
+                (correlation_turn_id IS NULL AND correlation_turn_sequence IS NULL) OR
+                (correlation_turn_id IS NOT NULL AND correlation_turn_sequence >= 1));
+        ALTER TABLE requests ADD COLUMN model_load_disposition INTEGER NOT NULL DEFAULT 0
+            CHECK(model_load_disposition BETWEEN 0 AND 2);
+        CREATE INDEX ix_requests_correlation
+            ON requests(session_id, correlation_turn_sequence);
         """;
 }

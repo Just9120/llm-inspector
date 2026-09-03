@@ -86,11 +86,16 @@ public sealed class HistoryUiTests
             ClientKind.Cline,
             BackendKind.Ollama,
             Id("model-a"),
-            new Dictionary<HistoryMetric, MetricValue>());
+            new Dictionary<HistoryMetric, MetricValue>(),
+            ModelLoadDisposition.Warm,
+            Guid.Parse("fedcba98-7654-3210-fedc-ba9876543210"),
+            2);
         string requests = App.HistoryTextPresenter.FormatRequests([request]);
         StringAssert.Contains(requests, "01234567");
         StringAssert.Contains(requests, "session=");
+        StringAssert.Contains(requests, "turn=fedcba9876543210fedcba9876543210/2");
         StringAssert.Contains(requests, "operation=");
+        StringAssert.Contains(requests, "model-load=Warm");
 
         MetricAggregate aggregate = new(3, true, 20m, 20m, 30m);
         PeriodAnalytics analytics = new(
@@ -100,8 +105,10 @@ public sealed class HistoryUiTests
                 new Dictionary<HistoryMetric, MetricAggregate>
                 {
                     [HistoryMetric.TimeToFirstTokenMilliseconds] = aggregate,
-                })]);
+                })],
+            new ModelLoadBreakdown(1, 2, 3));
         string trend = App.HistoryTextPresenter.FormatAnalytics(analytics);
+        StringAssert.Contains(trend, "cold=1 | warm=2 | unavailable=3");
         StringAssert.Contains(trend, "mean=20");
         StringAssert.Contains(trend, "P95(nearest-rank)=30");
         StringAssert.Contains(trend, "sufficient");
