@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION AND SELECTED EPIC-02/03 IMPLEMENTED; EPIC-04 PARTIAL; EPIC-08 LOCAL CANDIDATE`
-> Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`
+> Status: `DECIDED — FOUNDATION; EPIC-02..06/08/09 TERMINAL; EPIC-07 LOCAL CANDIDATE`
+> Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#9 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing и SQLite history/analytics/retention. Exact-main CI `33720428488` подтвердил этот baseline на merge SHA `7110c70b6975c939915273b005f05eedfcd2eb14`.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#12 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations и request-correlated Windows resources. Exact-main CI `33728697717` подтвердил terminal EPIC-06 baseline на merge SHA `883ed13bab90c9affa9f6cf26c13161565f27e67`; EPIC-07 diagnostics candidate пока имеет только local CODE/TEST Evidence.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -84,9 +84,9 @@ App (composition/UI)
 
 `Domain` не зависит от UI, HTTP, SQLite или Windows APIs. `Gateway` не пишет в database и не вызывает UI. `Storage` принимает только уже allowlisted domain records. Backend-specific fields остаются namespaced и не проникают в common model без declared semantics/unit.
 
-`Gateway`, `Domain`, `Application`, `Adapters`, `Telemetry`, `Storage.Sqlite`, `Resources.Windows` и `App` содержат product code; `Diagnostics` пока представлен marker type. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
+Все девять production boundaries содержат product code. `Diagnostics` владеет versioned explainable rules и typed conclusion/evidence contracts, но получает только allowlisted Domain/Application projections. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-EPIC-06 candidate добавляет per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. Versioned diagnostic rules и error taxonomy в `LlmInspector.Diagnostics` остаются scope EPIC-07; resource Evidence само по себе не классифицирует root cause.
+EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 candidate добавляет versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause.
 
 ## 5. Runtime/process model
 
@@ -236,6 +236,16 @@ Adapters не переключают client с OpenAI-compatible protocol на n
 
 Default sampling interval — versioned implementation constant `1 s`; tests inject a shorter interval and deterministic sources. NVIDIA is the currently supported primary GPU source; other vendors remain `unavailable`, not inferred. Cross-device display remains separate `BACKLOG-05` scope.
 
+### Explainable diagnostics и error analytics
+
+`LlmInspector.Diagnostics` применяет immutable defaults `diagnostic-rules-v1` к последнему completed request, exact-correlated resource sample и active-request snapshot. Threshold rules охватывают large prompt, slow generation, VRAM pressure, model-load/queue latency и high context usage. Exact/calculated Evidence может дать `FACT`; estimated Evidence по threshold даёт только `HYPOTHESIS`; CPU offload остаётся hypothesis даже при high process CPU/low GPU, потому что эти counters не доказывают placement layers.
+
+Для каждого conclusion сохраняются rule/version, human-readable explanation и typed supporting evidence. Missing, mismatched или inconsistent telemetry даёт `INSUFFICIENT_DATA`, а не guessed cause. Active lifecycle/stage подтверждает только продолжающийся request; `ConfirmedStall` возможен лишь при exact request-matched typed backend activity signal. Большая elapsed duration без такого signal явно недостаточна.
+
+Gateway классифицирует bounded technical outcomes без сохранения exception/error body: connection refused, model loading/HTTP 503, HTTP/API error, timeout, allowlisted context-overflow code/HTTP 413, client cancellation, backend disconnect/crash category и generic unavailable/relay failure. Backend-crash category описывает transport termination, но не выдаёт process-crash causality за доказанный факт.
+
+History считает recurring group от двух occurrences внутри selected query/period. Frequency comparison использует `occurrences / all requests in that period` отдельно для baseline/candidate и показывает percentage-point delta. Error correlation требует общего explicit operation/session identifier и показывает first/last timestamps; time proximity без metadata остаётся uncorrelated. Эта correlation не является causal attribution.
+
 ## 12. Failure isolation и error ownership
 
 | Failure | Forwarding behavior | Recorded state |
@@ -315,7 +325,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-05 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `142/142` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #11 CI `33724914481` и exact-main CI `33725139103` завершились успешно. Active EPIC-06 candidate прошёл тот же полный local pipeline с `150/150` tests без skips; exact-revision GitHub CI ещё не заявлен до PR gate.
+Последняя terminal merged-main validation для EPIC-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `150/150` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #12 CI `33728471307` и exact-main CI `33728697717` завершились успешно на merge `883ed13bab90c9affa9f6cf26c13161565f27e67`. Active EPIC-07 candidate прошёл тот же полный local pipeline с `172/172` tests без skips; exact-revision GitHub CI ещё не заявлен.
 
 Configured CI foundation:
 

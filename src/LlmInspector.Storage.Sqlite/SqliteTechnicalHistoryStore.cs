@@ -341,7 +341,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             new ModelLoadBreakdown(
                 requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Cold),
                 requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Warm),
-                requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Unavailable)));
+                requests.Count(item => item.ModelLoadDisposition == ModelLoadDisposition.Unavailable)))
+        {
+            ErrorGroups = HistoryStatistics.SummarizeErrors(requests),
+            ErrorCorrelations = HistoryStatistics.CorrelateErrors(requests),
+        };
     }
 
     public async Task<AnalyticsComparison> CompareAsync(
@@ -350,6 +354,28 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         HistoryMetric metric,
         CancellationToken cancellationToken = default)
     {
+        if (metric == HistoryMetric.ErrorRatePercent)
+        {
+            IReadOnlyList<RequestHistoryItem> baselineRequests = await QueryRequestsCoreAsync(
+                baseline,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<RequestHistoryItem> candidateRequests = await QueryRequestsCoreAsync(
+                candidate,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            AnalyticsComparison errorComparison = HistoryStatistics.Compare(
+                metric,
+                baselineRequests.Select(item => item.ErrorType == HistoryErrorType.None ? 0m : 100m),
+                candidateRequests.Select(item => item.ErrorType == HistoryErrorType.None ? 0m : 100m));
+            return errorComparison with
+            {
+                RecurringErrorFrequency = HistoryStatistics.CompareRecurringErrors(
+                    baselineRequests,
+                    candidateRequests),
+            };
+        }
+
         IReadOnlyList<decimal> baselineSamples = await ReadMetricSamplesAsync(baseline, metric, cancellationToken)
             .ConfigureAwait(false);
         IReadOnlyList<decimal> candidateSamples = await ReadMetricSamplesAsync(candidate, metric, cancellationToken)
@@ -568,7 +594,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue("$started_at", ToDbTime(observation.StartedAt));
         command.Parameters.AddWithValue("$http_status", DbValue(observation.HttpStatusCode));
         command.Parameters.AddWithValue("$outcome", (int)observation.Outcome);
-        command.Parameters.AddWithValue("$error_type", (int)MapErrorType(observation.Outcome));
+        command.Parameters.AddWithValue("$error_type", (int)HistoryErrorClassifier.From(observation));
         command.Parameters.AddWithValue("$client", (int)observation.Client);
         command.Parameters.AddWithValue("$backend", (int)observation.BackendTelemetry.Backend);
         command.Parameters.AddWithValue("$model", DbValue(observation.BackendTelemetry.Model?.Value));
@@ -974,7 +1000,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.CommandText = $"""
             SELECT r.request_id, r.session_id, r.operation_id, r.started_at_utc,
                    r.http_status_code, r.outcome, r.error_type, r.client, r.backend, r.model,
-                   r.model_load_disposition, r.correlation_turn_id, r.correlation_turn_sequence
+                   r.model_load_disposition, r.correlation_turn_id, r.correlation_turn_sequence,
+                   CASE WHEN r.error_type = 0 THEN 0 ELSE COUNT(*) OVER (PARTITION BY r.error_type) END
             FROM requests r
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
             ORDER BY r.started_at_utc DESC, r.request_id DESC
@@ -1014,7 +1041,10 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 : new Dictionary<HistoryMetric, MetricValue>(),
             row.ModelLoadDisposition,
             row.CorrelatedTurnId,
-            row.CorrelatedTurnSequence)).ToArray();
+            row.CorrelatedTurnSequence)
+        {
+            ErrorGroupOccurrenceCount = row.ErrorGroupOccurrenceCount,
+        }).ToArray();
     }
 
     private static async Task<Dictionary<Guid, Dictionary<HistoryMetric, MetricValue>>> ReadRequestMetricsAsync(
@@ -1126,13 +1156,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         ParseDbTime(reader.GetString(3)),
         reader.IsDBNull(4) ? null : reader.GetInt32(4),
         (ProxyOutcome)reader.GetInt32(5),
-        (HistoryErrorType)reader.GetInt32(6),
+        ReadHistoryErrorType(reader.GetInt32(6)),
         (ClientKind)reader.GetInt32(7),
         (BackendKind)reader.GetInt32(8),
         reader.IsDBNull(9) ? null : ReadIdentifier(reader.GetString(9)),
         ReadModelLoadDisposition(reader.GetInt32(10)),
         reader.IsDBNull(11) ? null : Guid.ParseExact(reader.GetString(11), "N"),
-        reader.IsDBNull(12) ? null : reader.GetInt32(12));
+        reader.IsDBNull(12) ? null : reader.GetInt32(12),
+        reader.GetInt32(13));
 
     private static async Task<TechnicalOperationRecord?> ReadOperationAsync(
         SqliteConnection connection,
@@ -1161,7 +1192,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             (BackendKind)reader.GetInt32(5),
             reader.IsDBNull(6) ? null : ReadIdentifier(reader.GetString(6)),
             (TechnicalOperationStatus)reader.GetInt32(7),
-            (HistoryErrorType)reader.GetInt32(8));
+            ReadHistoryErrorType(reader.GetInt32(8)));
     }
 
     private static async Task<IReadOnlyList<TechnicalTurnRecord>> ReadTurnsAsync(
@@ -1192,7 +1223,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 ParseDbTime(reader.GetString(4)),
                 TimeSpan.FromMilliseconds(reader.GetDouble(5)),
                 (ProxyOutcome)reader.GetInt32(6),
-                (HistoryErrorType)reader.GetInt32(7))
+                ReadHistoryErrorType(reader.GetInt32(7)))
             {
                 AvailableToolCount = CreateStoredMetric(
                     reader, MetricUnit.Count, 8, 9, 10, 11, 12),
@@ -1232,7 +1263,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 ParseDbTime(reader.GetString(5)),
                 TimeSpan.FromMilliseconds(reader.GetDouble(6)),
                 (TechnicalToolStatus)reader.GetInt32(11),
-                (HistoryErrorType)reader.GetInt32(12))
+                ReadHistoryErrorType(reader.GetInt32(12)))
             {
                 DurationMetric = CreateStoredMetric(
                     reader, MetricUnit.Milliseconds, 6, 7, 8, 9, 10),
@@ -1792,15 +1823,6 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             sourceVersionOrdinal,
             derivationVersionOrdinal);
 
-    private static HistoryErrorType MapErrorType(ProxyOutcome outcome) => outcome switch
-    {
-        ProxyOutcome.Completed => HistoryErrorType.None,
-        ProxyOutcome.BackendUnavailable => HistoryErrorType.BackendUnavailable,
-        ProxyOutcome.ClientCancelled => HistoryErrorType.ClientCancelled,
-        ProxyOutcome.RelayFailed => HistoryErrorType.RelayFailed,
-        _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
-    };
-
     private static string MetricKey(HistoryMetric metric) => metric switch
     {
         HistoryMetric.InputTokens => "input_tokens",
@@ -1850,6 +1872,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             ? (ModelLoadDisposition)value
             : throw new InvalidDataException("Persisted model-load disposition is invalid.");
 
+    private static HistoryErrorType ReadHistoryErrorType(int value) =>
+        Enum.IsDefined((HistoryErrorType)value)
+            ? (HistoryErrorType)value
+            : throw new InvalidDataException("Persisted history error type is invalid.");
+
     private static object DbValue(object? value) => value ?? DBNull.Value;
 
     private static string ToDbTime(DateTimeOffset value) =>
@@ -1871,7 +1898,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         TechnicalIdentifier? Model,
         ModelLoadDisposition ModelLoadDisposition,
         Guid? CorrelatedTurnId,
-        int? CorrelatedTurnSequence);
+        int? CorrelatedTurnSequence,
+        int ErrorGroupOccurrenceCount);
 
     private static async Task<int> ReadSchemaVersionAsync(
         SqliteConnection connection,

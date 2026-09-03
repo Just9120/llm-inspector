@@ -97,6 +97,15 @@ public sealed class HistoryUiTests
         StringAssert.Contains(requests, "operation=");
         StringAssert.Contains(requests, "model-load=Warm");
 
+        RequestHistoryItem recurring = request with
+        {
+            ErrorType = HistoryErrorType.ConnectionRefused,
+            ErrorGroupOccurrenceCount = 2,
+        };
+        StringAssert.Contains(
+            App.HistoryTextPresenter.FormatRequests([recurring]),
+            "ConnectionRefused [recurring x2]");
+
         MetricAggregate aggregate = new(3, true, 20m, 20m, 30m);
         PeriodAnalytics analytics = new(
             new HistoryFilter(),
@@ -106,12 +115,34 @@ public sealed class HistoryUiTests
                 {
                     [HistoryMetric.TimeToFirstTokenMilliseconds] = aggregate,
                 })],
-            new ModelLoadBreakdown(1, 2, 3));
+            new ModelLoadBreakdown(1, 2, 3))
+        {
+            ErrorGroups =
+            [
+                new ErrorGroupSummary(
+                    HistoryErrorType.ConnectionRefused,
+                    2,
+                    request.StartedAt,
+                    request.StartedAt.AddMinutes(1)),
+            ],
+            ErrorCorrelations = new ErrorCorrelationSummary(
+                [new CorrelatedErrorGroup(
+                    ErrorCorrelationBasis.Operation,
+                    operationId,
+                    request.StartedAt,
+                    request.StartedAt.AddMinutes(1),
+                    [HistoryErrorType.ConnectionRefused, HistoryErrorType.ClientCancelled],
+                    2)],
+                1),
+        };
         string trend = App.HistoryTextPresenter.FormatAnalytics(analytics);
         StringAssert.Contains(trend, "cold=1 | warm=2 | unavailable=3");
         StringAssert.Contains(trend, "mean=20");
         StringAssert.Contains(trend, "P95(nearest-rank)=30");
         StringAssert.Contains(trend, "sufficient");
+        StringAssert.Contains(trend, "ConnectionRefused | occurrences=2 | recurring");
+        StringAssert.Contains(trend, "Confirmed error correlation by Operation=");
+        StringAssert.Contains(trend, "Uncorrelated errors: 1");
 
         TechnicalOperationDetail detail = new(
             new TechnicalOperationRecord(
@@ -143,10 +174,23 @@ public sealed class HistoryUiTests
             aggregate,
             aggregate with { ArithmeticMean = 40m },
             20m,
-            true);
-        StringAssert.Contains(
-            App.HistoryTextPresenter.FormatComparison(comparison),
-            "CONFIRMED DEGRADATION");
+            true)
+        {
+            RecurringErrorFrequency =
+            [
+                new ErrorFrequencyComparison(
+                    HistoryErrorType.ConnectionRefused,
+                    2,
+                    3,
+                    50m,
+                    75m,
+                    25m),
+            ],
+        };
+        string comparisonText = App.HistoryTextPresenter.FormatComparison(comparison);
+        StringAssert.Contains(comparisonText, "CONFIRMED DEGRADATION");
+        StringAssert.Contains(comparisonText, "Recurring ConnectionRefused");
+        StringAssert.Contains(comparisonText, "delta=+25 p.p.");
 
         HistoryClearPreview preview = new(
             new HistoryClearScope(allHistory: true),

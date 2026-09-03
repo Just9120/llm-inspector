@@ -44,6 +44,88 @@ public static class HistoryStatistics
         return new AnalyticsComparison(metric, baseline, candidate, delta, degradation);
     }
 
+    public static IReadOnlyList<ErrorFrequencyComparison> CompareRecurringErrors(
+        IReadOnlyList<RequestHistoryItem> baseline,
+        IReadOnlyList<RequestHistoryItem> candidate)
+    {
+        ArgumentNullException.ThrowIfNull(baseline);
+        ArgumentNullException.ThrowIfNull(candidate);
+        Dictionary<HistoryErrorType, int> baselineCounts = CountErrors(baseline);
+        Dictionary<HistoryErrorType, int> candidateCounts = CountErrors(candidate);
+
+        return baselineCounts.Keys
+            .Union(candidateCounts.Keys)
+            .Where(error => baselineCounts.GetValueOrDefault(error) >= HistoryPolicies.RecurringErrorMinimumOccurrences ||
+                            candidateCounts.GetValueOrDefault(error) >= HistoryPolicies.RecurringErrorMinimumOccurrences)
+            .Order()
+            .Select(error =>
+            {
+                int baselineCount = baselineCounts.GetValueOrDefault(error);
+                int candidateCount = candidateCounts.GetValueOrDefault(error);
+                decimal baselineRate = Rate(baselineCount, baseline.Count);
+                decimal candidateRate = Rate(candidateCount, candidate.Count);
+                return new ErrorFrequencyComparison(
+                    error,
+                    baselineCount,
+                    candidateCount,
+                    baselineRate,
+                    candidateRate,
+                    candidateRate - baselineRate);
+            })
+            .ToArray();
+    }
+
+    public static IReadOnlyList<ErrorGroupSummary> SummarizeErrors(
+        IReadOnlyList<RequestHistoryItem> requests)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        return requests
+            .Where(request => request.ErrorType != HistoryErrorType.None)
+            .GroupBy(request => request.ErrorType)
+            .OrderBy(group => group.Key)
+            .Select(group => new ErrorGroupSummary(
+                group.Key,
+                group.Count(),
+                group.Min(request => request.StartedAt),
+                group.Max(request => request.StartedAt)))
+            .ToArray();
+    }
+
+    public static ErrorCorrelationSummary CorrelateErrors(IReadOnlyList<RequestHistoryItem> requests)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        RequestHistoryItem[] errors = requests
+            .Where(request => request.ErrorType != HistoryErrorType.None)
+            .ToArray();
+        var candidates = errors
+            .Select(request => request.OperationId is Guid operationId
+                ? new CorrelationCandidate(ErrorCorrelationBasis.Operation, operationId, request)
+                : request.SessionId is Guid sessionId
+                    ? new CorrelationCandidate(ErrorCorrelationBasis.Session, sessionId, request)
+                    : null)
+            .Where(candidate => candidate is not null)
+            .Select(candidate => candidate!)
+            .GroupBy(candidate => new { candidate.Basis, candidate.CorrelationId })
+            .Where(group => group.Count() >= 2)
+            .OrderBy(group => group.Min(item => item.Request.StartedAt))
+            .ToArray();
+        HashSet<Guid> correlatedRequests = candidates
+            .SelectMany(group => group.Select(item => item.Request.RequestId))
+            .ToHashSet();
+        CorrelatedErrorGroup[] groups = candidates
+            .Select(group => new CorrelatedErrorGroup(
+                group.Key.Basis,
+                group.Key.CorrelationId,
+                group.Min(item => item.Request.StartedAt),
+                group.Max(item => item.Request.StartedAt),
+                group.Select(item => item.Request.ErrorType).Distinct().Order().ToArray(),
+                group.Count()))
+            .ToArray();
+        return new ErrorCorrelationSummary(
+            groups,
+            errors.Count(request => !correlatedRequests.Contains(request.RequestId)));
+    }
+
     private static bool IsDegradation(HistoryMetric metric, decimal candidateMinusBaseline) => metric switch
     {
         HistoryMetric.TimeToFirstTokenMilliseconds or
@@ -57,4 +139,18 @@ public static class HistoryStatistics
         HistoryMetric.GenerationTokensPerSecond => candidateMinusBaseline < 0,
         _ => false,
     };
+
+    private static Dictionary<HistoryErrorType, int> CountErrors(IEnumerable<RequestHistoryItem> requests) =>
+        requests
+            .Where(request => request.ErrorType != HistoryErrorType.None)
+            .GroupBy(request => request.ErrorType)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+    private static decimal Rate(int occurrences, int total) =>
+        total == 0 ? 0 : 100m * occurrences / total;
+
+    private sealed record CorrelationCandidate(
+        ErrorCorrelationBasis Basis,
+        Guid CorrelationId,
+        RequestHistoryItem Request);
 }

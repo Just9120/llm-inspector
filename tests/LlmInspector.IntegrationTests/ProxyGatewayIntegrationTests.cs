@@ -205,8 +205,10 @@ public sealed class ProxyGatewayIntegrationTests
             await context.Response.WriteAsync(finalFragment, context.RequestAborted);
         });
         LiveRequestTracker liveState = new();
+        CollectingObservationSink sink = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
             ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink,
             liveRequestStateSink: liveState);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
@@ -296,8 +298,10 @@ public sealed class ProxyGatewayIntegrationTests
             }
         });
         LiveRequestTracker liveState = new();
+        CollectingObservationSink sink = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
             ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink,
             liveRequestStateSink: liveState);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
@@ -328,6 +332,8 @@ public sealed class ProxyGatewayIntegrationTests
             liveState,
             snapshot => snapshot.LatestTerminalRequest?.Stage.Stage == RequestStage.Cancelled);
         Assert.AreEqual(RequestStage.Cancelled, cancelled.LatestTerminalRequest?.Stage.Stage);
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.AreEqual(ProxyErrorType.ClientCancellation, observation.ErrorType);
     }
 
     [TestMethod]
@@ -999,6 +1005,7 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual("{\"error\":{\"type\":\"inspector_backend_unavailable\"}}", body);
         Assert.DoesNotContain(unavailablePort.ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
         Assert.AreEqual(ProxyOutcome.BackendUnavailable, observation.Outcome);
+        Assert.AreEqual(ProxyErrorType.ConnectionRefused, observation.ErrorType);
         Assert.AreEqual(
             RequestStage.Error,
             liveState.GetSnapshot().LatestTerminalRequest?.Stage.Stage);
@@ -1050,11 +1057,70 @@ public sealed class ProxyGatewayIntegrationTests
             ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.AreEqual(StatusCodes.Status200OK, observation.HttpStatusCode);
             Assert.AreEqual(ProxyOutcome.RelayFailed, observation.Outcome);
+            Assert.AreEqual(ProxyErrorType.BackendCrash, observation.ErrorType);
         }
         finally
         {
             releaseBackendAbort.TrySetResult(true);
         }
+    }
+
+    [TestMethod]
+    [DataRow(StatusCodes.Status503ServiceUnavailable, ProxyErrorType.ModelLoading)]
+    [DataRow(StatusCodes.Status500InternalServerError, ProxyErrorType.HttpApiError)]
+    [DataRow(StatusCodes.Status413PayloadTooLarge, ProxyErrorType.ContextOverflow)]
+    [DataRow(StatusCodes.Status504GatewayTimeout, ProxyErrorType.Timeout)]
+    public async Task BackendHttpFailuresReceiveTypedContentFreeErrorCategories(
+        int statusCode,
+        ProxyErrorType expected)
+    {
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"error\":{\"message\":\"opaque\"}}", context.RequestAborted);
+        });
+        CollectingObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(statusCode, (int)response.StatusCode);
+        Assert.AreEqual(expected, observation.ErrorType);
+    }
+
+    [TestMethod]
+    public async Task AllowlistedContextOverflowCodeIsClassifiedWithoutRetainingErrorMessage()
+    {
+        const string body = "{\"error\":{\"type\":\"context_length_exceeded\",\"message\":\"private-message\"}}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(body, context.RequestAborted);
+        });
+        CollectingObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.AreEqual(ProxyErrorType.ContextOverflow, observation.ErrorType);
+        Assert.IsFalse(typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)));
     }
 
     [TestMethod]

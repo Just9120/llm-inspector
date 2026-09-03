@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T07:29:05Z`
+> Updated: `2026-09-03T08:07:30Z`
 
 ## Current Goal
 
@@ -9,7 +9,7 @@
 
 - **State:** `IN_PROGRESS`.
 - **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`; exact-main CI [33725139103](https://github.com/Just9120/llm-inspector/actions/runs/33725139103) succeeded.
+- **Verified base:** `origin/main` / local `main` = `883ed13bab90c9affa9f6cf26c13161565f27e67`; exact-main CI [33728697717](https://github.com/Just9120/llm-inspector/actions/runs/33728697717) succeeded.
 - **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
@@ -63,30 +63,30 @@ Sequence — рабочий pipeline внутри одной authorized Goal; т
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T07:29:05Z` |
+| Updated UTC | `2026-09-03T08:07:30Z` |
 | Expected base branch | `main` |
-| Base SHA | `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0` — verified local/`origin/main`; exact-main CI `33725139103` success |
-| Working branch | `codex/goal-005-epic-06` |
-| Last verified revision | `29a517499c7ba8beaa401af6d0663851aa5b3700` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
-| Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
+| Base SHA | `883ed13bab90c9affa9f6cf26c13161565f27e67` — verified local/`origin/main`; exact-main CI `33728697717` success |
+| Working branch | `codex/goal-005-epic-07` |
+| Last verified revision | `10d5d7303faeb4c6ee8f0a9b52dfff176a388e7e` — complete candidate tree covered by full local CI-equivalent; this final checkpoint update is docs-only |
+| Initial worktree state | Clean branch created from verified `origin/main`; EPIC-06 branch already safely removed locally/remotely; no unrelated changes |
 | Current worktree state | Clean at full-validation boundary except this expected final docs-only checkpoint update; no unrelated changes |
-| Completed work | `625b751` adds request-correlated Windows host/process/disk/gateway/NVIDIA resource telemetry, bounded/gap-aware sampling, schema v4 persistence, UI projection and fail-closed tests; `29a5174` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `150/150` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-06 PR |
-| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-06` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | EPIC-05 terminal: PR #11, PR CI `33724914481`, merge `d27296a51df51ef5a8e3d4cabca329d23bdbfaa0`, exact-main CI `33725139103`, all success. EPIC-06 has not been pushed; exact-revision CI pending |
+| Completed work | `7f40e92` adds Evidence-quality-aware versioned diagnostic rules, typed gateway/history errors, metadata-only correlation, recurring error frequency analytics and UI/privacy coverage; `10d5d73` maps architecture/Evidence/readiness. Full exact-SDK pipeline: locked normal/RID restores; format unchanged; Release build `0` warnings/errors; `172/172` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record the final local checkpoint, then perform the one initial push and create the EPIC-07 PR |
+| Next exact action | Commit this docs-only checkpoint, push `codex/goal-005-epic-07` once, create PR against `main`, then wait for exact-head required CI |
+| PR / CI | EPIC-06 terminal: PR #12, head `78f0a985b719c6d9231cf0a65fe9a9c16da921a5`, PR CI `33728471307`, merge `883ed13bab90c9affa9f6cf26c13161565f27e67`, exact-main CI `33728697717`, all success. EPIC-07 has not been pushed; exact-revision CI pending |
 | Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | None for bounded EPIC-06 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
-| Unverified assumptions | Only the fixed-path NVIDIA `nvidia-smi` source is supported for GPU metrics; other vendors/devices and ambiguous backend listener ownership remain explicit `unavailable` and are not readiness Evidence |
+| Blockers | None for bounded EPIC-07 implementation; `E01-AC01` remains an independent release-matrix blocker and is not credited |
+| Unverified assumptions | No current backend adapter emits an exact typed stall signal, so elapsed active requests remain explicitly insufficient rather than confirmed stalls; CPU-offload detection is intentionally a hypothesis because resource counters cannot prove layer placement |
 | Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T07:24:58Z` | `91/139 = 65.5%` | `91/164 = 55.5%` | Independent AC-by-AC calculation credits E06-AC01..08 from request-correlated CODE and focused TEST Evidence; exact-revision CI remains open |
-| Previous | `2026-09-03T06:40:21Z` | `83/139 = 59.7%` | `83/164 = 50.6%` | EPIC-05 `8/8`; terminal PR #11 and exact-main CI `33725139103` subsequently confirmed required CI Evidence |
+| Current | `2026-09-03T08:00:48Z` | `107/139 = 77.0%` | `107/164 = 65.2%` | Independent AC-by-AC calculation credits E07-AC01..16 from versioned rules/error analytics CODE and focused TEST Evidence; exact-revision CI remains open |
+| Previous | `2026-09-03T07:35:19Z` | `91/139 = 65.5%` | `91/164 = 55.5%` | EPIC-06 `8/8`; terminal PR #12 and exact-main CI `33728697717` confirmed required CI Evidence |
 
-Delta: `+5.8 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше 10 п.п. Причина — локально подтверждены все восемь EPIC-06 criteria при неизменных denominators `139`/`164`.
+Delta: `+11.5 п.п.` initial release и `+9.7 п.п.` full roadmap. Initial-release delta превысила 10 п.п., потому что один independently calculated increment выполнил все `16` atomic EPIC-07 criteria при неизменных denominators `139`/`164`; это изменение denominator не отражает.
 
 ## Epic readiness и Evidence
 
@@ -97,21 +97,21 @@ Delta: `+5.8 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-05 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-06 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-06 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-07 | 🟦 IN PROGRESS | 16/16 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **91/139** | **65.5%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **107/139** | **77.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
 | BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **91/164** | **55.5%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **107/164** | **65.2%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
@@ -149,6 +149,27 @@ Delta: `+5.8 п.п.` initial release и `+4.9 п.п.` full roadmap; меньше
 | `E06-AC06` | Read/write transfer deltas from the proven backend process are stored on the same request/stage timeline with calculated provenance |
 | `E06-AC07` | Gateway counts actually relayed request/response bytes on the exact request timeline without buffering or blocking relay |
 | `E06-AC08` | Live/history UI renders exact request/stage correlation, metric quality/source and explicit unavailable process/GPU state; samples are bounded to 2048 with persisted gap count |
+
+### EPIC-07 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E07-AC01` | `DiagnosticRuleset` version `diagnostic-rules-v1` matches large prompt at explicit `8192`-token boundary; exact and below-boundary tests prevent implicit threshold drift |
+| `E07-AC02` | Versioned slow-generation rule matches exact rate `<=10 tokens/s`; missing and just-above-boundary cases do not produce a false fact |
+| `E07-AC03` | Exact request-correlated high process CPU/low GPU evidence produces only a CPU-offload `HYPOTHESIS`, explicitly avoiding unsupported layer-placement causality |
+| `E07-AC04` | Request-correlated VRAM used/total derives a versioned ratio and detects pressure at `>=90%`; missing, mismatched, estimated and inconsistent evidence fail closed |
+| `E07-AC05` | Cold model-load disposition plus measured duration identifies versioned load-latency contribution; missing duration remains hypothesis/insufficient rather than fabricated timing |
+| `E07-AC06` | Exact backend queue metric is compared with a versioned `1000 ms` threshold; unavailable evidence is explicit |
+| `E07-AC07` | Context used/limit derives a quality-preserving ratio and detects `>=90%`; unavailable or inconsistent numerator/denominator does not assert high usage |
+| `E07-AC08` | Gateway transport classification and diagnostics distinguish connection refused, timeout, backend disconnect/unavailable and relay failure without retaining exception text |
+| `E07-AC09` | Active lifecycle is reported as ongoing work; elapsed `>=30 s` without a request-matched typed backend signal is `INSUFFICIENT_DATA`, while only explicit `Stalled` signal yields confirmed fact |
+| `E07-AC10` | Every ruleset conclusion carries a bounded human-readable explanation rendered by `DiagnosticsSummaryTextPresenter` |
+| `E07-AC11` | Conclusions carry ruleset version and typed metric/stage/error/activity Evidence with quality/source/version; zero-evidence conclusions render explicit `unavailable` |
+| `E07-AC12` | Estimated threshold matches and inferred CPU offload are hypotheses; missing/mismatched inputs are insufficient; boundary tests assert neither is upgraded to fact |
+| `E07-AC13` | `ProxyErrorType`/`HistoryErrorType` distinguish connection refused, model loading/503, HTTP/API, timeout, context overflow, cancellation and backend crash/disconnect; gateway/store tests cover capture and persistence |
+| `E07-AC14` | Analytics groups errors only by explicit operation/session metadata and includes first/last UTC time; a nearby error without metadata remains uncorrelated and arbitrary body content is excluded |
+| `E07-AC15` | Query window count and UI label distinguish `single failure` from `recurring xN` at the versioned minimum of two occurrences |
+| `E07-AC16` | Error-rate period comparison reports baseline/candidate per-type counts, each period's all-request denominator, rates and percentage-point delta for groups recurring in either period |
 
 ## Current blockers и decisions
 

@@ -107,6 +107,13 @@
           "LlmInspector.Domain": "[1.0.0, )"
         }
       },
+      "llminspector.diagnostics": {
+        "type": "Project",
+        "dependencies": {
+          "LlmInspector.Application": "[1.0.0, )",
+          "LlmInspector.Domain": "[1.0.0, )"
+        }
+      },
       "llminspector.domain": {
         "type": "Project"
       },

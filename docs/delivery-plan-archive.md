@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T06:40:21Z`: initial release `83/139 = 59.7%`, full roadmap `83/164 = 50.6%`; EPIC-05 terminal state before EPIC-06 implementation. Archived after terminal EPIC-06 Evidence and the independent EPIC-07 calculation produced a newer current/previous pair.
 - `2026-09-03T06:17:58Z`: initial release `75/139 = 54.0%`, full roadmap `75/164 = 45.7%`; terminal EPIC-01 calculation. Archived after EPIC-05 reached terminal delivery and EPIC-06 produced a newer independent calculation.
 - `2026-09-03T06:01:33Z`: initial release `72/139 = 51.8%`, full roadmap `72/164 = 43.9%`; exact merged-main recovery before EPIC-01. Archived after EPIC-01 terminal delivery and the independent EPIC-05 calculation.
 - `2026-09-03T05:10:51Z`: initial release `70/139 = 50.4%`, full roadmap `70/164 = 42.7%`; terminal EPIC-08 state before the bounded EPIC-04 fix. Archived when GOAL-004 reached terminal `72/72` with exact-main CI.
@@ -24,6 +25,16 @@
 - **Delivered:** monitoring/analytics/diagnostics UI surfaces, literal-loopback backend boundary and fail-closed absence of backend lifecycle/runtime mutation commands.
 - **Cleanup:** merged branch had zero unique commits and was removed locally/remotely after local `main` synchronized to the exact merge SHA.
 - **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/10#issuecomment-5521422014).
+
+## GOAL-005 / EPIC-06 — Windows resource telemetry
+
+- **Product outcome:** `READY 8/8`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#12](https://github.com/Just9120/llm-inspector/pull/12), head `78f0a985b719c6d9231cf0a65fe9a9c16da921a5`, PR CI `33728471307` success.
+- **Merge/exact-main Evidence:** merge `883ed13bab90c9affa9f6cf26c13161565f27e67`; exact-main CI `33728697717` success with every required step.
+- **Delivered:** request/stage-correlated Windows host/process/disk/gateway traffic telemetry, fixed-path NVIDIA GPU metrics, schema v4 persistence, bounded sampling/gap accounting and fail-closed `unavailable` semantics.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `150/150` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/12#issuecomment-5522253234).
 
 ## GOAL-005 / EPIC-05 — Agent operations, tools and concurrency
 
