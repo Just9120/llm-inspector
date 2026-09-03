@@ -510,7 +510,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
                         "model-1.0",
                         ProxyOutcome.BackendUnavailable,
                         10,
-                        errorType: ProxyErrorType.ConnectionRefused) with { RuntimeFacts = runtimeFacts },
+                        errorType: ProxyErrorType.ConnectionRefused) with
+                    { RuntimeFacts = runtimeFacts },
                     CancellationToken.None);
             }
 
@@ -535,7 +536,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
                     BackendKind.Ollama,
                     "model-1.0",
                     ProxyOutcome.Completed,
-                    30) with { RuntimeFacts = runtimeFacts },
+                    30) with
+                { RuntimeFacts = runtimeFacts },
                 CancellationToken.None);
             Assert.AreEqual(
                 3,
@@ -606,7 +608,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
                     BackendKind.Ollama,
                     "model-1.0",
                     ProxyOutcome.Completed,
-                    10) with { RuntimeFacts = baseline },
+                    10) with
+                { RuntimeFacts = baseline },
                 CancellationToken.None);
             await fixture.Store.RecordAsync(
                 CreateObservation(
@@ -617,7 +620,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
                     "model-2.0",
                     ProxyOutcome.BackendUnavailable,
                     20,
-                    errorType: ProxyErrorType.BackendUnavailable) with { RuntimeFacts = candidate },
+                    errorType: ProxyErrorType.BackendUnavailable) with
+                { RuntimeFacts = candidate },
                 CancellationToken.None);
         }
 

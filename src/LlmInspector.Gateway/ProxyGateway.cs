@@ -816,12 +816,12 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private TechnicalRuntimeFacts EnrichRuntimeFacts(
         BackendResponseTelemetry telemetry,
         IReadOnlyList<TechnicalResourceSampleRecord> resourceSamples) => _runtimeFacts with
-    {
-        ModelVersion = _runtimeFacts.ModelVersion ?? telemetry.Model,
-        GpuDriverVersion = resourceSamples
+        {
+            ModelVersion = _runtimeFacts.ModelVersion ?? telemetry.Model,
+            GpuDriverVersion = resourceSamples
             .Select(sample => sample.GpuDriverVersion)
             .LastOrDefault(version => version is not null) ?? _runtimeFacts.GpuDriverVersion,
-    };
+        };
 
     private static TechnicalRuntimeFacts CreateDefaultRuntimeFacts(
         ProxyGatewayOptions options,
