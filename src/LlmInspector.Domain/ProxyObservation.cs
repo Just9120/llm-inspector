@@ -37,6 +37,8 @@ public sealed record RequestCorrelation
     public Guid TurnId { get; }
 
     public int TurnSequence { get; }
+
+    public Guid? OperationId { get; init; }
 }
 
 public sealed record ProxyObservation(
@@ -57,6 +59,8 @@ public sealed record ProxyObservation(
         MetricUnit.TokenDelta,
         MetricSource.Inspector,
         CorrelationSourceVersion);
+
+    public AgentTurnTelemetry AgentTurn { get; init; } = AgentTurnTelemetry.Unavailable;
 
     public ProxyObservation(
         Guid requestId,

@@ -5,6 +5,7 @@ using LlmInspector.Adapters;
 using LlmInspector.Application;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
+using LlmInspector.Storage.Sqlite;
 using LlmInspector.Telemetry;
 using LlmInspector.TestInfrastructure;
 using Microsoft.AspNetCore.Http;
@@ -155,14 +156,21 @@ public sealed class ProxyGatewayIntegrationTests
                 await Task.Delay(5, context.RequestAborted);
             }
         });
+        SequenceOperationSink operations = new();
         await using ProxyGateway gateway = ProxyGateway.Create(
-            ProxyGatewayOptions.CreateForTesting(0, backend.Address));
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            operationSink: operations);
         await gateway.StartAsync();
         using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
         using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
         {
             Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
         };
+        Guid operationId = Guid.NewGuid();
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.OperationId, operationId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.SessionId, Guid.NewGuid().ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnId, Guid.NewGuid().ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnSequence, "1");
 
         using HttpResponseMessage response = await client.SendAsync(
             request,
@@ -172,6 +180,11 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual("text/event-stream", response.Content.Headers.ContentType?.MediaType);
         Assert.AreEqual(requestBody, forwardedBody);
         Assert.AreEqual(expectedResponse, actualResponse);
+        TechnicalOperationGraph operation = await operations.ReadAsync();
+        Assert.AreEqual(operationId, operation.Operation.OperationId);
+        Assert.AreEqual(1m, operation.Turns[0].AvailableToolCount.Value);
+        Assert.AreEqual(1m, operation.Turns[0].InvokedToolCount.Value);
+        Assert.AreEqual("fixture", operation.ToolEvents[0].ToolName.Value);
     }
 
     [TestMethod]
@@ -616,6 +629,225 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task ExplicitOperationCorrelationBuildsOrderedToolLifecycleWithoutForwardingMetadata()
+    {
+        const string firstResponse =
+            "{\"model\":\"fixture\",\"choices\":[{\"message\":{\"tool_calls\":[{\"function\":{\"name\":\"read_file\",\"arguments\":\"opaque-secret\"}}]},\"finish_reason\":\"tool_calls\"}]}";
+        const string finalResponse =
+            "{\"model\":\"fixture\",\"choices\":[{\"message\":{\"content\":\"opaque-final\"},\"finish_reason\":\"stop\"}]}";
+        int requestIndex = -1;
+        List<string[]> forwardedInspectorHeaders = [];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            forwardedInspectorHeaders.Add(context.Request.Headers.Keys
+                .Where(InspectorCorrelationHeaders.Names.Contains)
+                .ToArray());
+            using StreamReader reader = new(context.Request.Body, Encoding.UTF8);
+            _ = await reader.ReadToEndAsync(context.RequestAborted);
+            int index = Interlocked.Increment(ref requestIndex);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(index == 0 ? firstResponse : finalResponse, context.RequestAborted);
+        });
+        SequenceOperationSink operations = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            telemetryAdapter: BackendTelemetryAdapters.Create(BackendKind.Ollama),
+            operationSink: operations);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        Guid operationId = Guid.NewGuid();
+        Guid sessionId = Guid.NewGuid();
+
+        string firstBody =
+            "{\"messages\":[{\"role\":\"user\",\"content\":\"opaque-prompt\"}]," +
+            "\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"read_file\"}},{\"type\":\"function\",\"function\":{\"name\":\"list_files\"}}]}";
+        using HttpResponseMessage firstHttp = await SendOperationTurnAsync(
+            client, operationId, sessionId, Guid.NewGuid(), 1, firstBody);
+        Assert.AreEqual(firstResponse, await firstHttp.Content.ReadAsStringAsync());
+        TechnicalOperationGraph first = await operations.ReadAsync();
+
+        string secondBody =
+            "{\"messages\":[{\"role\":\"assistant\",\"tool_calls\":[{}]},{\"role\":\"tool\",\"content\":\"opaque-result\"}]," +
+            "\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"read_file\"}}]}";
+        using HttpResponseMessage secondHttp = await SendOperationTurnAsync(
+            client, operationId, sessionId, Guid.NewGuid(), 2, secondBody);
+        Assert.AreEqual(finalResponse, await secondHttp.Content.ReadAsStringAsync());
+        TechnicalOperationGraph completed = await operations.ReadAsync();
+
+        Assert.AreEqual(TechnicalOperationStatus.Running, first.Operation.Status);
+        Assert.AreEqual(2m, first.Turns[0].AvailableToolCount.Value);
+        Assert.AreEqual(1m, first.Turns[0].InvokedToolCount.Value);
+        Assert.AreEqual("read_file", first.ToolEvents[0].ToolName.Value);
+        Assert.AreEqual(TechnicalOperationStatus.Completed, completed.Operation.Status);
+        Assert.HasCount(2, completed.Turns);
+        Assert.AreEqual(1m, completed.Turns[1].AvailableToolCount.Value);
+        Assert.AreEqual(0m, completed.Turns[1].InvokedToolCount.Value);
+        Assert.HasCount(1, completed.ToolEvents);
+        Assert.AreEqual(TechnicalToolStatus.Completed, completed.ToolEvents[0].Status);
+        Assert.AreEqual(MetricQuality.Calculated, completed.ToolEvents[0].DurationMetric.Quality);
+        Assert.IsTrue(forwardedInspectorHeaders.All(headers => headers.Length == 0));
+    }
+
+    [TestMethod]
+    public async Task ParallelClientsProduceIndependentOperationMembershipAndRequestIds()
+    {
+        const string responseBody =
+            "{\"choices\":[{\"message\":{\"content\":\"opaque\"},\"finish_reason\":\"stop\"}]}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            await context.Request.Body.CopyToAsync(Stream.Null, context.RequestAborted);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(responseBody, context.RequestAborted);
+        });
+        SequenceOperationSink operations = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            operationSink: operations);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        (Guid Operation, Guid Session, string Path, ClientKind Client)[] expected = Enumerable
+            .Range(0, 8)
+            .Select(index => (
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                index % 2 == 0 ? "/clients/cline/v1/chat/completions" : "/clients/open-webui/v1/chat/completions",
+                index % 2 == 0 ? ClientKind.Cline : ClientKind.OpenWebUi))
+            .ToArray();
+
+        Task<HttpResponseMessage>[] pending = expected
+            .Select(item => SendOperationTurnAsync(
+                client,
+                item.Operation,
+                item.Session,
+                Guid.NewGuid(),
+                1,
+                "{\"messages\":[],\"tools\":[]}",
+                item.Path))
+            .ToArray();
+        HttpResponseMessage[] responses = await Task.WhenAll(pending);
+        foreach (HttpResponseMessage response in responses)
+        {
+            using (response)
+            {
+                response.EnsureSuccessStatusCode();
+            }
+        }
+
+        TechnicalOperationGraph[] actual = new TechnicalOperationGraph[expected.Length];
+        for (int index = 0; index < actual.Length; index++)
+        {
+            actual[index] = await operations.ReadAsync();
+        }
+
+        Assert.HasCount(expected.Length, actual.Select(item => item.Operation.OperationId).Distinct());
+        Assert.HasCount(expected.Length, actual.Select(item => item.Operation.SessionId).Distinct());
+        Assert.HasCount(expected.Length, actual.Select(item => item.Turns.Single().RequestId).Distinct());
+        foreach (TechnicalOperationGraph operation in actual)
+        {
+            (Guid Operation, Guid Session, string Path, ClientKind Client) match = expected.Single(
+                item => item.Operation == operation.Operation.OperationId);
+            Assert.AreEqual(match.Session, operation.Operation.SessionId);
+            Assert.AreEqual(match.Client, operation.Operation.Client);
+            Assert.AreEqual(TechnicalOperationStatus.Completed, operation.Operation.Status);
+        }
+    }
+
+    [TestMethod]
+    public async Task GatewayPersistsCorrelatedOperationGraphAndRequestMembership()
+    {
+        const string finalResponse =
+            "{\"model\":\"fixture\",\"choices\":[{\"message\":{\"content\":\"opaque\"},\"finish_reason\":\"stop\"}]}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            await context.Request.Body.CopyToAsync(Stream.Null, context.RequestAborted);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(finalResponse, context.RequestAborted);
+        });
+        string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-operation-e2e-{Guid.NewGuid():N}");
+        string databasePath = Path.Combine(directory, "history.db");
+        Guid operationId = Guid.NewGuid();
+        Guid sessionId = Guid.NewGuid();
+        try
+        {
+            await using SqliteTechnicalHistoryStore store = new(databasePath);
+            await store.InitializeAsync();
+            await using ProxyGateway gateway = ProxyGateway.Create(
+                ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+                store,
+                BackendTelemetryAdapters.Create(BackendKind.Ollama),
+                operationSink: store);
+            await gateway.StartAsync();
+            using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+            using HttpResponseMessage response = await SendOperationTurnAsync(
+                client,
+                operationId,
+                sessionId,
+                Guid.NewGuid(),
+                1,
+                "{\"messages\":[],\"tools\":[{\"type\":\"function\"}]}");
+            response.EnsureSuccessStatusCode();
+            _ = await response.Content.ReadAsStringAsync();
+
+            TechnicalOperationDetail? detail = await store.GetOperationDetailAsync(operationId);
+            IReadOnlyList<RequestHistoryItem> requests = await store.QueryRequestsAsync(
+                new HistoryFilter(SessionId: sessionId));
+            Assert.IsNotNull(detail);
+            Assert.AreEqual(TechnicalOperationStatus.Completed, detail.Operation.Status);
+            Assert.HasCount(1, detail.Turns);
+            Assert.AreEqual(1m, detail.Turns[0].AvailableToolCount.Value);
+            Assert.AreEqual(0m, detail.Turns[0].InvokedToolCount.Value);
+            Assert.HasCount(1, requests);
+            Assert.AreEqual(operationId, requests[0].OperationId);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task MalformedOperationCorrelationRemainsUngrouped()
+    {
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            await context.Request.Body.CopyToAsync(Stream.Null, context.RequestAborted);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(
+                "{\"choices\":[{\"finish_reason\":\"stop\"}]}",
+                context.RequestAborted);
+        });
+        CollectingObservationSink observations = new();
+        SequenceOperationSink operations = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            observations,
+            operationSink: operations);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+        using HttpRequestMessage request = new(HttpMethod.Post, ProxyGateway.ChatCompletionsPath)
+        {
+            Content = new StringContent("{\"messages\":[]}", Encoding.UTF8, "application/json"),
+        };
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.OperationId, "ambiguous");
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.SessionId, Guid.NewGuid().ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnId, Guid.NewGuid().ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnSequence, "1");
+
+        using HttpResponseMessage response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        ProxyObservation observation = await observations.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.IsNotNull(observation.Correlation);
+        Assert.IsNull(observation.Correlation.OperationId);
+        Assert.AreEqual(0, operations.RecordedCount);
+    }
+
+    [TestMethod]
     public async Task LmStudioNativeChatIsRelayedVerbatimAndProjectsExactColdEvidence()
     {
         const string requestBody = "{\"model\":\"fixture\",\"input\":\"opaque\",\"stream\":false}";
@@ -860,6 +1092,28 @@ public sealed class ProxyGatewayIntegrationTests
         return await sink.ReadAsync();
     }
 
+    private static async Task<HttpResponseMessage> SendOperationTurnAsync(
+        HttpClient client,
+        Guid operationId,
+        Guid sessionId,
+        Guid turnId,
+        int turnSequence,
+        string body,
+        string path = ProxyGateway.ChatCompletionsPath)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, path)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.OperationId, operationId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.SessionId, sessionId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(InspectorCorrelationHeaders.TurnId, turnId.ToString("N"));
+        request.Headers.TryAddWithoutValidation(
+            InspectorCorrelationHeaders.TurnSequence,
+            turnSequence.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return await client.SendAsync(request);
+    }
+
     private static async Task<LiveRequestCollectionSnapshot> WaitForLiveStateAsync(
         LiveRequestTracker tracker,
         Func<LiveRequestCollectionSnapshot, bool> predicate)
@@ -899,6 +1153,26 @@ public sealed class ProxyGatewayIntegrationTests
 
         public async Task<ProxyObservation> ReadAsync() =>
             await _observations.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    private sealed class SequenceOperationSink : ITechnicalOperationSink
+    {
+        private readonly System.Threading.Channels.Channel<TechnicalOperationGraph> _operations =
+            System.Threading.Channels.Channel.CreateUnbounded<TechnicalOperationGraph>();
+        private int _recordedCount;
+
+        public int RecordedCount => Volatile.Read(ref _recordedCount);
+
+        public Task RecordOperationGraphAsync(
+            TechnicalOperationGraph graph,
+            CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _recordedCount);
+            return _operations.Writer.WriteAsync(graph, cancellationToken).AsTask();
+        }
+
+        public async Task<TechnicalOperationGraph> ReadAsync() =>
+            await _operations.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private sealed class ThrowingObservationSink : IProxyObservationSink

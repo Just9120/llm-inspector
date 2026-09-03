@@ -34,6 +34,7 @@ public enum MetricUnit
     Milliseconds,
     TokensPerSecond,
     Percent,
+    Count,
 }
 
 public enum MetricSource
@@ -124,7 +125,7 @@ public sealed record MetricValue
             throw new ArgumentOutOfRangeException(nameof(value), "Telemetry metrics cannot be negative.");
         }
 
-        if (unit is MetricUnit.TokenCount or MetricUnit.TokenDelta &&
+        if (unit is MetricUnit.TokenCount or MetricUnit.TokenDelta or MetricUnit.Count &&
             value is decimal tokenValue &&
             tokenValue != decimal.Truncate(tokenValue))
         {

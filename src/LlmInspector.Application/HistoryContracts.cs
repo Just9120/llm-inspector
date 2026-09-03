@@ -82,7 +82,20 @@ public sealed record TechnicalTurnRecord(
     DateTimeOffset StartedAt,
     TimeSpan Duration,
     ProxyOutcome Outcome,
-    HistoryErrorType ErrorType);
+    HistoryErrorType ErrorType)
+{
+    private const string SourceVersion = "openai-agent-metadata-v1";
+
+    public MetricValue AvailableToolCount { get; init; } = MetricValue.Unavailable(
+        MetricUnit.Count,
+        MetricSource.Inspector,
+        SourceVersion);
+
+    public MetricValue InvokedToolCount { get; init; } = MetricValue.Unavailable(
+        MetricUnit.Count,
+        MetricSource.Inspector,
+        SourceVersion);
+}
 
 public sealed record TechnicalToolEventRecord(
     Guid ToolEventId,
@@ -93,7 +106,15 @@ public sealed record TechnicalToolEventRecord(
     DateTimeOffset StartedAt,
     TimeSpan Duration,
     TechnicalToolStatus Status,
-    HistoryErrorType ErrorType);
+    HistoryErrorType ErrorType)
+{
+    public MetricValue DurationMetric { get; init; } = MetricValue.Calculated(
+        (decimal)Duration.TotalMilliseconds,
+        MetricUnit.Milliseconds,
+        MetricSource.Inspector,
+        "agent-operation-tracker-v1",
+        "tool-call-wall-duration-v1");
+}
 
 public sealed record TechnicalResourceSampleRecord(
     Guid SampleId,

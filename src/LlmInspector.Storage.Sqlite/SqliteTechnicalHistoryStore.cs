@@ -7,7 +7,7 @@ namespace LlmInspector.Storage.Sqlite;
 
 public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsyncDisposable
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     private const int MaximumQueryLimit = 1_000;
     private readonly string _connectionString;
     private readonly string _readConnectionString;
@@ -84,6 +84,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                     .ConfigureAwait(false);
                 await RecordSchemaVersionAsync(connection, transaction, 2, cancellationToken).ConfigureAwait(false);
                 persistedVersion = 2;
+            }
+
+            if (persistedVersion == 2)
+            {
+                await ExecuteNonQueryAsync(connection, transaction, Migration3Sql, cancellationToken)
+                    .ConfigureAwait(false);
+                await RecordSchemaVersionAsync(connection, transaction, 3, cancellationToken).ConfigureAwait(false);
+                persistedVersion = 3;
             }
 
             if (persistedVersion != SchemaVersion)
@@ -666,8 +674,33 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Transaction = transaction;
         command.CommandText = """
             INSERT INTO turns(
-                turn_id, operation_id, sequence, request_id, started_at_utc, duration_ms, outcome, error_type)
-            VALUES($id, $operation, $sequence, $request, $started, $duration, $outcome, $error);
+                turn_id, operation_id, sequence, request_id, started_at_utc, duration_ms, outcome, error_type,
+                available_tool_count, available_tool_count_quality, available_tool_count_source,
+                available_tool_count_source_version, available_tool_count_derivation_version,
+                invoked_tool_count, invoked_tool_count_quality, invoked_tool_count_source,
+                invoked_tool_count_source_version, invoked_tool_count_derivation_version)
+            VALUES(
+                $id, $operation, $sequence, $request, $started, $duration, $outcome, $error,
+                $available_value, $available_quality, $available_source, $available_source_version,
+                $available_derivation_version,
+                $invoked_value, $invoked_quality, $invoked_source, $invoked_source_version,
+                $invoked_derivation_version)
+            ON CONFLICT(operation_id, sequence) DO UPDATE SET
+                request_id = excluded.request_id,
+                started_at_utc = excluded.started_at_utc,
+                duration_ms = excluded.duration_ms,
+                outcome = excluded.outcome,
+                error_type = excluded.error_type,
+                available_tool_count = excluded.available_tool_count,
+                available_tool_count_quality = excluded.available_tool_count_quality,
+                available_tool_count_source = excluded.available_tool_count_source,
+                available_tool_count_source_version = excluded.available_tool_count_source_version,
+                available_tool_count_derivation_version = excluded.available_tool_count_derivation_version,
+                invoked_tool_count = excluded.invoked_tool_count,
+                invoked_tool_count_quality = excluded.invoked_tool_count_quality,
+                invoked_tool_count_source = excluded.invoked_tool_count_source,
+                invoked_tool_count_source_version = excluded.invoked_tool_count_source_version,
+                invoked_tool_count_derivation_version = excluded.invoked_tool_count_derivation_version;
             """;
         command.Parameters.AddWithValue("$id", turn.TurnId.ToString("N"));
         command.Parameters.AddWithValue("$operation", turn.OperationId.ToString("N"));
@@ -677,6 +710,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue("$duration", turn.Duration.TotalMilliseconds);
         command.Parameters.AddWithValue("$outcome", (int)turn.Outcome);
         command.Parameters.AddWithValue("$error", (int)turn.ErrorType);
+        AddCountMetricParameters(command, "available", turn.AvailableToolCount);
+        AddCountMetricParameters(command, "invoked", turn.InvokedToolCount);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -716,8 +751,22 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.CommandText = """
             INSERT INTO tool_events(
                 tool_event_id, operation_id, turn_sequence, sequence, tool_name,
-                started_at_utc, duration_ms, status, error_type)
-            VALUES($id, $operation, $turn_sequence, $sequence, $name, $started, $duration, $status, $error);
+                started_at_utc, duration_ms, duration_quality, duration_source,
+                duration_source_version, duration_derivation_version, status, error_type)
+            VALUES(
+                $id, $operation, $turn_sequence, $sequence, $name, $started, $duration,
+                $duration_quality, $duration_source, $duration_source_version,
+                $duration_derivation_version, $status, $error)
+            ON CONFLICT(operation_id, turn_sequence, sequence) DO UPDATE SET
+                tool_name = excluded.tool_name,
+                started_at_utc = excluded.started_at_utc,
+                duration_ms = excluded.duration_ms,
+                duration_quality = excluded.duration_quality,
+                duration_source = excluded.duration_source,
+                duration_source_version = excluded.duration_source_version,
+                duration_derivation_version = excluded.duration_derivation_version,
+                status = excluded.status,
+                error_type = excluded.error_type;
             """;
         command.Parameters.AddWithValue("$id", tool.ToolEventId.ToString("N"));
         command.Parameters.AddWithValue("$operation", tool.OperationId.ToString("N"));
@@ -726,6 +775,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue("$name", tool.ToolName.Value);
         command.Parameters.AddWithValue("$started", ToDbTime(tool.StartedAt));
         command.Parameters.AddWithValue("$duration", tool.Duration.TotalMilliseconds);
+        ValidateMetricMetadata(tool.DurationMetric);
+        command.Parameters.AddWithValue("$duration_quality", (int)tool.DurationMetric.Quality);
+        command.Parameters.AddWithValue("$duration_source", (int)tool.DurationMetric.Source);
+        command.Parameters.AddWithValue("$duration_source_version", tool.DurationMetric.SourceVersion);
+        command.Parameters.AddWithValue("$duration_derivation_version", DbValue(tool.DurationMetric.DerivationVersion));
         command.Parameters.AddWithValue("$status", (int)tool.Status);
         command.Parameters.AddWithValue("$error", (int)tool.ErrorType);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -983,7 +1037,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """
             SELECT turn_id, operation_id, sequence, request_id, started_at_utc,
-                   duration_ms, outcome, error_type
+                   duration_ms, outcome, error_type,
+                   available_tool_count, available_tool_count_quality, available_tool_count_source,
+                   available_tool_count_source_version, available_tool_count_derivation_version,
+                   invoked_tool_count, invoked_tool_count_quality, invoked_tool_count_source,
+                   invoked_tool_count_source_version, invoked_tool_count_derivation_version
             FROM turns WHERE operation_id = $id ORDER BY sequence, started_at_utc;
             """;
         command.Parameters.AddWithValue("$id", operationId.ToString("N"));
@@ -999,7 +1057,13 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 ParseDbTime(reader.GetString(4)),
                 TimeSpan.FromMilliseconds(reader.GetDouble(5)),
                 (ProxyOutcome)reader.GetInt32(6),
-                (HistoryErrorType)reader.GetInt32(7)));
+                (HistoryErrorType)reader.GetInt32(7))
+            {
+                AvailableToolCount = CreateStoredMetric(
+                    reader, MetricUnit.Count, 8, 9, 10, 11, 12),
+                InvokedToolCount = CreateStoredMetric(
+                    reader, MetricUnit.Count, 13, 14, 15, 16, 17),
+            });
         }
 
         return result;
@@ -1013,7 +1077,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """
             SELECT tool_event_id, operation_id, turn_sequence, sequence, tool_name,
-                   started_at_utc, duration_ms, status, error_type
+                   started_at_utc, duration_ms, duration_quality, duration_source,
+                   duration_source_version, duration_derivation_version, status, error_type
             FROM tool_events
             WHERE operation_id = $id
             ORDER BY turn_sequence, sequence, started_at_utc;
@@ -1031,8 +1096,12 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                 ReadIdentifier(reader.GetString(4)),
                 ParseDbTime(reader.GetString(5)),
                 TimeSpan.FromMilliseconds(reader.GetDouble(6)),
-                (TechnicalToolStatus)reader.GetInt32(7),
-                (HistoryErrorType)reader.GetInt32(8)));
+                (TechnicalToolStatus)reader.GetInt32(11),
+                (HistoryErrorType)reader.GetInt32(12))
+            {
+                DurationMetric = CreateStoredMetric(
+                    reader, MetricUnit.Milliseconds, 6, 7, 8, 9, 10),
+            });
         }
 
         return result;
@@ -1335,6 +1404,16 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         {
             throw new ArgumentException("Turn/tool sequence and duration values are invalid.", nameof(graph));
         }
+
+        if (graph.Turns.Any(item =>
+                item.AvailableToolCount.Unit != MetricUnit.Count ||
+                item.InvokedToolCount.Unit != MetricUnit.Count) ||
+            graph.ToolEvents.Any(item =>
+                item.DurationMetric.Unit != MetricUnit.Milliseconds ||
+                item.DurationMetric.Value != (decimal)item.Duration.TotalMilliseconds))
+        {
+            throw new ArgumentException("Turn/tool metrics have incompatible units or values.", nameof(graph));
+        }
     }
 
     private static void ValidateFilter(HistoryFilter filter)
@@ -1381,8 +1460,27 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         samples.Add(value);
     }
 
-    private static MetricValue CreateStoredPercentMetric(
+    private static void AddCountMetricParameters(
+        SqliteCommand command,
+        string prefix,
+        MetricValue metric)
+    {
+        if (metric.Unit != MetricUnit.Count)
+        {
+            throw new ArgumentException("Tool counts must use the count unit.", nameof(metric));
+        }
+
+        ValidateMetricMetadata(metric);
+        command.Parameters.AddWithValue($"${prefix}_value", DbValue(metric.Value));
+        command.Parameters.AddWithValue($"${prefix}_quality", (int)metric.Quality);
+        command.Parameters.AddWithValue($"${prefix}_source", (int)metric.Source);
+        command.Parameters.AddWithValue($"${prefix}_source_version", metric.SourceVersion);
+        command.Parameters.AddWithValue($"${prefix}_derivation_version", DbValue(metric.DerivationVersion));
+    }
+
+    private static MetricValue CreateStoredMetric(
         SqliteDataReader reader,
+        MetricUnit unit,
         int valueOrdinal,
         int qualityOrdinal,
         int sourceOrdinal,
@@ -1393,12 +1491,28 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         decimal? value = reader.IsDBNull(valueOrdinal) ? null : reader.GetDecimal(valueOrdinal);
         return new MetricValue(
             value,
-            MetricUnit.Percent,
+            unit,
             quality,
             (MetricSource)reader.GetInt32(sourceOrdinal),
             reader.GetString(sourceVersionOrdinal),
             reader.IsDBNull(derivationVersionOrdinal) ? null : reader.GetString(derivationVersionOrdinal));
     }
+
+    private static MetricValue CreateStoredPercentMetric(
+        SqliteDataReader reader,
+        int valueOrdinal,
+        int qualityOrdinal,
+        int sourceOrdinal,
+        int sourceVersionOrdinal,
+        int derivationVersionOrdinal)
+        => CreateStoredMetric(
+            reader,
+            MetricUnit.Percent,
+            valueOrdinal,
+            qualityOrdinal,
+            sourceOrdinal,
+            sourceVersionOrdinal,
+            derivationVersionOrdinal);
 
     private static HistoryErrorType MapErrorType(ProxyOutcome outcome) => outcome switch
     {
@@ -1635,5 +1749,39 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             CHECK(model_load_disposition BETWEEN 0 AND 2);
         CREATE INDEX ix_requests_correlation
             ON requests(session_id, correlation_turn_sequence);
+        """;
+
+    private const string Migration3Sql = """
+        ALTER TABLE turns ADD COLUMN available_tool_count INTEGER NULL
+            CHECK(available_tool_count IS NULL OR available_tool_count >= 0);
+        ALTER TABLE turns ADD COLUMN available_tool_count_quality INTEGER NOT NULL DEFAULT 3
+            CHECK(available_tool_count_quality BETWEEN 0 AND 3);
+        ALTER TABLE turns ADD COLUMN available_tool_count_source INTEGER NOT NULL DEFAULT 2;
+        ALTER TABLE turns ADD COLUMN available_tool_count_source_version TEXT NOT NULL
+            DEFAULT 'openai-agent-metadata-v1'
+            CHECK(length(available_tool_count_source_version) BETWEEN 1 AND 128);
+        ALTER TABLE turns ADD COLUMN available_tool_count_derivation_version TEXT NULL
+            CHECK(available_tool_count_derivation_version IS NULL OR length(available_tool_count_derivation_version) BETWEEN 1 AND 128);
+
+        ALTER TABLE turns ADD COLUMN invoked_tool_count INTEGER NULL
+            CHECK(invoked_tool_count IS NULL OR invoked_tool_count >= 0);
+        ALTER TABLE turns ADD COLUMN invoked_tool_count_quality INTEGER NOT NULL DEFAULT 3
+            CHECK(invoked_tool_count_quality BETWEEN 0 AND 3);
+        ALTER TABLE turns ADD COLUMN invoked_tool_count_source INTEGER NOT NULL DEFAULT 2;
+        ALTER TABLE turns ADD COLUMN invoked_tool_count_source_version TEXT NOT NULL
+            DEFAULT 'openai-agent-metadata-v1'
+            CHECK(length(invoked_tool_count_source_version) BETWEEN 1 AND 128);
+        ALTER TABLE turns ADD COLUMN invoked_tool_count_derivation_version TEXT NULL
+            CHECK(invoked_tool_count_derivation_version IS NULL OR length(invoked_tool_count_derivation_version) BETWEEN 1 AND 128);
+
+        ALTER TABLE tool_events ADD COLUMN duration_quality INTEGER NOT NULL DEFAULT 1
+            CHECK(duration_quality BETWEEN 0 AND 3);
+        ALTER TABLE tool_events ADD COLUMN duration_source INTEGER NOT NULL DEFAULT 2;
+        ALTER TABLE tool_events ADD COLUMN duration_source_version TEXT NOT NULL
+            DEFAULT 'history-schema-v3-backfill'
+            CHECK(length(duration_source_version) BETWEEN 1 AND 128);
+        ALTER TABLE tool_events ADD COLUMN duration_derivation_version TEXT NULL
+            DEFAULT 'legacy-tool-duration-v1'
+            CHECK(duration_derivation_version IS NULL OR length(duration_derivation_version) BETWEEN 1 AND 128);
         """;
 }

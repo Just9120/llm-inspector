@@ -2,7 +2,27 @@ using LlmInspector.Domain;
 
 namespace LlmInspector.Application;
 
-public interface ITechnicalHistoryStore : IProxyObservationSink
+public interface ITechnicalOperationSink
+{
+    Task RecordOperationGraphAsync(
+        TechnicalOperationGraph graph,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed class NullTechnicalOperationSink : ITechnicalOperationSink
+{
+    public static NullTechnicalOperationSink Instance { get; } = new();
+
+    private NullTechnicalOperationSink()
+    {
+    }
+
+    public Task RecordOperationGraphAsync(
+        TechnicalOperationGraph graph,
+        CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public interface ITechnicalHistoryStore : IProxyObservationSink, ITechnicalOperationSink
 {
     Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(
         HistoryFilter filter,

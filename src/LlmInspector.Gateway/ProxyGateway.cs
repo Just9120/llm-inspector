@@ -37,10 +37,12 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
     private readonly ProxyGatewayOptions _options;
     private readonly IProxyObservationSink _observationSink;
+    private readonly ITechnicalOperationSink _operationSink;
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly IBackendTelemetryAdapter? _lmStudioNativeTelemetryAdapter;
     private readonly RequestCorrelationTracker _correlationTracker = new();
+    private readonly AgentOperationTracker _operationTracker = new();
     private readonly HttpClient _httpClient;
     private readonly WebApplication _application;
     private int _started;
@@ -49,6 +51,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private ProxyGateway(
         ProxyGatewayOptions options,
         IProxyObservationSink observationSink,
+        ITechnicalOperationSink operationSink,
         ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter,
@@ -57,6 +60,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     {
         _options = options;
         _observationSink = observationSink;
+        _operationSink = operationSink;
         _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
         _lmStudioNativeTelemetryAdapter = lmStudioNativeTelemetryAdapter;
@@ -71,7 +75,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         IProxyObservationSink? observationSink = null,
         IBackendTelemetryAdapter? telemetryAdapter = null,
         ILiveRequestStateSink? liveRequestStateSink = null,
-        IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter = null)
+        IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter = null,
+        ITechnicalOperationSink? operationSink = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -128,6 +133,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ProxyGateway gateway = new(
             options,
             observationSink ?? NullProxyObservationSink.Instance,
+            operationSink ?? NullTechnicalOperationSink.Instance,
             liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
             lmStudioNativeTelemetryAdapter,
@@ -266,6 +272,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         BackendResponseTelemetry backendTelemetry = telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
         RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
+        using BoundedBodyCapture requestCapture = new();
+        using BoundedBodyCapture responseCapture = new();
+        string? responseMediaType = null;
         NotifyLiveStateSafely(sink => sink.RequestStarted(requestId, startedAt, client));
 
         try
@@ -275,17 +284,20 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 RequestStageValue.ProtocolObserved(
                     RequestStage.PromptProcessing,
                     lifecycleSourceVersion)));
+            using CapturingReadStream capturedRequestBody = new(context.Request.Body, requestCapture);
             using HttpRequestMessage outboundRequest = CreateOutboundRequest(
                 context,
                 HttpMethod.Post,
                 backendPath,
-                includeBody: true);
+                includeBody: true,
+                capturedRequestBody);
             using HttpResponseMessage backendResponse = await _httpClient.SendAsync(
                 outboundRequest,
                 HttpCompletionOption.ResponseHeadersRead,
                 context.RequestAborted).ConfigureAwait(false);
 
             statusCode = (int)backendResponse.StatusCode;
+            responseMediaType = backendResponse.Content.Headers.ContentType?.MediaType;
             context.Response.StatusCode = statusCode.Value;
             CopyResponseHeaders(backendResponse, context.Response);
 
@@ -300,6 +312,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                         RequestStage.ReasoningGeneration,
                         lifecycleSourceVersion))),
                 () => firstOutputTimestamp ??= Stopwatch.GetTimestamp(),
+                responseCapture,
                 context.RequestAborted).ConfigureAwait(false);
 
             outcome = ProxyOutcome.Completed;
@@ -346,8 +359,19 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 ContextChangeTokens = _correlationTracker.Observe(
                     correlation,
                     backendTelemetry.ContextUsageTokens),
+                AgentTurn = backendPath == ChatCompletionsPath
+                    ? AgentProtocolMetadataExtractor.Extract(
+                        requestCapture,
+                        responseCapture,
+                        responseMediaType)
+                    : AgentTurnTelemetry.Unavailable,
             };
             await RecordSafelyAsync(observation).ConfigureAwait(false);
+            TechnicalOperationGraph? operation = _operationTracker.Observe(observation);
+            if (operation is not null)
+            {
+                await RecordOperationSafelyAsync(operation).ConfigureAwait(false);
+            }
         }
     }
 
@@ -394,6 +418,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         Stream clientBody,
         Action responseBodyObserved,
         Action outputContentObserved,
+        BoundedBodyCapture responseCapture,
         CancellationToken cancellationToken)
     {
         IBackendTelemetrySession? telemetrySession;
@@ -421,8 +446,11 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                     .ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
+                    responseCapture.Complete();
                     break;
                 }
+
+                responseCapture.Observe(buffer.AsSpan(0, bytesRead));
 
                 if (!responseBodyStageObserved)
                 {
@@ -491,7 +519,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         HttpContext context,
         HttpMethod method,
         string backendPath,
-        bool includeBody)
+        bool includeBody,
+        Stream? body = null)
     {
         UriBuilder destination = new(_options.BackendBaseAddress)
         {
@@ -508,7 +537,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         };
         if (includeBody)
         {
-            outbound.Content = new StreamContent(context.Request.Body);
+            outbound.Content = new StreamContent(body ?? context.Request.Body);
         }
 
         HashSet<string> excludedHeaders = CreateExcludedHeaders(context.Request.Headers);
@@ -610,6 +639,19 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         catch (Exception)
         {
             // Observation is best-effort. A telemetry sink must never break request forwarding.
+        }
+    }
+
+    private async Task RecordOperationSafelyAsync(TechnicalOperationGraph operation)
+    {
+        try
+        {
+            await _operationSink.RecordOperationGraphAsync(operation, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Operation telemetry is best-effort and must never affect request forwarding.
         }
     }
 

@@ -11,11 +11,11 @@ public static class TechnicalDataDisclosure
     [
         new(
             "Volatile proxy observation",
-            "Generated request ID, pseudonymous session/turn correlation IDs and sequence when explicitly supplied, current stage/evidence, elapsed time, backend-reported progress, estimated ETA with quality, HTTP status, outcome, configured backend, explicit client attribution, normalized model identity, token/context/timing metrics with quality/provenance, model-load classification, and allowlisted backend-specific metrics",
+            "Generated request ID, pseudonymous operation/session/turn correlation IDs and sequence when explicitly supplied, current stage/evidence, elapsed time, backend-reported progress, estimated ETA with quality, HTTP status, outcome, configured backend, explicit client attribution, normalized model identity, available/invoked tool counts, normalized tool names, token/context/timing metrics with quality/provenance, model-load classification, and allowlisted backend-specific metrics",
             "Process lifetime only"),
         new(
             "Local SQLite technical history",
-            "Pseudonymous request/session/turn/operation IDs, timestamps, durations, status/error classification, configured client/backend, normalized model and tool identifiers, resource samples, model-load classification, and allowlisted numeric metrics with quality/provenance",
+            "Pseudonymous request/session/turn/operation IDs, timestamps, durations, status/error classification, configured client/backend, normalized model and tool identifiers, available/invoked tool counts, tool duration quality/provenance, resource samples, model-load classification, and allowlisted numeric metrics with quality/provenance",
             "User-selected: 7 days, 30 days (default), 90 days, or indefinite; explicit clear is available"),
     ];
 

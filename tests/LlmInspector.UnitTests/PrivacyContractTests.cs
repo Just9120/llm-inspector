@@ -18,6 +18,7 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.BackendTelemetry),
         nameof(ProxyObservation.Correlation),
         nameof(ProxyObservation.ContextChangeTokens),
+        nameof(ProxyObservation.AgentTurn),
     ];
 
     private static readonly string[] AllowedCorrelationProperties =
@@ -25,6 +26,7 @@ public sealed class PrivacyContractTests
         nameof(RequestCorrelation.SessionId),
         nameof(RequestCorrelation.TurnId),
         nameof(RequestCorrelation.TurnSequence),
+        nameof(RequestCorrelation.OperationId),
     ];
 
     [TestMethod]
@@ -53,6 +55,29 @@ public sealed class PrivacyContractTests
             AllowedCorrelationProperties.Order(StringComparer.Ordinal).ToArray(),
             correlationProperties);
         Assert.IsFalse(typeof(RequestCorrelation).GetProperties().Any(property => property.PropertyType == typeof(string)));
+
+        string[] agentProperties = typeof(AgentTurnTelemetry)
+            .GetProperties()
+            .Select(property => property.Name)
+            .Concat(typeof(AgentToolCall).GetProperties().Select(property => property.Name))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        string[] allowedAgentProperties =
+        [
+            "AvailableToolCount",
+            "Completion",
+            "InvokedToolCount",
+            "Sequence",
+            "ToolCalls",
+            "ToolDetailsComplete",
+            "ToolName",
+            "ToolResultCount",
+            "Unavailable",
+        ];
+        CollectionAssert.AreEqual(allowedAgentProperties, agentProperties);
+        Assert.IsFalse(
+            typeof(AgentTurnTelemetry).GetProperties().Any(property => property.PropertyType == typeof(string)));
 
         string[] telemetryPropertyNames = typeof(BackendResponseTelemetry)
             .GetProperties()

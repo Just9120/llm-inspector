@@ -11,16 +11,16 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - proxy поддерживает transparent `GET /v1/models`, non-streaming/streaming/tool-calling `POST /v1/chat/completions` и, только при выбранном LM Studio, native `POST /api/v1/chat`; он не следует redirects и propagates cancellation;
 - bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details, документированные llama.cpp `timings` и LM Studio native `stats`/`model_load.*`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
 - UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, latest request tokens/context/timings с quality state и отдельную content-free technical diagnostics summary; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
-- SQLite WAL schema v2 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, operation detail, daily aggregates, cold/warm breakdown, comparisons, retention и explicit clear preview/confirmation;
+- SQLite WAL schema v3 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, ordered operation/tool detail, daily aggregates, cold/warm breakdown, comparisons, retention и explicit clear preview/confirmation;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03/04/08/09 имеют terminal PR/main CI; `EPIC-01` локально выполняет `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
+- EPIC-02/03/04/08/09 имеют terminal PR/main CI; EPIC-01 доставлен как честный partial `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main`: `72/139 = 51.8%` initial release и `72/164 = 43.9%` full roadmap. Активный EPIC-01 candidate локально добавляет три выполненных AC (`75/139 = 54.0%`, `75/164 = 45.7%`) и прошёл полный local pipeline (`133/133` tests); terminal CI Evidence появится только после PR.
+Текущая readiness baseline на merged `main`: `75/139 = 54.0%` initial release и `75/164 = 45.7%` full roadmap. Active EPIC-05 candidate локально выполняет ещё `8/8` AC (`83/139 = 59.7%`, `83/164 = 50.6%`) и прошёл полный local pipeline (`142/142` tests); terminal CI Evidence появится только после PR.
 
 ## Быстрый старт
 
@@ -62,7 +62,9 @@ Versioned launch configuration v1 принимает `--backend=ollama|llama-cpp
 
 При `--backend=lm-studio` gateway дополнительно открывает generic `http://127.0.0.1:5117/api/v1/chat` и прозрачно передаёт одноимённый native LM Studio flow. Полные terminal `stats` и optional `model_load_time_seconds` либо streaming `model_load.start/end` дают exact cold/warm evidence; неполный или противоречивый lifecycle остаётся `unavailable`.
 
-Опциональная cross-turn correlation включается только полным набором Inspector-reserved headers: `X-LLM-Inspector-Session-Id`, `X-LLM-Inspector-Turn-Id` (оба — non-empty GUID в 32-hex `N` format) и положительный `X-LLM-Inspector-Turn-Sequence`. Headers удаляются до forwarding к backend. Изменение context size рассчитывается только для соседних sequence одной session; первый, duplicate, gap, out-of-order или неполный набор отображается как `unavailable`, без time-based guessing.
+Опциональная cross-turn correlation включается только полным набором Inspector-reserved headers: `X-LLM-Inspector-Session-Id`, `X-LLM-Inspector-Turn-Id` (оба — non-empty GUID в 32-hex `N` format) и положительный `X-LLM-Inspector-Turn-Sequence`. Изменение context size рассчитывается только для соседних sequence одной session; первый, duplicate, gap, out-of-order или неполный набор отображается как `unavailable`, без time-based guessing.
+
+Agent operation grouping дополнительно требует `X-LLM-Inspector-Operation-Id` с non-empty GUID в том же `N` format и начинается с turn sequence `1`. Только строго соседние turns одной session/client/backend входят в operation; malformed, duplicate, gap, out-of-order или несовпадающие metadata остаются ungrouped. Gateway boundedly извлекает из OpenAI-compatible JSON/SSE только available/invoked tool counts, normalized tool names и finish state; arguments/results/final content не сохраняются. Все четыре Inspector headers удаляются до forwarding к backend.
 
 Техническое наблюдение сохраняется локально с default retention `30 days`; доступны точные варианты `7 days`, `30 days`, `90 days`, `indefinite`. При старте и после изменения setting применяется bounded oldest-first cleanup. Raw request/response/reasoning/tool content не сохраняется, не индексируется и не логируется; negative runtime canary test проверяет основной DB/WAL surface.
 

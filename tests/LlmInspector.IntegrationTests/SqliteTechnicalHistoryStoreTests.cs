@@ -129,10 +129,18 @@ public sealed class SqliteTechnicalHistoryStoreTests
             [
                 new TechnicalTurnRecord(
                     Guid.NewGuid(), operationId, 1, secondRequestId, startedAt.AddSeconds(2),
-                    TimeSpan.FromSeconds(2), ProxyOutcome.RelayFailed, HistoryErrorType.RelayFailed),
+                    TimeSpan.FromSeconds(2), ProxyOutcome.RelayFailed, HistoryErrorType.RelayFailed)
+                {
+                    AvailableToolCount = Count(2),
+                    InvokedToolCount = Count(1),
+                },
                 new TechnicalTurnRecord(
                     Guid.NewGuid(), operationId, 0, firstRequestId, startedAt,
-                    TimeSpan.FromSeconds(1), ProxyOutcome.Completed, HistoryErrorType.None),
+                    TimeSpan.FromSeconds(1), ProxyOutcome.Completed, HistoryErrorType.None)
+                {
+                    AvailableToolCount = Count(4),
+                    InvokedToolCount = Count(1),
+                },
             ],
             [
                 new TechnicalToolEventRecord(
@@ -157,11 +165,14 @@ public sealed class SqliteTechnicalHistoryStoreTests
         Assert.AreEqual(HistoryErrorType.RelayFailed, detail.Operation.ErrorType);
         Assert.AreEqual(0, detail.Turns[0].Sequence);
         Assert.AreEqual(1, detail.Turns[1].Sequence);
+        Assert.AreEqual(4m, detail.Turns[0].AvailableToolCount.Value);
+        Assert.AreEqual(1m, detail.Turns[0].InvokedToolCount.Value);
         Assert.AreEqual("list_files", detail.ToolEvents[0].ToolName.Value);
         Assert.AreEqual("read_file", detail.ToolEvents[1].ToolName.Value);
         Assert.AreEqual(30m, detail.ResourceSamples[0].CpuPercent.Value);
         Assert.AreEqual(70m, detail.ResourceSamples[1].CpuPercent.Value);
         Assert.AreEqual(TimeSpan.FromMilliseconds(40), detail.ToolEvents[1].Duration);
+        Assert.AreEqual(MetricQuality.Calculated, detail.ToolEvents[1].DurationMetric.Quality);
     }
 
     [TestMethod]
@@ -283,7 +294,7 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
-    public async Task VersionOneDatabaseMigratesToVersionTwoWithoutLosingRequests()
+    public async Task VersionOneDatabaseMigratesToCurrentSchemaWithoutLosingRequests()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-migration-{Guid.NewGuid():N}");
         string databasePath = Path.Combine(directory, "history.db");
@@ -337,7 +348,7 @@ public sealed class SqliteTechnicalHistoryStoreTests
             await verification.OpenAsync();
             await using SqliteCommand versionCommand = verification.CreateCommand();
             versionCommand.CommandText = "SELECT MAX(version) FROM schema_migrations;";
-            Assert.AreEqual(2L, await versionCommand.ExecuteScalarAsync());
+            Assert.AreEqual(3L, await versionCommand.ExecuteScalarAsync());
         }
         finally
         {
@@ -441,6 +452,45 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
+    public async Task BufferedSinkPreservesObservationBeforeItsOperationGraph()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        Guid requestId = Guid.NewGuid();
+        Guid sessionId = Guid.NewGuid();
+        Guid operationId = Guid.NewGuid();
+        DateTimeOffset startedAt = DateTimeOffset.UtcNow;
+        ProxyObservation observation = CreateObservation(
+            requestId, startedAt, ClientKind.Cline, BackendKind.Ollama,
+            "buffer-operation-model", ProxyOutcome.Completed, 10);
+        TechnicalOperationGraph graph = new(
+            new TechnicalSessionRecord(
+                sessionId, startedAt, startedAt.AddMilliseconds(50), ClientKind.Cline,
+                BackendKind.Ollama, Id("buffer-operation-model")),
+            new TechnicalOperationRecord(
+                operationId, sessionId, startedAt, startedAt.AddMilliseconds(50), ClientKind.Cline,
+                BackendKind.Ollama, Id("buffer-operation-model"),
+                TechnicalOperationStatus.Completed, HistoryErrorType.None),
+            [new TechnicalTurnRecord(
+                Guid.NewGuid(), operationId, 1, requestId, startedAt,
+                TimeSpan.FromMilliseconds(50), ProxyOutcome.Completed, HistoryErrorType.None)],
+            [],
+            []);
+
+        await using (BufferedTechnicalHistorySink sink = new(fixture.Store))
+        {
+            await sink.RecordAsync(observation, CancellationToken.None);
+            await sink.RecordOperationGraphAsync(graph, CancellationToken.None);
+        }
+
+        TechnicalOperationDetail? stored = await fixture.Store.GetOperationDetailAsync(operationId);
+        RequestHistoryItem linked = AssertSingle(await fixture.Store.QueryRequestsAsync(
+            new HistoryFilter(SessionId: sessionId)));
+        Assert.IsNotNull(stored);
+        Assert.AreEqual(requestId, stored.Turns.Single().RequestId);
+        Assert.AreEqual(operationId, linked.OperationId);
+    }
+
+    [TestMethod]
     public async Task ManualClearRequiresExplicitScopeFreshPreviewAndConfirmation()
     {
         _ = Assert.ThrowsExactly<ArgumentException>(() => new HistoryClearScope(allHistory: false));
@@ -528,6 +578,9 @@ public sealed class SqliteTechnicalHistoryStoreTests
     private static MetricValue Percent(decimal value) =>
         MetricValue.Exact(value, MetricUnit.Percent, MetricSource.Inspector, "resource-fixture-v1");
 
+    private static MetricValue Count(decimal value) =>
+        MetricValue.Exact(value, MetricUnit.Count, MetricSource.Inspector, "agent-operation-fixture-v1");
+
     private static TechnicalIdentifier Id(string value) =>
         TechnicalIdentifier.FromBackend(value) ?? throw new InvalidOperationException("Invalid test identifier.");
 
@@ -580,6 +633,10 @@ public sealed class SqliteTechnicalHistoryStoreTests
             await ReleaseWrites.Task.WaitAsync(cancellationToken);
             Interlocked.Increment(ref _recordedCount);
         }
+
+        public Task RecordOperationGraphAsync(
+            TechnicalOperationGraph graph,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(
             HistoryFilter filter,
