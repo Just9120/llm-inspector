@@ -8,6 +8,20 @@ public enum ProxyOutcome
     RelayFailed,
 }
 
+public enum ProxyErrorType
+{
+    None,
+    ConnectionRefused,
+    ModelLoading,
+    HttpApiError,
+    Timeout,
+    ContextOverflow,
+    ClientCancellation,
+    BackendCrash,
+    BackendUnavailable,
+    RelayFailure,
+}
+
 public sealed record RequestCorrelation
 {
     public RequestCorrelation(Guid sessionId, Guid turnId, int turnSequence)
@@ -61,6 +75,8 @@ public sealed record ProxyObservation(
         CorrelationSourceVersion);
 
     public AgentTurnTelemetry AgentTurn { get; init; } = AgentTurnTelemetry.Unavailable;
+
+    public ProxyErrorType ErrorType { get; init; }
 
     public ProxyObservation(
         Guid requestId,

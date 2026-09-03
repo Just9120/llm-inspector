@@ -92,10 +92,41 @@ public sealed class DesktopProductBoundaryTests
         StringAssert.Contains(summary, "outcome=BackendUnavailable");
         StringAssert.Contains(summary, "HTTP=503");
         StringAssert.Contains(summary, "125 ms [calculated]");
-        Assert.IsFalse(summary.Contains("prompt", StringComparison.OrdinalIgnoreCase));
-        Assert.IsFalse(summary.Contains("response", StringComparison.OrdinalIgnoreCase));
-        Assert.IsFalse(summary.Contains("reasoning", StringComparison.OrdinalIgnoreCase));
-        Assert.IsFalse(summary.Contains("tool", StringComparison.OrdinalIgnoreCase));
+        StringAssert.Contains(summary, "FACT | BackendUnavailable");
+        StringAssert.Contains(summary, "Evidence:");
+        Assert.IsFalse(summary.Contains("private-content-canary", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void DiagnosticsSurfaceDoesNotCallLongRunningActiveStageAConfirmedStall()
+    {
+        Guid requestId = Guid.NewGuid();
+        LiveRequestSnapshot active = new(
+            requestId,
+            ClientKind.Cline,
+            RequestStageValue.ProtocolObserved(RequestStage.ReasoningGeneration, "ui-stall-test-v1"),
+            DateTimeOffset.UnixEpoch,
+            MetricValue.Calculated(
+                30_000,
+                MetricUnit.Milliseconds,
+                MetricSource.Inspector,
+                "ui-stall-test-v1",
+                "elapsed-v1"),
+            MetricValue.Unavailable(MetricUnit.Percent, MetricSource.Inspector, "ui-stall-test-v1"),
+            MetricValue.Unavailable(MetricUnit.Milliseconds, MetricSource.Inspector, "ui-stall-test-v1"));
+
+        string summary = App.DiagnosticsSummaryTextPresenter.Format(
+            App.AppRuntimeStatus.Running(
+                new Uri("http://127.0.0.1:5117/"),
+                new Uri("http://127.0.0.1:11434/"),
+                BackendKind.Ollama),
+            null,
+            "Technical history is available.",
+            liveRequests: new LiveRequestCollectionSnapshot([active], null));
+
+        StringAssert.Contains(summary, "FACT | ActiveWork");
+        StringAssert.Contains(summary, "INSUFFICIENTDATA | ConfirmedStall");
+        Assert.IsFalse(summary.Contains("FACT | ConfirmedStall", StringComparison.Ordinal));
     }
 
     private static bool IsLiteralLoopback(string host) =>

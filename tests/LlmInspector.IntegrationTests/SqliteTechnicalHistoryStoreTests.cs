@@ -324,6 +324,73 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
+    public async Task TypedRecurringErrorsArePersistedCorrelatedAndComparedByPeriod()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTimeOffset baselineAt = new(2026, 4, 1, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset candidateAt = baselineAt.AddDays(1);
+        Guid sessionId = Guid.NewGuid();
+        ProxyObservation[] observations =
+        [
+            CreateObservation(
+                Guid.NewGuid(), baselineAt, ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.BackendUnavailable, 10,
+                correlation: new RequestCorrelation(sessionId, Guid.NewGuid(), 1),
+                errorType: ProxyErrorType.ConnectionRefused),
+            CreateObservation(
+                Guid.NewGuid(), baselineAt.AddMinutes(1), ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.ClientCancelled, 10,
+                correlation: new RequestCorrelation(sessionId, Guid.NewGuid(), 2),
+                errorType: ProxyErrorType.ClientCancellation),
+            CreateObservation(
+                Guid.NewGuid(), baselineAt.AddMinutes(2), ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.BackendUnavailable, 10,
+                errorType: ProxyErrorType.ConnectionRefused),
+            CreateObservation(
+                Guid.NewGuid(), candidateAt, ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.Completed, 10,
+                errorType: ProxyErrorType.ContextOverflow),
+            CreateObservation(
+                Guid.NewGuid(), candidateAt.AddMinutes(1), ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.Completed, 10,
+                errorType: ProxyErrorType.ContextOverflow),
+            CreateObservation(
+                Guid.NewGuid(), candidateAt.AddMinutes(2), ClientKind.Cline, BackendKind.Ollama,
+                "model", ProxyOutcome.Completed, 10),
+        ];
+        foreach (ProxyObservation observation in observations)
+        {
+            await fixture.Store.RecordAsync(observation, CancellationToken.None);
+        }
+
+        HistoryFilter baseline = new(From: baselineAt, To: baselineAt.AddHours(1));
+        HistoryFilter candidate = new(From: candidateAt, To: candidateAt.AddHours(1));
+        IReadOnlyList<RequestHistoryItem> stored = await fixture.Store.QueryRequestsAsync(baseline);
+        RequestHistoryItem recurringConnection = stored.First(item => item.ErrorType == HistoryErrorType.ConnectionRefused);
+        Assert.IsTrue(recurringConnection.IsRecurringError);
+        Assert.AreEqual(2, recurringConnection.ErrorGroupOccurrenceCount);
+
+        PeriodAnalytics analytics = await fixture.Store.AnalyzePeriodAsync(baseline);
+        Assert.IsTrue(analytics.ErrorGroups.Single(item => item.ErrorType == HistoryErrorType.ConnectionRefused).IsRecurring);
+        CorrelatedErrorGroup correlation = analytics.ErrorCorrelations.ConfirmedGroups.Single();
+        Assert.AreEqual(ErrorCorrelationBasis.Session, correlation.Basis);
+        Assert.AreEqual(sessionId, correlation.CorrelationId);
+        Assert.AreEqual(1, analytics.ErrorCorrelations.UncorrelatedErrors);
+
+        AnalyticsComparison comparison = await fixture.Store.CompareAsync(
+            baseline,
+            candidate,
+            HistoryMetric.ErrorRatePercent);
+        CollectionAssert.AreEquivalent(
+            new[] { HistoryErrorType.ConnectionRefused, HistoryErrorType.ContextOverflow },
+            comparison.RecurringErrorFrequency.Select(item => item.ErrorType).ToArray());
+        ErrorFrequencyComparison contextChange = comparison.RecurringErrorFrequency.Single(
+            item => item.ErrorType == HistoryErrorType.ContextOverflow);
+        Assert.AreEqual(0, contextChange.BaselineOccurrences);
+        Assert.AreEqual(2, contextChange.CandidateOccurrences);
+    }
+
+    [TestMethod]
     public async Task VersionOneDatabaseMigratesToCurrentSchemaWithoutLosingRequests()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"llm-inspector-migration-{Guid.NewGuid():N}");
@@ -567,7 +634,8 @@ public sealed class SqliteTechnicalHistoryStoreTests
         ProxyOutcome outcome,
         decimal value,
         ModelLoadDisposition modelLoadDisposition = ModelLoadDisposition.Unavailable,
-        RequestCorrelation? correlation = null)
+        RequestCorrelation? correlation = null,
+        ProxyErrorType errorType = ProxyErrorType.None)
     {
         string sourceVersion = "history-fixture-v1";
         BackendResponseTelemetry telemetry = new(
@@ -599,6 +667,7 @@ public sealed class SqliteTechnicalHistoryStoreTests
             MetricValue.Exact(value * 10, MetricUnit.Milliseconds, MetricSource.Inspector, sourceVersion))
         {
             Correlation = correlation,
+            ErrorType = errorType,
         };
 
         MetricValue Exact(decimal metricValue, MetricUnit unit) =>

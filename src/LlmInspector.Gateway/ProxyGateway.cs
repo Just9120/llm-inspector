@@ -279,6 +279,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         long startedTimestamp = Stopwatch.GetTimestamp();
         int? statusCode = null;
         ProxyOutcome outcome = ProxyOutcome.RelayFailed;
+        ProxyErrorType errorType = ProxyErrorType.RelayFailure;
         BackendResponseTelemetry backendTelemetry = telemetryAdapter.CreateUnavailable();
         long? firstOutputTimestamp = null;
         RequestCorrelation? correlation = RequestCorrelationHeaderReader.Read(context.Request.Headers);
@@ -344,14 +345,26 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 context.RequestAborted).ConfigureAwait(false);
 
             outcome = ProxyOutcome.Completed;
+            errorType = ProxyErrorClassifier.FromResponse(statusCode.Value, responseCapture);
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             outcome = ProxyOutcome.ClientCancelled;
+            errorType = ProxyErrorType.ClientCancellation;
             context.Abort();
         }
-        catch (HttpRequestException)
+        catch (OperationCanceledException)
         {
+            outcome = context.Response.HasStarted
+                ? ProxyOutcome.RelayFailed
+                : ProxyOutcome.BackendUnavailable;
+            errorType = ProxyErrorType.Timeout;
+            statusCode ??= StatusCodes.Status504GatewayTimeout;
+            await AbortOrWriteSafeGatewayFailureAsync(context, statusCode.Value).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception)
+        {
+            errorType = ProxyErrorClassifier.FromTransport(exception, context.Response.HasStarted);
             if (context.Response.HasStarted)
             {
                 outcome = ProxyOutcome.RelayFailed;
@@ -364,11 +377,12 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                 await WriteSafeGatewayFailureAsync(context, statusCode.Value).ConfigureAwait(false);
             }
         }
-        catch (IOException)
+        catch (IOException exception)
         {
             outcome = ProxyOutcome.RelayFailed;
+            errorType = ProxyErrorClassifier.FromTransport(exception, context.Response.HasStarted);
             statusCode ??= StatusCodes.Status502BadGateway;
-            await AbortOrWriteSafeGatewayFailureAsync(context).ConfigureAwait(false);
+            await AbortOrWriteSafeGatewayFailureAsync(context, statusCode.Value).ConfigureAwait(false);
         }
         finally
         {
@@ -405,6 +419,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
                         responseCapture,
                         responseMediaType)
                     : AgentTurnTelemetry.Unavailable,
+                ErrorType = errorType,
             };
             await RecordSafelyAsync(observation).ConfigureAwait(false);
             TechnicalOperationGraph? operation = _operationTracker.Observe(observation);
@@ -670,7 +685,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             CancellationToken.None).ConfigureAwait(false);
     }
 
-    private static Task AbortOrWriteSafeGatewayFailureAsync(HttpContext context)
+    private static Task AbortOrWriteSafeGatewayFailureAsync(
+        HttpContext context,
+        int statusCode = StatusCodes.Status502BadGateway)
     {
         if (context.Response.HasStarted)
         {
@@ -678,7 +695,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             return Task.CompletedTask;
         }
 
-        return WriteSafeGatewayFailureAsync(context, StatusCodes.Status502BadGateway);
+        return WriteSafeGatewayFailureAsync(context, statusCode);
     }
 
     private async ValueTask RecordSafelyAsync(ProxyObservation observation)

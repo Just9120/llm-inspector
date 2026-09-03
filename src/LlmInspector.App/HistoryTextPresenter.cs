@@ -25,6 +25,11 @@ public static class HistoryTextPresenter
                 .Append(" | model=").Append(request.Model?.Value ?? "unavailable")
                 .Append(" | status=").Append(request.Outcome)
                 .Append(" | error=").Append(request.ErrorType)
+                .Append(" [").Append(request.ErrorType == HistoryErrorType.None
+                    ? "none"
+                    : request.IsRecurringError
+                        ? $"recurring x{request.ErrorGroupOccurrenceCount.ToString(CultureInfo.InvariantCulture)}"
+                        : "single failure").Append(']')
                 .Append(" | session=").Append(FullId(request.SessionId))
                 .Append(" | turn=").Append(FullId(request.CorrelatedTurnId))
                 .Append('/').Append(request.CorrelatedTurnSequence?.ToString(CultureInfo.InvariantCulture) ?? "unavailable")
@@ -109,6 +114,37 @@ public static class HistoryTextPresenter
             .Append(" | unavailable=")
             .Append(analytics.ModelLoads.UnavailableRequests.ToString(CultureInfo.InvariantCulture))
             .AppendLine();
+        if (analytics.ErrorGroups.Count == 0)
+        {
+            text.AppendLine("Error groups: none in the selected period.");
+        }
+        else
+        {
+            foreach (ErrorGroupSummary group in analytics.ErrorGroups)
+            {
+                text.Append("Error group ").Append(group.ErrorType)
+                    .Append(" | occurrences=").Append(group.Occurrences.ToString(CultureInfo.InvariantCulture))
+                    .Append(" | ").Append(group.IsRecurring ? "recurring" : "single failure")
+                    .Append(" | first=").Append(group.FirstObservedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture))
+                    .Append(" | last=").Append(group.LastObservedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture))
+                    .AppendLine();
+            }
+        }
+
+        foreach (CorrelatedErrorGroup group in analytics.ErrorCorrelations.ConfirmedGroups)
+        {
+            text.Append("Confirmed error correlation by ").Append(group.Basis)
+                .Append('=').Append(group.CorrelationId.ToString("N"))
+                .Append(" | occurrences=").Append(group.Occurrences.ToString(CultureInfo.InvariantCulture))
+                .Append(" | types=").Append(string.Join(',', group.ErrorTypes))
+                .Append(" | from=").Append(group.FirstObservedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture))
+                .Append(" | to=").Append(group.LastObservedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture))
+                .AppendLine();
+        }
+
+        text.Append("Uncorrelated errors: ")
+            .Append(analytics.ErrorCorrelations.UncorrelatedErrors.ToString(CultureInfo.InvariantCulture))
+            .AppendLine("; time proximity alone is not treated as proof.");
         foreach (AnalyticsTrendPoint point in analytics.Trend)
         {
             text.AppendLine(point.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
@@ -127,11 +163,32 @@ public static class HistoryTextPresenter
         return text.ToString().TrimEnd();
     }
 
-    public static string FormatComparison(AnalyticsComparison comparison) =>
-        $"{comparison.Metric}: baseline mean={FormatDecimal(comparison.Baseline.ArithmeticMean)} " +
-        $"(n={comparison.Baseline.SampleCount}), candidate mean={FormatDecimal(comparison.Candidate.ArithmeticMean)} " +
-        $"(n={comparison.Candidate.SampleCount}), delta={FormatDecimal(comparison.MeanDelta)}, " +
-        $"result={(comparison.IsConfirmedDegradation ? "CONFIRMED DEGRADATION" : "no confirmed degradation")}.";
+    public static string FormatComparison(AnalyticsComparison comparison)
+    {
+        StringBuilder text = new();
+        text.Append(comparison.Metric)
+            .Append(": baseline mean=").Append(FormatDecimal(comparison.Baseline.ArithmeticMean))
+            .Append(" (n=").Append(comparison.Baseline.SampleCount.ToString(CultureInfo.InvariantCulture))
+            .Append("), candidate mean=").Append(FormatDecimal(comparison.Candidate.ArithmeticMean))
+            .Append(" (n=").Append(comparison.Candidate.SampleCount.ToString(CultureInfo.InvariantCulture))
+            .Append("), delta=").Append(FormatDecimal(comparison.MeanDelta))
+            .Append(", result=")
+            .Append(comparison.IsConfirmedDegradation ? "CONFIRMED DEGRADATION" : "no confirmed degradation")
+            .Append('.');
+        foreach (ErrorFrequencyComparison error in comparison.RecurringErrorFrequency)
+        {
+            text.AppendLine()
+                .Append("Recurring ").Append(error.ErrorType)
+                .Append(": baseline=").Append(error.BaselineOccurrences.ToString(CultureInfo.InvariantCulture))
+                .Append(" (").Append(error.BaselineRatePercent.ToString("0.###", CultureInfo.InvariantCulture)).Append("%)")
+                .Append(", candidate=").Append(error.CandidateOccurrences.ToString(CultureInfo.InvariantCulture))
+                .Append(" (").Append(error.CandidateRatePercent.ToString("0.###", CultureInfo.InvariantCulture)).Append("%)")
+                .Append(", delta=").Append(error.RateDeltaPercentagePoints.ToString("+0.###;-0.###;0", CultureInfo.InvariantCulture))
+                .Append(" p.p.");
+        }
+
+        return text.ToString();
+    }
 
     public static string FormatClearPreview(HistoryClearPreview preview) =>
         $"Scope: {FormatScope(preview.Scope)}. " +

@@ -68,7 +68,7 @@ public sealed class AgentOperationTracker
                 return null;
             }
 
-            HistoryErrorType error = MapErrorType(observation.Outcome);
+            HistoryErrorType error = HistoryErrorClassifier.From(observation);
             state.Turns.Add(new TechnicalTurnRecord(
                 correlation.TurnId,
                 operationId,
@@ -142,23 +142,21 @@ public sealed class AgentOperationTracker
         ProxyObservation observation,
         DateTimeOffset completedAt)
     {
+        HistoryErrorType error = HistoryErrorClassifier.From(observation);
+        if (error != HistoryErrorType.None)
+        {
+            state.Status = observation.Outcome == ProxyOutcome.ClientCancelled
+                ? TechnicalOperationStatus.Cancelled
+                : TechnicalOperationStatus.Error;
+            state.ErrorType = error;
+            state.EndedAt = completedAt;
+            state.IsTerminal = true;
+            FailPendingTools(state, error, completedAt);
+            return;
+        }
+
         switch (observation.Outcome)
         {
-            case ProxyOutcome.ClientCancelled:
-                state.Status = TechnicalOperationStatus.Cancelled;
-                state.ErrorType = HistoryErrorType.ClientCancelled;
-                state.EndedAt = completedAt;
-                state.IsTerminal = true;
-                FailPendingTools(state, HistoryErrorType.ClientCancelled, completedAt);
-                break;
-            case ProxyOutcome.BackendUnavailable:
-            case ProxyOutcome.RelayFailed:
-                state.Status = TechnicalOperationStatus.Error;
-                state.ErrorType = MapErrorType(observation.Outcome);
-                state.EndedAt = completedAt;
-                state.IsTerminal = true;
-                FailPendingTools(state, state.ErrorType, completedAt);
-                break;
             case ProxyOutcome.Completed
                 when observation.AgentTurn.Completion == AgentCompletionDisposition.Final:
                 state.Status = TechnicalOperationStatus.Completed;
@@ -228,15 +226,6 @@ public sealed class AgentOperationTracker
         BitConverter.TryWriteBytes(bytes[12..], sequence);
         return new Guid(bytes);
     }
-
-    private static HistoryErrorType MapErrorType(ProxyOutcome outcome) => outcome switch
-    {
-        ProxyOutcome.Completed => HistoryErrorType.None,
-        ProxyOutcome.BackendUnavailable => HistoryErrorType.BackendUnavailable,
-        ProxyOutcome.ClientCancelled => HistoryErrorType.ClientCancelled,
-        ProxyOutcome.RelayFailed => HistoryErrorType.RelayFailed,
-        _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
-    };
 
     private sealed class OperationState(
         Guid operationId,

@@ -265,7 +265,9 @@ public partial class MainWindow : Window
         DiagnosticsSummaryText.Text = DiagnosticsSummaryTextPresenter.Format(
             _runtimeStatus,
             _observationSource?.Latest,
-            _historyState);
+            _historyState,
+            _resourceSource?.Latest,
+            _liveRequestState?.GetSnapshot());
     }
 
     private void RefreshResources()

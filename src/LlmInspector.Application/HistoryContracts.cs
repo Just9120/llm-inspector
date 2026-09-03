@@ -4,10 +4,16 @@ namespace LlmInspector.Application;
 
 public enum HistoryErrorType
 {
-    None,
-    BackendUnavailable,
-    ClientCancelled,
-    RelayFailed,
+    None = 0,
+    BackendUnavailable = 1,
+    ClientCancelled = 2,
+    RelayFailed = 3,
+    ConnectionRefused = 4,
+    ModelLoading = 5,
+    HttpApiError = 6,
+    Timeout = 7,
+    ContextOverflow = 8,
+    BackendCrash = 9,
 }
 
 public enum TechnicalOperationStatus
@@ -225,7 +231,14 @@ public sealed record RequestHistoryItem(
     IReadOnlyDictionary<HistoryMetric, MetricValue> Metrics,
     ModelLoadDisposition ModelLoadDisposition = ModelLoadDisposition.Unavailable,
     Guid? CorrelatedTurnId = null,
-    int? CorrelatedTurnSequence = null);
+    int? CorrelatedTurnSequence = null)
+{
+    public int ErrorGroupOccurrenceCount { get; init; }
+
+    public bool IsRecurringError =>
+        ErrorType != HistoryErrorType.None &&
+        ErrorGroupOccurrenceCount >= HistoryPolicies.RecurringErrorMinimumOccurrences;
+}
 
 public sealed record TechnicalOperationDetail(
     TechnicalOperationRecord Operation,
@@ -280,6 +293,10 @@ public sealed record PeriodAnalytics(
         : this(filter, trend, new ModelLoadBreakdown(0, 0, 0))
     {
     }
+
+    public IReadOnlyList<ErrorGroupSummary> ErrorGroups { get; init; } = [];
+
+    public ErrorCorrelationSummary ErrorCorrelations { get; init; } = ErrorCorrelationSummary.Empty;
 }
 
 public sealed record AnalyticsComparison(
@@ -287,7 +304,48 @@ public sealed record AnalyticsComparison(
     MetricAggregate Baseline,
     MetricAggregate Candidate,
     decimal? MeanDelta,
-    bool IsConfirmedDegradation);
+    bool IsConfirmedDegradation)
+{
+    public IReadOnlyList<ErrorFrequencyComparison> RecurringErrorFrequency { get; init; } = [];
+}
+
+public sealed record ErrorGroupSummary(
+    HistoryErrorType ErrorType,
+    int Occurrences,
+    DateTimeOffset FirstObservedAt,
+    DateTimeOffset LastObservedAt)
+{
+    public bool IsRecurring => Occurrences >= HistoryPolicies.RecurringErrorMinimumOccurrences;
+}
+
+public sealed record ErrorFrequencyComparison(
+    HistoryErrorType ErrorType,
+    int BaselineOccurrences,
+    int CandidateOccurrences,
+    decimal BaselineRatePercent,
+    decimal CandidateRatePercent,
+    decimal RateDeltaPercentagePoints);
+
+public enum ErrorCorrelationBasis
+{
+    Operation,
+    Session,
+}
+
+public sealed record CorrelatedErrorGroup(
+    ErrorCorrelationBasis Basis,
+    Guid CorrelationId,
+    DateTimeOffset FirstObservedAt,
+    DateTimeOffset LastObservedAt,
+    IReadOnlyList<HistoryErrorType> ErrorTypes,
+    int Occurrences);
+
+public sealed record ErrorCorrelationSummary(
+    IReadOnlyList<CorrelatedErrorGroup> ConfirmedGroups,
+    int UncorrelatedErrors)
+{
+    public static ErrorCorrelationSummary Empty { get; } = new([], 0);
+}
 
 public sealed record HistoryClearScope
 {
@@ -335,6 +393,8 @@ public sealed record HistoryClearPreview(
 public static class HistoryPolicies
 {
     public const int MinimumAggregateSamples = 3;
+
+    public const int RecurringErrorMinimumOccurrences = 2;
 
     public const int RetentionDeleteBatchSize = 500;
 

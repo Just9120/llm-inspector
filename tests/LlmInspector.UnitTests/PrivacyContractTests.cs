@@ -14,6 +14,7 @@ public sealed class PrivacyContractTests
         nameof(ProxyObservation.Duration),
         nameof(ProxyObservation.HttpStatusCode),
         nameof(ProxyObservation.Outcome),
+        nameof(ProxyObservation.ErrorType),
         nameof(ProxyObservation.Client),
         nameof(ProxyObservation.BackendTelemetry),
         nameof(ProxyObservation.Correlation),

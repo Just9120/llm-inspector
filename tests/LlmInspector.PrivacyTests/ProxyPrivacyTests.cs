@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using LlmInspector.Adapters;
 using LlmInspector.Application;
+using LlmInspector.Diagnostics;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
 using LlmInspector.TestInfrastructure;
@@ -113,6 +114,7 @@ public sealed class ProxyPrivacyTests
             nameof(ProxyObservation.ContextChangeTokens),
             nameof(ProxyObservation.Correlation),
             nameof(ProxyObservation.Duration),
+            nameof(ProxyObservation.ErrorType),
             nameof(ProxyObservation.HttpStatusCode),
             nameof(ProxyObservation.Outcome),
             nameof(ProxyObservation.RequestId),
@@ -129,6 +131,42 @@ public sealed class ProxyPrivacyTests
         Assert.IsFalse(typeof(ProxyObservation).GetProperties().Any(property => property.PropertyType == typeof(string)));
     }
 
+    [TestMethod]
+    public async Task ErrorClassifierAndDiagnosticsDiscardBackendErrorMessageContent()
+    {
+        string canary = $"private-error-message-{Guid.NewGuid():N}";
+        string backendBody = $"{{\"error\":{{\"type\":\"context_overflow\",\"message\":\"{canary}\"}}}}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(backendBody, context.RequestAborted);
+        });
+        InMemoryObservationSink sink = new();
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            sink);
+        await gateway.StartAsync();
+        using HttpClient client = new()
+        {
+            BaseAddress = gateway.ListeningAddress,
+            Timeout = TimeSpan.FromSeconds(15),
+        };
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.ChatCompletionsPath,
+            new StringContent("{}", Encoding.UTF8, "application/json"));
+        string relayed = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.Recorded.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        IReadOnlyList<DiagnosticConclusion> conclusions = DiagnosticRuleset.Default.Evaluate(
+            new DiagnosticInput(observation, null, null));
+
+        StringAssert.Contains(relayed, canary, StringComparison.Ordinal);
+        Assert.AreEqual(ProxyErrorType.ContextOverflow, observation.ErrorType);
+        Assert.DoesNotContain(canary, JsonSerializer.Serialize(observation), StringComparison.Ordinal);
+        Assert.DoesNotContain(canary, JsonSerializer.Serialize(conclusions), StringComparison.Ordinal);
+    }
+
     private sealed class FileObservationSink(string directory) : IProxyObservationSink
     {
         public TaskCompletionSource<ProxyObservation> Recorded { get; } =
@@ -142,6 +180,18 @@ public sealed class ProxyPrivacyTests
             string json = JsonSerializer.Serialize(observation);
             await File.WriteAllTextAsync(path, json, cancellationToken);
             Recorded.TrySetResult(observation);
+        }
+    }
+
+    private sealed class InMemoryObservationSink : IProxyObservationSink
+    {
+        public TaskCompletionSource<ProxyObservation> Recorded { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken)
+        {
+            Recorded.TrySetResult(observation);
+            return ValueTask.CompletedTask;
         }
     }
 }
