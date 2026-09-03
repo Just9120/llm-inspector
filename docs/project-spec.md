@@ -1,9 +1,10 @@
 # LLM Inspector — canonical product contract
 
 > Contract status: `RATIFIED`  
-> Contract version: `1.1`
+> Contract version: `1.2`
 > Ratified by: explicit user instruction от `2026-09-02`  
 > Compatibility amendment: approved `GOAL-002` от `2026-09-02`
+> Delivery amendments: explicit user decisions от `2026-09-03`–`2026-09-04`
 > Source revision verified: `ANLCKQnzyDom5DeN3wi-2dxPnK0emPJPFJh5F8R-W-gdIOdgbB97DBs9sGlbKtyj4pIU-4jyzwSBurSlDjbO0NS94cy-90xjHspDIs7Vmtc`
 
 ## 1. Назначение и authority
@@ -20,8 +21,10 @@ Upstream документ остаётся provenance source, но после р
 - Initial release наблюдает локальные backends на том же Windows PC и не управляет lifecycle моделей/backends.
 - Приложение помогает понять текущую стадию работы модели, причины медленного ответа или apparent stall и ограничивающий ресурс.
 - Пользовательский content не является telemetry: prompt, response, reasoning, tool arguments, tool results и user code не должны попадать в persistence, indexes, logs, analytics или diagnostic snapshot.
-- Initial release не требует server deployment. `DEPLOY` и `LIVE` имеют `N/A` в feature epic DoD; Windows package/release validation относится к отдельному будущему release Goal.
+- Initial release не требует server deployment. `DEPLOY` и `LIVE` имеют `N/A` в feature epic DoD; Windows package/release validation относится к `E01-AC01`, а не к runtime deployment.
 - CD на runtime host отключён. CI и будущий build/release pipeline остаются отдельными concerns.
+- Product release `v1.0` остаётся observation-only и не содержит lifecycle commands. Backend/model lifecycle management начинается с `v1.1`; release candidates `v1.0` и `v1.1` валидируются раздельно.
+- Текущий distribution target — GitHub Releases: unsigned portable self-contained single-file `win-x64` executable без installer/admin requirement, с SHA-256, SBOM и provenance. Update/download выполняется вручную; SmartScreen warning документируется. Microsoft Store/MSIX/trusted signing/automatic Store updates отложены в отдельный release backlog и не блокируют `E01-AC01`.
 
 ### Утверждённая support matrix initial release
 
@@ -43,6 +46,49 @@ Upstream документ остаётся provenance source, но после р
 6. **Fault isolation.** Ошибка collector/Inspector не должна обрывать или маскировать client-to-backend request.
 7. **Evidence before READY.** Epic получает `🟩 READY` только при выполнении всех своих AC и всех required Evidence.
 
+### 3.1. Утверждённые performance profiles
+
+Пользователь выбирает один из трёх built-in profiles либо создаёт user-friendly custom profile. Sampling interval: `Бережный` — `2 s`, `Сбалансированный` — `1 s` и является default/recommended, `Детальный` — `500 ms`; `Свой профиль` допускает `250 ms`–`10 s`, валидируется, предупреждает о риске overhead и имеет reset. Custom profile не является release Evidence и не может превратить unavailable/failed mandatory metric в pass.
+
+| Metric / gate | Бережный | Сбалансированный | Детальный |
+|---|---:|---:|---:|
+| Active CPU mean / P95, percentage points total logical capacity | `1.5 / 4` | `3 / 8` | `5 / 12` |
+| Process-tree private bytes P95 | `192 MiB` | `256 MiB` | `384 MiB` |
+| Active RAM growth after warm-up / 30 min | `16 MiB` | `32 MiB` | `64 MiB` |
+| GPU utilization delta mean / P95, percentage points | `1 / 3` | `2 / 5` | `3 / 8` |
+| Dedicated VRAM P95 | `128 MiB` | `192 MiB` | `256 MiB` |
+| Disk writes | `1 MiB/min` | `2 MiB/min` | `5 MiB/min` |
+| Throughput regression median / P95 | `3% / 5%` | `5% / 10%` | `8% / 15%` |
+| Idle CPU mean / P95 | `0.25% / 1%` | `0.5% / 2%` | `1% / 4%` |
+| Idle RAM growth / hour | `8 MiB` | `16 MiB` | `32 MiB` |
+| Idle disk writes / hour | `0.25 MiB` | `1 MiB` | `5 MiB` |
+| Idle wakeups mean / P95 per second | `2 / 8` | `5 / 15` | `15 / 30` |
+
+Каждый built-in profile обязан отдельно пройти собственные gates. Controlled Windows protocol: idle после `10 min` warm-up измеряется `1 h`; active measurements используют минимум `5` paired `AB/BA` repetitions; gates применяются к median и указанному P95. Contaminated run исключается только по заранее определённым OS update/antivirus/thermal/foreign-load signals. Mandatory unavailable metric не считается pass. GPU gate обязателен на supported discrete GPU с reliable source. Hosted CI ловит только gross regressions; release Evidence формируется на controlled Windows hardware. TTFT и total latency измеряются, но canonical product gate — throughput regression.
+
+Reference hardware/configuration: Windows 11 Pro `25H2` x64 build `26200.9168`; Ryzen 7 9800X3D (`8C/16T`, max `4700 MHz`); `64 GB` nominal RAM (`61.7 GiB` available); NVIDIA RTX 5060 Ti `16311 MiB`, driver `610.74`, плюс integrated AMD Radeon; system Samsung SSD 970 EVO Plus 1TB NVMe (`931.5 GiB`) для app/DB/fixtures; WDC WD30EZRZ 3TB HDD документируется, но не используется как benchmark storage; Windows Balanced power plan `381b4222-f694-41f0-9685-ff5bb260df2e`. WMI `4 GB` NVIDIA value не используется вместо verified `nvidia-smi` value. Это controlled reference, не minimum hardware requirement.
+
+Reference runtime/model: Ollama `0.33.2`, executable SHA-256 `c79df1e0c1bfa10ed813c7030ac4c3ba38bb0e350bd7322d9bb58320343235c6`; installed community model `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M`, digest `6fac2f98fdf716f292de04c8554681b1e1f3a0d71445e374afebb3433911f705`, GGUF/Q4_K_M, `27.3B`, size `17741860746` bytes, model context capability `262144`, fixed benchmark context `8192`. Model не распространяется с Inspector; из-за размера больше reference VRAM ожидается hybrid offload. Workloads: idle, cold load, hybrid GPU/CPU inference, CPU-only, streaming/non-streaming, concurrency `1/4`, tools/fragmented stream и collector failure на immutable synthetic corpus с deterministic seed/output, когда supported.
+
+### 3.2. Утверждённый lifecycle и compatibility contract
+
+- Managed built-ins: Ollama, llama.cpp и LM Studio; generic observation доступно любому literal-loopback OpenAI-compatible runtime. Extension — capability-based community adapters.
+- Start/stop/restart разрешены только для Inspector-owned processes. Externally started backend остаётся observation-only на process level. Model operations используют только official version-pinned interfaces и explicit target; arbitrary commands, arbitrary args/env, privileged service management, wildcard/public bind и automatic backend/model download/install/update запрещены.
+- Discovery использует official standard paths/PATH и показывает version/path/endpoint перед подтверждением; fallback — manual file picker. Model enumeration использует official API/CLI, для llama.cpp — explicit `.gguf` picker.
+- Runtime parameters ограничены allowlist: Ollama — local port, context, keep-alive, parallel requests, max loaded models, max queue; llama.cpp — local port, context, GPU layers `auto/off/all/N`, CPU threads, parallel slots; LM Studio — local port, context, GPU offload `auto/off/max/0..1`, model TTL, model ID. Unsupported controls unavailable; default — native backend value; reset возвращает backend default.
+- Operation сериализуются per backend. Start idempotent; port conflict не убивает occupant. Stop/restart/model switch блокируются при active Inspector requests и показывают их count. Graceful official stop предшествует force; force разрешён только exact PID при совпадении start time и executable identity. Restart использует exact verified executable и last valid config. Readiness проверяется exact endpoint; failed start очищает только partial owned process. Model load успешен только после official identity confirmation. Crash даёт typed `Crashed` и manual one-click restart; auto-restart не входит в scope.
+- Canonical machine-readable matrix — `config/runtime-compatibility.json`, встраиваемая в Inspector без unsigned remote updates. Она фиксирует exact runtime version, capabilities, Windows matrix, date, Inspector revision, sanitized Evidence, limitations и status. UI statuses: `Проверено`, `Совместимо`, `Только наблюдение`, `Не поддерживается`. Unknown/newer version допускается operation-by-operation только после safe capability probes и не называется verified; community report имеет `community-reported` до local reproduction.
+- First version baselines: Ollama `0.33.2` — `VERIFIED`; llama.cpp `b10516` — target `PENDING_EXTERNAL_GATE`; LM Studio `lms` CLI `0.0.47+` — target, exact app/runtime pin определяется первым test и до него остаётся `PENDING_EXTERNAL_GATE`. Inspector не обновляет runtime автоматически.
+
+### 3.3. Утверждённый remote и conditional-platform contract
+
+- Verified remote transport — Tailscale. Inspector продолжает слушать только `127.0.0.1`; private HTTPS exposure внутри tailnet выполняет Tailscale Serve. Funnel, public Internet, wildcard bind и direct backend port exposure запрещены.
+- Remote access выключен по умолчанию. Дополнительно требуется random `256-bit` application bearer token из Windows current-user protected storage; token показывается только при creation/rotation. Tailscale install/login/ACL остаются explicit user operations; Inspector предоставляет wizard/status и не меняет tailnet.
+- Backend на другом PC задаётся explicit remote configuration через private encrypted overlay. Network/transport latency отделяется от inference; недоступная remote telemetry не заменяется local attribution. LibreChat использует custom OpenAI endpoint/token. Другие WireGuard/private overlays имеют status `Compatible`, но не first verified profile.
+- Для `BACKLOG-02` server CD отсутствует, поэтому `DEPLOY: N/A`; `LIVE: ✅` обязательно через фактический encrypted Windows↔VPS/second-PC test. Недоступность такой среды после merge означает `PENDING_EXTERNAL_GATE`, а не pass.
+- Linux/macOS не требуются без подтверждённого demand: `BACKLOG-03` остаётся `BACKLOG`, `0/3` и не блокирует Windows work.
+- OpenCode, Hermes и Open WebUI используют уже существующие `/v1/models` и `/v1/chat/completions`; новый protocol сейчас не нужен, поэтому `BACKLOG-04` остаётся `BACKLOG`, `0/2`. Для OpenCode используется `@ai-sdk/openai-compatible`. Configuration examples и automated contract tests входят в релевантные implementation PR; каждый manual client E2E подтверждается отдельно в финальной manual-validation phase, иначе остаётся `PENDING_EXTERNAL_GATE`. `/v1/responses`, Anthropic Messages и Ollama native generation вне текущего scope.
+
 ## 4. Status, readiness и Evidence
 
 ```text
@@ -55,14 +101,14 @@ Evidence status: ✅ | ◐ | ❌ | — | N/A
 - Частичное выполнение AC не даёт дробного кредита: AC либо выполнен, либо нет.
 - Initial release readiness использует только `EPIC-01`–`EPIC-12`.
 - Full roadmap readiness использует initial release и `BACKLOG-01`–`BACKLOG-06`.
-- Для всех feature epics required Evidence: `SPEC`, `CODE`, `TEST`, `CI`. `DEPLOY` и `LIVE`: `N/A` по текущему DoD.
+- Для всех feature epics required Evidence: `SPEC`, `CODE`, `TEST`, `CI`. `DEPLOY` и `LIVE`: `N/A`, кроме обязательного `LIVE` для `BACKLOG-02` согласно его DoD.
 - `SPEC: ◐` допускается при ратифицированном intent, но открытом измеримом threshold/compatibility decision; такой epic не может стать READY до закрытия gap.
 
 ## 5. Initial release epics
 
 ### EPIC-01 — Windows application и границы первой версии
 
-**Status:** 🟦 IN PROGRESS ⛔
+**Status:** 🟦 IN PROGRESS
 **Goal:** предоставить Windows desktop application для observation/analytics/diagnostics локальных LLM без lifecycle management.
 
 Acceptance criteria:
@@ -299,7 +345,7 @@ Definition of Done: `10/10` AC, включая automated negative privacy tests;
 
 ### EPIC-12 — Reliability, overhead и regression correlation
 
-**Status:** 🟦 IN PROGRESS ⛔
+**Status:** 🟦 IN PROGRESS
 **Goal:** не ухудшать inference заметно, изолировать collector failures и сохранять историю корректной.
 
 Acceptance criteria:
@@ -322,7 +368,7 @@ Definition of Done: `13/13` AC, утверждённые numeric performance/idl
 
 ## 6. Canonical product backlog epics
 
-Backlog requirements согласованы, но их implementation не начата и не авторизована. Они не входят в initial release readiness.
+Backlog requirements согласованы и не входят в initial release readiness. `BACKLOG-01` и `BACKLOG-02` авторизованы в активной `GOAL-005`; `BACKLOG-03`/`BACKLOG-04` остаются conditional backlog, `BACKLOG-05`/`BACKLOG-06` уже завершены.
 
 ### BACKLOG-01 — Backend/model lifecycle management
 
@@ -350,7 +396,7 @@ Definition of Done: `5/5` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 - `B02-AC08`: Enabling remote access не публикует LLM backend endpoint напрямую в Internet. [source: `UP-C07-06`]
 - `B02-AC09`: При недоступности remote telemetry component request data не получает fabricated local attribution. [source: `UP-C02-10`]
 
-Definition of Done: `9/9` AC, security/threat-model review и SPEC/CODE/TEST/CI `✅`; DEPLOY/LIVE applicability должна быть пересмотрена при authorization этого epic.
+Definition of Done: `9/9` AC, security/threat-model review и SPEC/CODE/TEST/CI `✅`, `DEPLOY: N/A`, `LIVE: ✅` по фактическому encrypted Windows↔VPS/second-PC test.
 
 ### BACKLOG-03 — Linux и macOS
 
@@ -373,7 +419,7 @@ Definition of Done: `2/2` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-05 — Multiple GPUs
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 
 - `B05-AC01`: Inspector обнаруживает несколько supported GPU devices. [source: `UP-C04-03`]
 - `B05-AC02`: Resource UI показывает metrics раздельно для каждого device. [source: `UP-C04-03`]
@@ -393,11 +439,11 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13` и BACKLOG-06 `3/3`. Active BACKLOG-05 candidate выполняет `B05-AC01..03`: bounded multi-device discovery, separate per-device metrics и explicit unavailable workload attribution для device-wide source. `E12-AC01..06`, `E01-AC01` и другие product AC без фактического Evidence не кредитуются.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `ecdb542281ca5ad989de0540bf59939f42af8eb7` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`. Ратификация budgets, fixtures и security/release boundaries закрывает SPEC gaps, но сама по себе не выполняет `E12-AC01..06`, `E01-AC01`, `B01-*` или `B02-*`; AC без CODE/TEST/CI и применимого LIVE Evidence не кредитуются.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS ⛔ | 3/4 | 75% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -408,25 +454,28 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ◐ | — | — | — | —* | —* |
-| BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
+| BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ✅ | — | — | — | N/A | — |
+| BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **—** |
 
-`*` Для remote backlog applicability DEPLOY/LIVE ещё не определена: защищённый remote component может потребовать operational Evidence, хотя initial Windows desktop release не имеет CD target.
+Для remote backlog runtime deployment отсутствует (`DEPLOY: N/A`), но фактический encrypted two-host test обязателен (`LIVE: ✅`) до READY.
 
-## 8. Remaining SPEC gaps
+## 8. Resolved decisions и external gates
 
-Scope согласован; gaps ниже не меняют перечень features, но блокируют READY соответствующих epics:
+Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
 
-1. `EPIC-12`: утвердить numeric CPU/RAM/GPU/disk/idle/throughput performance budgets и frozen reference hardware/workload fixtures; measurement protocol уже определён в `docs/architecture.md`.
-2. `BACKLOG-02`: определить remote topology, identity/authentication model и required DEPLOY/LIVE Evidence до начала реализации.
-3. `BACKLOG-03`: определить supported Linux distributions/macOS versions только после demand gate.
+1. `EPIC-12`: реализовать user-friendly profiles/measurement harness и выполнить controlled reference runs для `E12-AC01..06`.
+2. `EPIC-01`: собрать exact portable release candidate и вручную подтвердить Windows 11 `25H2` Home/Pro matrix.
+3. `BACKLOG-01`: llama.cpp и LM Studio exact versions остаются `PENDING_EXTERNAL_GATE` до установки и manual compatibility tests; это не блокирует safe code PR.
+4. `BACKLOG-02`: encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE`; это не блокирует safe code PR.
+5. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
+6. `BACKLOG-04`: новый protocol не нужен для OpenCode/Hermes/Open WebUI; manual client E2E выполняются в финальной validation phase без readiness credit по `B04-*`.
 
 Versioned diagnostic thresholds, minimum sample size и notification anti-spam policy являются implementation/configuration decisions, но должны быть explicit и boundary-tested до READY.
 
@@ -436,16 +485,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T10:37:48Z`.
+- Last recalculation: `2026-09-03T20:59:53Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`; all completed successfully.
-- Code/tests/runtime: merged baseline through BACKLOG-06 is exact-main CI verified. Active BACKLOG-05 candidate adds bounded all-device NVIDIA discovery, separate correlated persistence/UI metrics and explicit unavailable workload attribution for the device-wide source. Full exact SDK `10.0.400` local CI-equivalent passed: locked normal/RID restores, format verification, Release build without warnings/errors, `211/211` tests without skips, clean self-contained `win-x64` publish and smoke exit `0`; exact-revision CI remains pending.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`; all completed successfully.
+- Code/tests/runtime: merged baseline through BACKLOG-05/06 is exact-main CI verified. PR #18 head `d834215da8c31a2331bfee880e2b712379b4844e`, merge `ecdb542281ca5ad989de0540bf59939f42af8eb7` and exact-main CI `33746269521` confirm bounded all-device NVIDIA discovery, separate correlated persistence/UI metrics and explicit unavailable workload attribution. Exact SDK `10.0.400` CI passed `211/211` tests without skips plus locked restores, format, Release build, self-contained `win-x64` publish and smoke.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
-- Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; exact-main CI confirmed, numeric `E12-AC01..06` remain blocked and uncredited).
+- Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; exact-main CI confirmed, `E12-AC01..06` remain pending implementation/controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-005 IN_PROGRESS`; BACKLOG-06 delivered through PR [#17](https://github.com/Just9120/llm-inspector/pull/17), merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574`; active BACKLOG-05 branch is `codex/goal-005-backlog-05` from that base.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; BACKLOG-05 delivered through PR [#18](https://github.com/Just9120/llm-inspector/pull/18), merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`, exact-main CI `33746269521`. Decision-ratification branch `codex/goal-005-ratify-decisions` starts from that verified base before E12/E01/B01/B02 implementation PRs.

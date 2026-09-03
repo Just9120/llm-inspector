@@ -19,12 +19,14 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03/04/05/06/07/08/09/10/11 имеют terminal PR/main CI; EPIC-12 доставлен partial `7/13`, EPIC-01 — partial `3/4`, а их release/performance blockers остаются без кредита;
+- EPIC-02/03/04/05/06/07/08/09/10/11 и BACKLOG-05/06 имеют terminal PR/main CI; EPIC-12 доставлен partial `7/13`, EPIC-01 — partial `3/4`; performance/release contracts утверждены, но оставшиеся AC не получают credit до implementation и фактических measurements/runtime Evidence;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main` `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`: `132/139 = 95.0%` initial release и `135/164 = 82.3%` full roadmap. Active BACKLOG-05 candidate выполняет `B05-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `138/164 = 84.1%`; полный local CI-equivalent прошёл `211/211` tests, exact-revision CI остаётся следующим gate. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
+Текущая readiness на exact merged `main` `ecdb542281ca5ad989de0540bf59939f42af8eb7`: `132/139 = 95.0%` initial release и `138/164 = 84.1%` full roadmap. PR #18 и exact-main CI `33746269521` подтвердили BACKLOG-05 и `211/211` tests. Следующий активный scope — `21` AC: `E01-AC01`, `E12-AC01..06`, `B01-AC01..05`, `B02-AC01..09`; ratification decisions не считаются выполнением этих AC.
+
+Утверждённый release path: observation-only `v1.0` как unsigned portable self-contained single-file `win-x64` executable в GitHub Releases с SHA-256, SBOM/provenance и документированным SmartScreen warning; lifecycle начинается с `v1.1`. Store/MSIX/signing/automatic updates отложены. Secure remote target использует loopback-only Inspector, private Tailscale Serve и отдельный application token; public exposure запрещён. Linux/macOS и новые API protocols сейчас не реализуются.
 
 ## Быстрый старт
 
@@ -87,7 +89,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 
 `artifacts/` — локальный disposable output и не коммитится. CI выполняет ту же последовательность в [`.github/workflows/ci.yml`](.github/workflows/ci.yml), не публикует artifacts и не содержит deployment steps.
 
-Self-contained `win-x64` publish из этой команды является validation build, а не поддерживаемым release package. Clean install, upgrade, launch и другие release-matrix checks на Windows 11 25H2 Home/Pro требуют отдельного release gate; signing identity и distribution channel пока не утверждены.
+Self-contained `win-x64` publish из этой команды пока является validation build, а не опубликованным release artifact. Поддерживаемый portable single-file package появится только после reproducible artifact/SHA-256/SBOM/provenance automation и exact-artifact checks на Windows 11 25H2 Home/Pro. Текущий канал утверждён как GitHub Releases; package unsigned, поэтому SmartScreen warning должен быть показан пользователю.
 
 ## Навигация
 
@@ -114,4 +116,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16; BACKLOG-06 — через PR #17 в verified `main` commit `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. BACKLOG-05 candidate находится в отдельной локальной ветке.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16; BACKLOG-06 — через PR #17; BACKLOG-05 — через [PR #18](https://github.com/Just9120/llm-inspector/pull/18) в verified `main` commit `ecdb542281ca5ad989de0540bf59939f42af8eb7`.

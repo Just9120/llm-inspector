@@ -22,6 +22,22 @@
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
 
+## GOAL-005 / BACKLOG-05 — Multiple GPUs
+
+- **Product outcome:** `READY 3/3`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#18](https://github.com/Just9120/llm-inspector/pull/18), head `d834215da8c31a2331bfee880e2b712379b4844e`, PR CI `33746022880` success.
+- **Merge/exact-main Evidence:** merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`; exact-main CI `33746269521` success with every required step.
+- **Delivered:** bounded discovery of up to 16 distinct supported NVIDIA devices, per-device request-correlated persistence and live/history presentation, and explicit `workload attribution=unavailable` for device-wide `nvidia-smi` data.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `211/211` tests without skips, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/18#issuecomment-5524584973); [external-gate checkpoint](https://github.com/Just9120/llm-inspector/pull/18#issuecomment-5524607625).
+
+## GOAL-005 / superseded pre-ratification checkpoint
+
+- **Archived:** `2026-09-03T20:59:53Z` after recovery from PR #18 and explicit owner decisions.
+- **Superseded state:** base `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, branch `codex/goal-005-backlog-05`, local candidate with pending CI, plus unresolved E12/release/remote decisions.
+- **Replacement:** verified base `ecdb542281ca5ad989de0540bf59939f42af8eb7`; all performance/release/lifecycle/remote/version decisions are canonicalized in contract `1.2`; active scope is 21 AC, while B03/B04 remain conditional backlog by explicit user decision.
+
 ## GOAL-005 / BACKLOG-06 — Analytics export
 
 - **Product outcome:** `READY 3/3`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.

@@ -349,7 +349,7 @@ Validation and rollback/stop criteria
 
 ## 16. Project CI/CD profile
 
-Профиль ниже заполнен подтверждёнными данными и explicit user decisions от `2026-09-02`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack/release model, а `GOAL-003` реализовала reproducible repository и CI foundation. Windows release остаётся disabled до отдельной Goal, поэтому её operational поля имеют `N/A`, а не вымышленные значения. Фактический PR run/CI Evidence фиксируется в `docs/delivery-plan.md`.
+Профиль ниже заполнен подтверждёнными repository facts и explicit user decisions от `2026-09-02`–`2026-09-04`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack, `GOAL-003` реализовала reproducible repository/CI foundation, а текущая `GOAL-005` утвердила portable GitHub Releases target. Release automation ещё не реализована, поэтому `windows_release.enabled` остаётся `false`; approved target поля не являются claim о существующем workflow. Фактический PR/run/artifact Evidence фиксируется в `docs/delivery-plan.md`.
 
 ```yaml
 profile_version: 1
@@ -367,7 +367,7 @@ architecture_design:
 repository:
   expected_repository: https://github.com/Just9120/llm-inspector
   production_branch: main
-  release_tag_policy: N/A # windows_release.enabled is false
+  release_tag_policy: vMAJOR.MINOR.PATCH[-prerelease] # approved target; automation not implemented
 
 ci:
   workflow: .github/workflows/ci.yml
@@ -397,13 +397,15 @@ artifacts:
 
 windows_release:
   enabled: false
-  installable_unit: signed and timestamped MSIX
-  validated_build_unit: self-contained win-x64 publish output
-  trusted_trigger: N/A
-  signing_identity: N/A # external decision required before enabling release
-  distribution_channel: N/A # external decision required before enabling release
-  update_channel: N/A # not a ratified initial-release feature
-  package_validation: N/A
+  approved_target: portable unsigned self-contained single-file win-x64 executable
+  validated_build_unit: exact hashed self-contained win-x64 publish output
+  version_boundary: observation-only v1.0; lifecycle starts v1.1
+  first_candidate: v1.0.0-rc.1 before BACKLOG-01 merge
+  trusted_trigger: exact SemVer tag after branch/main validation # target, workflow absent
+  signing_identity: N/A # unsigned portable channel; trusted signing belongs to separate Store/MSIX backlog
+  distribution_channel: GitHub Releases # approved target, not yet automated
+  update_channel: manual download # automatic Store updates are deferred
+  package_validation: SHA-256 + SBOM + provenance + SmartScreen disclosure + Windows 11 25H2 Home/Pro exact-artifact run
   applicable_evidence: BUILD_PACKAGE_INSTALL # DEPLOY/LIVE remain N/A
 
 deployment:
@@ -430,9 +432,9 @@ credentials:
   required_secret_names: N/A # CD secret names only
 
 stateful:
-  services: N/A # SQLite is design-only and not implemented in foundation
-  migration_class: N/A
-  backup_recovery_contract: N/A
+  services: local per-user SQLite WAL in %LOCALAPPDATA%/LLM Inspector/data/inspector.db
+  migration_class: forward schema migrations through v5; single application writer
+  backup_recovery_contract: startup quick_check plus normal/process-kill committed-history recovery tests; user backup workflow remains deferred
 
 recovery:
   rollback_or_forward_fix: N/A # server deployment recovery
