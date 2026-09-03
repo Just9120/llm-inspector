@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using LlmInspector.Application;
 using LlmInspector.Domain;
 
 namespace LlmInspector.App;
@@ -28,6 +29,19 @@ public static class RequestDetailTextPresenter
         text.Append(GetBackendLabel(telemetry.Backend));
         text.Append(" | Model: ");
         text.Append(telemetry.Model?.Value ?? "unavailable");
+        text.Append(" | Error origin: ");
+        text.Append(HistoryErrorClassifier.OriginFrom(observation));
+
+        if (observation.RuntimeFacts is TechnicalRuntimeFacts runtimeFacts)
+        {
+            text.AppendLine();
+            text.Append("Runtime | config: ").Append(runtimeFacts.ConfigurationId.Value)
+                .Append(" | Inspector: ").Append(runtimeFacts.InspectorVersion?.Value ?? "unavailable")
+                .Append(" | backend: ").Append(runtimeFacts.BackendVersion?.Value ?? "unavailable")
+                .Append(" | client: ").Append(runtimeFacts.ClientVersion?.Value ?? "unavailable")
+                .Append(" | model: ").Append(runtimeFacts.ModelVersion?.Value ?? "unavailable")
+                .Append(" | GPU driver: ").Append(runtimeFacts.GpuDriverVersion?.Value ?? "unavailable");
+        }
 
         text.AppendLine();
         text.Append("Tokens | Input: ");

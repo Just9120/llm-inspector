@@ -389,6 +389,41 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task ResourceCollectorStartCallbackCompletionAndDisposalFailuresCannotBreakRelay()
+    {
+        const string backendBody = "{\"ok\":true}";
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(
+            context => context.Response.WriteAsync(backendBody));
+        IRequestResourceMonitor[] failingCollectors =
+        [
+            new ThrowingStartResourceMonitor(),
+            new ThrowingSessionResourceMonitor(),
+        ];
+
+        foreach (IRequestResourceMonitor collector in failingCollectors)
+        {
+            CollectingObservationSink sink = new();
+            await using ProxyGateway gateway = ProxyGateway.Create(
+                ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+                sink,
+                resourceMonitor: collector);
+            await gateway.StartAsync();
+            using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+            using HttpResponseMessage response = await client.PostAsync(
+                ProxyGateway.ChatCompletionsPath,
+                new StringContent("{}", Encoding.UTF8, "application/json"));
+            string actual = await response.Content.ReadAsStringAsync();
+            ProxyObservation observation = await sink.NextObservation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            response.EnsureSuccessStatusCode();
+            Assert.AreEqual(backendBody, actual);
+            Assert.AreEqual(ProxyOutcome.Completed, observation.Outcome);
+            Assert.IsNotNull(observation.RuntimeFacts);
+        }
+    }
+
+    [TestMethod]
     [DataRow(BackendKind.Ollama, "ollama-fixture", 11, 7, 18)]
     [DataRow(BackendKind.LlamaCpp, "llama-cpp-fixture", 13, 8, 21)]
     [DataRow(BackendKind.LmStudio, "lm-studio-fixture", 17, 9, 26)]
@@ -1159,6 +1194,7 @@ public sealed class ProxyGatewayIntegrationTests
         Assert.AreEqual(Encoding.UTF8.GetByteCount(requestBody), sample.ClientToBackendBytes.Value);
         Assert.AreEqual(Encoding.UTF8.GetByteCount(responseBody), sample.BackendToClientBytes.Value);
         Assert.AreEqual(backend.Address, monitor.Context?.BackendBaseAddress);
+        Assert.AreEqual(MetricQuality.Unavailable, sample.CpuPercent.Quality);
     }
 
     private static HttpClient CreateProxyClient(Uri address)
@@ -1350,6 +1386,37 @@ public sealed class ProxyGatewayIntegrationTests
             }
 
             public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class ThrowingStartResourceMonitor : IRequestResourceMonitor
+    {
+        public IRequestResourceSession Start(RequestResourceContext context) =>
+            throw new InvalidOperationException("Synthetic collector start failure.");
+    }
+
+    private sealed class ThrowingSessionResourceMonitor : IRequestResourceMonitor
+    {
+        public IRequestResourceSession Start(RequestResourceContext context) => new ThrowingSession();
+
+        private sealed class ThrowingSession : IRequestResourceSession
+        {
+            public void StageChanged(RequestStageValue stage) => Throw();
+
+            public void AddClientToBackendBytes(int count) => Throw();
+
+            public void AddBackendToClientBytes(int count) => Throw();
+
+            public Task<IReadOnlyList<TechnicalResourceSampleRecord>> CompleteAsync(
+                CancellationToken cancellationToken = default) =>
+                Task.FromException<IReadOnlyList<TechnicalResourceSampleRecord>>(
+                    new InvalidOperationException("Synthetic collector completion failure."));
+
+            public ValueTask DisposeAsync() =>
+                ValueTask.FromException(new InvalidOperationException("Synthetic collector disposal failure."));
+
+            private static void Throw() =>
+                throw new InvalidOperationException("Synthetic collector callback failure.");
         }
     }
 

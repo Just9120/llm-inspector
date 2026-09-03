@@ -296,6 +296,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
                 Stage = Volatile.Read(ref _stage),
                 RelatedProcess = _process,
                 GpuDeviceId = gpuDevice,
+                GpuDriverVersion = current?.Gpu?.DriverVersion,
                 DroppedSampleCount = Volatile.Read(ref _droppedSamples),
                 MemoryUsedBytes = memoryUsed,
                 ProcessCpuPercent = processCpu,

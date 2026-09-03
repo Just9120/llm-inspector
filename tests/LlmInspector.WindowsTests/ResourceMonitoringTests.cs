@@ -58,6 +58,7 @@ public sealed class ResourceMonitoringTests
         Assert.AreEqual(123m, sample.ClientToBackendBytes.Value);
         Assert.AreEqual(456m, sample.BackendToClientBytes.Value);
         Assert.AreEqual("GPU-primary", sample.GpuDeviceId?.Value);
+        Assert.AreEqual("572.83", sample.GpuDriverVersion?.Value);
         Assert.AreEqual(50m, sample.GpuUtilizationPercent.Value);
         Assert.AreEqual(100m * 1_048_576m, sample.GpuVramUsedBytes.Value);
         Assert.AreEqual(80m, sample.GpuTemperatureCelsius.Value);
@@ -97,16 +98,18 @@ public sealed class ResourceMonitoringTests
     public void NvidiaCsvSelectsLowestIndexAndTreatsUnsupportedFieldsAsUnavailable()
     {
         GpuResourceSnapshot? gpu = NvidiaSmiGpuProbe.ParseCsv(
-            "1, GPU-secondary, 80, 200, 300, 70, 90\n" +
-            "0, GPU-primary, 50, 100, 250, 65, N/A\n");
+            "1, GPU-secondary, 572.83, 80, 200, 300, 70, 90\n" +
+            "0, GPU-primary, 572.83, 50, 100, 250, 65, N/A\n");
 
         Assert.IsNotNull(gpu);
         Assert.AreEqual("GPU-primary", gpu.DeviceId.Value);
+        Assert.AreEqual("572.83", gpu.DriverVersion?.Value);
         Assert.AreEqual(50m, gpu.UtilizationPercent);
         Assert.AreEqual(100m, gpu.VramUsedMebibytes);
         Assert.AreEqual(250m, gpu.VramTotalMebibytes);
         Assert.AreEqual(65m, gpu.TemperatureCelsius);
         Assert.IsNull(gpu.PowerWatts);
+        Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("0, GPU-primary, N/A, 50, 100, 250, 65, 90")?.DriverVersion);
         Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("malformed content"));
     }
 
@@ -186,7 +189,7 @@ public sealed class ResourceMonitoringTests
             1_000,
             at.Second == 0 ? 400UL : 300UL,
             new ProcessResourceSnapshot(TimeSpan.FromMilliseconds(processCpuMs), 250, read, write),
-            new GpuResourceSnapshot(Id("GPU-primary"), 50, 100, 250, 80, 125.5m));
+            new GpuResourceSnapshot(Id("GPU-primary"), Id("572.83"), 50, 100, 250, 80, 125.5m));
 
     private static MetricValue Exact(decimal value, MetricUnit unit, MetricSource source) =>
         MetricValue.Exact(value, unit, source, "resource-test-v1");

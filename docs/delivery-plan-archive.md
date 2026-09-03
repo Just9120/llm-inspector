@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T08:53:36Z`: initial release `115/139 = 82.7%`, full roadmap `115/164 = 70.1%`; EPIC-10 terminal state before EPIC-11 implementation. Archived after terminal EPIC-11 Evidence and the independent EPIC-12 calculation produced a newer current/previous pair.
 - `2026-09-03T08:14:33Z`: initial release `107/139 = 77.0%`, full roadmap `107/164 = 65.2%`; EPIC-07 terminal state before EPIC-10 implementation. Archived after terminal EPIC-10 Evidence and the independent EPIC-11 calculation produced a newer current/previous pair.
 - `2026-09-03T07:35:19Z`: initial release `91/139 = 65.5%`, full roadmap `91/164 = 55.5%`; EPIC-06 terminal state before EPIC-07 implementation. Archived after terminal EPIC-07 Evidence and the independent EPIC-10 calculation produced a newer current/previous pair.
 - `2026-09-03T06:40:21Z`: initial release `83/139 = 59.7%`, full roadmap `83/164 = 50.6%`; EPIC-05 terminal state before EPIC-06 implementation. Archived after terminal EPIC-06 Evidence and the independent EPIC-07 calculation produced a newer current/previous pair.
@@ -18,6 +19,16 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / EPIC-11 — Local anonymized diagnostic snapshot
+
+- **Product outcome:** `READY 10/10`; SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#15](https://github.com/Just9120/llm-inspector/pull/15), head `2d015d3adc76b9be3938f79d2637cdcdae9e40b3`, PR CI `33737811632` success.
+- **Merge/exact-main Evidence:** merge `9b2933fe802842e60b089a37b1352f393ad94a56`; exact-main CI `33738059071` success with every required step.
+- **Delivered:** bounded versioned snapshot allowlist, typed unavailable environment facts, UTC range/operation selection, exact local preview SHA-256/save workflow and end-to-end negative privacy corpus.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `193/193` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/15#issuecomment-5523510559).
 
 ## GOAL-005 / EPIC-01 — Windows desktop product boundary
 

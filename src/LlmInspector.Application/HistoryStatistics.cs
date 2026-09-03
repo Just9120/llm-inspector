@@ -1,3 +1,5 @@
+using LlmInspector.Domain;
+
 namespace LlmInspector.Application;
 
 public static class HistoryStatistics
@@ -126,6 +128,83 @@ public static class HistoryStatistics
             errors.Count(request => !correlatedRequests.Contains(request.RequestId)));
     }
 
+    public static RuntimeChangeCorrelation CorrelateRuntimeChanges(
+        IReadOnlyList<RequestHistoryItem> requests)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        HistoryMetric[] performanceMetrics =
+        [
+            HistoryMetric.TotalDurationMilliseconds,
+            HistoryMetric.TimeToFirstTokenMilliseconds,
+            HistoryMetric.PromptTokensPerSecond,
+            HistoryMetric.GenerationTokensPerSecond,
+        ];
+        RuntimeConfigurationAggregate[] configurations = requests
+            .Where(request => request.RuntimeFacts is not null)
+            .GroupBy(request => request.RuntimeFacts!)
+            .Select(group => new RuntimeConfigurationAggregate(
+                group.Key,
+                group.Min(request => request.StartedAt),
+                group.Max(request => request.StartedAt),
+                group.Count(),
+                performanceMetrics
+                    .Append(HistoryMetric.ErrorRatePercent)
+                    .ToDictionary(
+                        metric => metric,
+                        metric => Calculate(GetRuntimeMetricSamples(group, metric)))))
+            .OrderBy(configuration => configuration.FirstObservedAt)
+            .ThenBy(configuration => configuration.Facts.ConfigurationId.Value, StringComparer.Ordinal)
+            .ToArray();
+        if (configurations.Length == 0)
+        {
+            return RuntimeChangeCorrelation.Empty;
+        }
+
+        if (configurations.Length == 1)
+        {
+            return new RuntimeChangeCorrelation(
+                RuntimeCorrelationStatus.SingleConfiguration,
+                configurations,
+                configurations[0],
+                null,
+                [],
+                null);
+        }
+
+        RuntimeConfigurationAggregate baseline = configurations[0];
+        RuntimeConfigurationAggregate candidate = configurations[^1];
+        RequestHistoryItem[] baselineRequests = requests
+            .Where(request => request.RuntimeFacts == baseline.Facts)
+            .ToArray();
+        RequestHistoryItem[] candidateRequests = requests
+            .Where(request => request.RuntimeFacts == candidate.Facts)
+            .ToArray();
+        AnalyticsComparison[] comparisons = performanceMetrics
+            .Select(metric => Compare(
+                metric,
+                GetRuntimeMetricSamples(baselineRequests, metric),
+                GetRuntimeMetricSamples(candidateRequests, metric)))
+            .ToArray();
+        AnalyticsComparison errorRate = Compare(
+            HistoryMetric.ErrorRatePercent,
+            GetRuntimeMetricSamples(baselineRequests, HistoryMetric.ErrorRatePercent),
+            GetRuntimeMetricSamples(candidateRequests, HistoryMetric.ErrorRatePercent)) with
+        {
+            RecurringErrorFrequency = CompareRecurringErrors(baselineRequests, candidateRequests),
+        };
+        RuntimeCorrelationStatus status = baseline.RequestCount >= HistoryPolicies.MinimumAggregateSamples &&
+                                          candidate.RequestCount >= HistoryPolicies.MinimumAggregateSamples
+            ? RuntimeCorrelationStatus.Sufficient
+            : RuntimeCorrelationStatus.InsufficientSamples;
+        return new RuntimeChangeCorrelation(
+            status,
+            configurations,
+            baseline,
+            candidate,
+            comparisons,
+            errorRate);
+    }
+
     private static bool IsDegradation(HistoryMetric metric, decimal candidateMinusBaseline) => metric switch
     {
         HistoryMetric.TimeToFirstTokenMilliseconds or
@@ -148,6 +227,15 @@ public static class HistoryStatistics
 
     private static decimal Rate(int occurrences, int total) =>
         total == 0 ? 0 : 100m * occurrences / total;
+
+    private static IEnumerable<decimal> GetRuntimeMetricSamples(
+        IEnumerable<RequestHistoryItem> requests,
+        HistoryMetric metric) => metric == HistoryMetric.ErrorRatePercent
+        ? requests.Select(request => request.ErrorType == HistoryErrorType.None ? 0m : 100m)
+        : requests
+            .Select(request => request.Metrics.TryGetValue(metric, out MetricValue? value) ? value.Value : null)
+            .Where(value => value is not null)
+            .Select(value => value!.Value);
 
     private sealed record CorrelationCandidate(
         ErrorCorrelationBasis Basis,

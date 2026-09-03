@@ -30,12 +30,23 @@ public static class HistoryTextPresenter
                     : request.IsRecurringError
                         ? $"recurring x{request.ErrorGroupOccurrenceCount.ToString(CultureInfo.InvariantCulture)}"
                         : "single failure").Append(']')
+                .Append(" | origin=").Append(request.ErrorOrigin)
                 .Append(" | session=").Append(FullId(request.SessionId))
                 .Append(" | turn=").Append(FullId(request.CorrelatedTurnId))
                 .Append('/').Append(request.CorrelatedTurnSequence?.ToString(CultureInfo.InvariantCulture) ?? "unavailable")
                 .Append(" | operation=").Append(FullId(request.OperationId))
                 .Append(" | model-load=").Append(request.ModelLoadDisposition)
                 .AppendLine();
+            if (request.RuntimeFacts is TechnicalRuntimeFacts facts)
+            {
+                text.Append("  Runtime config=").Append(facts.ConfigurationId.Value)
+                    .Append(" | Inspector=").Append(Identifier(facts.InspectorVersion))
+                    .Append(" | backend=").Append(Identifier(facts.BackendVersion))
+                    .Append(" | client=").Append(Identifier(facts.ClientVersion))
+                    .Append(" | model=").Append(Identifier(facts.ModelVersion))
+                    .Append(" | GPU driver=").Append(Identifier(facts.GpuDriverVersion))
+                    .AppendLine();
+            }
         }
 
         return text.ToString().TrimEnd();
@@ -145,6 +156,7 @@ public static class HistoryTextPresenter
         text.Append("Uncorrelated errors: ")
             .Append(analytics.ErrorCorrelations.UncorrelatedErrors.ToString(CultureInfo.InvariantCulture))
             .AppendLine("; time proximity alone is not treated as proof.");
+        AppendRuntimeCorrelation(text, analytics.RuntimeCorrelation);
         foreach (AnalyticsTrendPoint point in analytics.Trend)
         {
             text.AppendLine(point.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
@@ -161,6 +173,40 @@ public static class HistoryTextPresenter
         }
 
         return text.ToString().TrimEnd();
+    }
+
+    private static void AppendRuntimeCorrelation(StringBuilder text, RuntimeChangeCorrelation correlation)
+    {
+        text.Append("Runtime-change correlation: ").Append(correlation.Status);
+        if (!correlation.IsStatisticallySufficient)
+        {
+            text.AppendLine("; insufficient correlation data.");
+            return;
+        }
+
+        text.Append(" | baseline=").Append(correlation.Baseline!.Facts.ConfigurationId.Value)
+            .Append(" | candidate=").Append(correlation.Candidate!.Facts.ConfigurationId.Value)
+            .Append(" | result=")
+            .Append(correlation.HasConfirmedRegression ? "CONFIRMED REGRESSION" : "no confirmed regression")
+            .AppendLine();
+        foreach (AnalyticsComparison comparison in correlation.PerformanceComparisons
+                     .Append(correlation.ErrorRateComparison!))
+        {
+            text.Append("  ").Append(comparison.Metric)
+                .Append(" | baseline n=").Append(comparison.Baseline.SampleCount.ToString(CultureInfo.InvariantCulture))
+                .Append(" | candidate n=").Append(comparison.Candidate.SampleCount.ToString(CultureInfo.InvariantCulture))
+                .Append(" | delta=").Append(FormatDecimal(comparison.MeanDelta))
+                .Append(" | ").Append(comparison.IsConfirmedDegradation ? "degradation" : "no confirmed degradation")
+                .AppendLine();
+        }
+
+        foreach (ErrorFrequencyComparison error in correlation.ErrorRateComparison!.RecurringErrorFrequency)
+        {
+            text.Append("  Runtime-linked ").Append(error.ErrorType)
+                .Append(" rate delta=")
+                .Append(error.RateDeltaPercentagePoints.ToString("+0.###;-0.###;0", CultureInfo.InvariantCulture))
+                .AppendLine(" p.p.");
+        }
     }
 
     public static string FormatComparison(AnalyticsComparison comparison)
@@ -197,6 +243,8 @@ public static class HistoryTextPresenter
         "Review this exact scope, then confirm.";
 
     private static string FullId(Guid? value) => value is Guid id ? id.ToString("N") : "unavailable";
+
+    private static string Identifier(TechnicalIdentifier? value) => value?.Value ?? "unavailable";
 
     private static string FormatScope(HistoryClearScope scope) => scope.AllHistory
         ? "all history"

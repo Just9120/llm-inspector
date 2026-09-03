@@ -131,6 +131,58 @@ public sealed class HistoryStatisticsTests
         Assert.AreEqual(1, summary.UncorrelatedErrors);
     }
 
+    [TestMethod]
+    public void RuntimeCorrelationLinksSufficientVersionChangeToPerformanceAndErrorRegression()
+    {
+        DateTimeOffset at = DateTimeOffset.UnixEpoch;
+        TechnicalRuntimeFacts baseline = RuntimeFacts("config-a", "backend-1.0", "client-1.0", "model-1.0", "driver-1.0");
+        TechnicalRuntimeFacts candidate = RuntimeFacts("config-b", "backend-2.0", "client-2.0", "model-2.0", "driver-2.0");
+        RequestHistoryItem[] requests =
+        [
+            RuntimeRequest(at, baseline, 100, 20, HistoryErrorType.None),
+            RuntimeRequest(at.AddMinutes(1), baseline, 100, 20, HistoryErrorType.None),
+            RuntimeRequest(at.AddMinutes(2), baseline, 100, 20, HistoryErrorType.None),
+            RuntimeRequest(at.AddDays(1), candidate, 200, 10, HistoryErrorType.BackendUnavailable),
+            RuntimeRequest(at.AddDays(1).AddMinutes(1), candidate, 200, 10, HistoryErrorType.BackendUnavailable),
+            RuntimeRequest(at.AddDays(1).AddMinutes(2), candidate, 200, 10, HistoryErrorType.BackendUnavailable),
+        ];
+
+        RuntimeChangeCorrelation correlation = HistoryStatistics.CorrelateRuntimeChanges(requests);
+
+        Assert.AreEqual(RuntimeCorrelationStatus.Sufficient, correlation.Status);
+        Assert.AreEqual("config-a", correlation.Baseline?.Facts.ConfigurationId.Value);
+        Assert.AreEqual("config-b", correlation.Candidate?.Facts.ConfigurationId.Value);
+        Assert.IsTrue(correlation.PerformanceComparisons.Single(
+            item => item.Metric == HistoryMetric.TotalDurationMilliseconds).IsConfirmedDegradation);
+        Assert.IsTrue(correlation.PerformanceComparisons.Single(
+            item => item.Metric == HistoryMetric.GenerationTokensPerSecond).IsConfirmedDegradation);
+        Assert.IsTrue(correlation.ErrorRateComparison?.IsConfirmedDegradation);
+        Assert.IsTrue(correlation.HasConfirmedRegression);
+    }
+
+    [TestMethod]
+    public void RuntimeCorrelationExplainsMissingSingleAndInsufficientConfigurationData()
+    {
+        DateTimeOffset at = DateTimeOffset.UnixEpoch;
+        TechnicalRuntimeFacts first = RuntimeFacts("config-a", "backend-1", "client-1", "model-1", "driver-1");
+        TechnicalRuntimeFacts second = RuntimeFacts("config-b", "backend-2", "client-2", "model-2", "driver-2");
+
+        Assert.AreEqual(
+            RuntimeCorrelationStatus.NoRuntimeFacts,
+            HistoryStatistics.CorrelateRuntimeChanges([Request(at, HistoryErrorType.None)]).Status);
+        Assert.AreEqual(
+            RuntimeCorrelationStatus.SingleConfiguration,
+            HistoryStatistics.CorrelateRuntimeChanges([
+                RuntimeRequest(at, first, 100, 20, HistoryErrorType.None),
+            ]).Status);
+        Assert.AreEqual(
+            RuntimeCorrelationStatus.InsufficientSamples,
+            HistoryStatistics.CorrelateRuntimeChanges([
+                RuntimeRequest(at, first, 100, 20, HistoryErrorType.None),
+                RuntimeRequest(at.AddDays(1), second, 200, 10, HistoryErrorType.BackendUnavailable),
+            ]).Status);
+    }
+
     private static RequestHistoryItem Request(DateTimeOffset at, HistoryErrorType error) => new(
         Guid.NewGuid(),
         null,
@@ -143,6 +195,45 @@ public sealed class HistoryStatisticsTests
         BackendKind.Ollama,
         null,
         new Dictionary<HistoryMetric, MetricValue>());
+
+    private static RequestHistoryItem RuntimeRequest(
+        DateTimeOffset at,
+        TechnicalRuntimeFacts facts,
+        decimal duration,
+        decimal generationThroughput,
+        HistoryErrorType error) => Request(at, error) with
+        {
+            RuntimeFacts = facts,
+            Metrics = new Dictionary<HistoryMetric, MetricValue>
+            {
+                [HistoryMetric.TotalDurationMilliseconds] = MetricValue.Exact(
+                    duration,
+                    MetricUnit.Milliseconds,
+                    MetricSource.Inspector,
+                    "runtime-correlation-test-v1"),
+                [HistoryMetric.GenerationTokensPerSecond] = MetricValue.Exact(
+                    generationThroughput,
+                    MetricUnit.TokensPerSecond,
+                    MetricSource.BackendExtension,
+                    "runtime-correlation-test-v1"),
+            },
+        };
+
+    private static TechnicalRuntimeFacts RuntimeFacts(
+        string configuration,
+        string backend,
+        string client,
+        string model,
+        string driver) => new(Id(configuration))
+        {
+            BackendVersion = Id(backend),
+            ClientVersion = Id(client),
+            ModelVersion = Id(model),
+            GpuDriverVersion = Id(driver),
+        };
+
+    private static TechnicalIdentifier Id(string value) =>
+        TechnicalIdentifier.FromBackend(value) ?? throw new InvalidOperationException("Invalid test identifier.");
 
     private static T AssertSingle<T>(IReadOnlyList<T> items)
     {

@@ -4,25 +4,25 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, девять завершённых core epics и активную `GOAL-005` для всех оставшихся canonical AC:
+Проект имеет repository/CI foundation, десять завершённых core epics и активную `GOAL-005` для всех оставшихся canonical AC:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
 - proxy поддерживает transparent `GET /v1/models`, non-streaming/streaming/tool-calling `POST /v1/chat/completions` и, только при выбранном LM Studio, native `POST /api/v1/chat`; он не следует redirects и propagates cancellation;
 - bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details, документированные llama.cpp `timings` и LM Studio native `stats`/`model_load.*`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
 - UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, latest request tokens/context/timings с quality state и content-free diagnostics; versioned rules отделяют `FACT`, `HYPOTHESIS` и `INSUFFICIENT_DATA`, а stall не объявляется без typed backend signal; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
-- SQLite WAL schema v4 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; request-correlated resource timeline включает host CPU/RAM, exact process CPU/RAM/disk counters при доказанной listener ownership, gateway traffic и NVIDIA GPU/VRAM/temperature/power либо явные `unavailable`; UI также предоставляет history filters, ordered operation/tool detail, daily aggregates, cold/warm breakdown, recurring typed errors/correlation, comparisons, retention и explicit clear preview/confirmation;
+- SQLite WAL schema v5 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; request-correlated resource timeline включает host CPU/RAM, exact process CPU/RAM/disk counters при доказанной listener ownership, gateway traffic и NVIDIA GPU/driver/VRAM/temperature/power либо явные `unavailable`; history хранит typed error origin и available version/runtime configuration facts, а analytics сопоставляет достаточно представительные configuration cohorts; startup выполняет integrity check, normal restart и process-kill recovery покрыты integration test;
 - Windows background runtime продолжает proxy/history monitoring после скрытия main window, предоставляет native tray, per-user autostart и четыре independently configurable content-free notification events с silent mode и versioned anti-spam policy;
-- active EPIC-11 candidate создаёт только локальный `diagnostic-snapshot-v1` по выбранному UTC range или operation: user сначала просматривает exact allowlist JSON и SHA-256, затем сохраняет тот же preview; upload path отсутствует;
+- локальный `diagnostic-snapshot-v1` создаётся по выбранному UTC range или operation: user сначала просматривает exact allowlist JSON и SHA-256, затем сохраняет тот же preview; upload path отсутствует;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03/04/05/06/07/08/09/10 имеют terminal PR/main CI; EPIC-01 доставлен как честный partial `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
+- EPIC-02/03/04/05/06/07/08/09/10/11 имеют terminal PR/main CI; EPIC-01 доставлен как честный partial `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main`: `115/139 = 82.7%` initial release и `115/164 = 70.1%` full roadmap. Active EPIC-11 candidate локально выполняет ещё `10/10` AC (`125/139 = 89.9%`, `125/164 = 76.2%`) и прошёл полный local pipeline (`193/193` tests); terminal CI Evidence остаётся следующим gate.
+Текущая readiness baseline на merged `main`: `125/139 = 89.9%` initial release и `125/164 = 76.2%` full roadmap. Active EPIC-12 candidate выполняет `E12-AC07..13`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `132/164 = 80.5%`; `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures. Текущий code tree прошёл `207/207` local tests; exact-revision CI остаётся следующим gate.
 
 ## Быстрый старт
 
@@ -70,7 +70,7 @@ Agent operation grouping дополнительно требует `X-LLM-Inspec
 
 Техническое наблюдение сохраняется локально с default retention `30 days`; доступны точные варианты `7 days`, `30 days`, `90 days`, `indefinite`. При старте и после изменения setting применяется bounded oldest-first cleanup. Raw request/response/reasoning/tool content не сохраняется, не индексируется и не логируется; negative runtime canary test проверяет основной DB/WAL surface.
 
-History filters принимают period, client, backend, model, session GUID, status и error type. Typed error model различает connection refused, model loading/503, HTTP/API error, timeout, context overflow, cancellation и backend crash/disconnect; arbitrary error body не сохраняется. UI помечает единичный failure и recurring group (`>=2` occurrences), а period comparison показывает per-type частоту с точным denominator и delta в percentage points. Correlation подтверждается только explicit operation/session metadata; близость времени сама по себе не считается доказательством. Comparison dimension выбирается из period/model/backend/client; для period используется формат `<ISO-8601 start>..<ISO-8601 end>`. Aggregates показывают arithmetic mean, median и nearest-rank P95; минимум статистической достаточности — `3` samples. Manual clear выполняется только после preview exact UTC scope и отдельного confirmation.
+History filters принимают period, client, backend, model, session GUID, status и error type. Typed error model различает connection refused, model loading/503, HTTP/API error, timeout, context overflow, cancellation и backend crash/disconnect; отдельный origin принимает только `Inspector`, `Client`, `Backend`, `Model`, `Unknown` или `NotApplicable`, и arbitrary error body не сохраняется. UI помечает единичный failure и recurring group (`>=2` occurrences), а period comparison показывает per-type частоту с точным denominator и delta в percentage points. Correlation подтверждается только explicit operation/session либо version/runtime configuration facts; близость времени сама по себе не считается доказательством. Runtime comparison использует earliest/latest distinct configuration cohorts и объявляет regression только при `n >= 3` с обеих сторон, иначе явно показывает `insufficient correlation data`. Manual clear выполняется только после preview exact UTC scope и отдельного confirmation.
 
 ## Проверки и сборка
 
@@ -112,4 +112,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14 в verified `main` commit `a349b1d36d929324c8e9102c2d9650b483172319`.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15 в verified `main` commit `9b2933fe802842e60b089a37b1352f393ad94a56`. EPIC-12 candidate пока остаётся локальным.

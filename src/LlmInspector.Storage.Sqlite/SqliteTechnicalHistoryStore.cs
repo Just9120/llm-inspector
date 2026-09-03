@@ -7,7 +7,7 @@ namespace LlmInspector.Storage.Sqlite;
 
 public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsyncDisposable
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
     private const int MaximumQueryLimit = 1_000;
     private readonly string _connectionString;
     private readonly string _readConnectionString;
@@ -60,6 +60,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
             await ExecuteNonQueryAsync(connection, null, "PRAGMA journal_mode=WAL;", cancellationToken)
                 .ConfigureAwait(false);
+            await VerifyIntegrityAsync(connection, cancellationToken).ConfigureAwait(false);
             await using SqliteTransaction transaction = (SqliteTransaction)await connection
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -100,6 +101,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
                     .ConfigureAwait(false);
                 await RecordSchemaVersionAsync(connection, transaction, 4, cancellationToken).ConfigureAwait(false);
                 persistedVersion = 4;
+            }
+
+            if (persistedVersion == 4)
+            {
+                await ExecuteNonQueryAsync(connection, transaction, Migration5Sql, cancellationToken)
+                    .ConfigureAwait(false);
+                await RecordSchemaVersionAsync(connection, transaction, 5, cancellationToken).ConfigureAwait(false);
+                persistedVersion = 5;
             }
 
             if (persistedVersion != SchemaVersion)
@@ -373,6 +382,7 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         {
             ErrorGroups = HistoryStatistics.SummarizeErrors(requests),
             ErrorCorrelations = HistoryStatistics.CorrelateErrors(requests),
+            RuntimeCorrelation = HistoryStatistics.CorrelateRuntimeChanges(requests),
         };
     }
 
@@ -610,19 +620,25 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.CommandText = """
             INSERT INTO requests(
                 request_id, session_id, operation_id, started_at_utc, http_status_code,
-                outcome, error_type, client, backend, model,
-                correlation_turn_id, correlation_turn_sequence, model_load_disposition)
+                outcome, error_type, error_origin, client, backend, model,
+                correlation_turn_id, correlation_turn_sequence, model_load_disposition,
+                runtime_configuration_id, inspector_version, framework_version, operating_system_version,
+                telemetry_contract_version, backend_version, client_version, model_version, gpu_driver_version)
             VALUES(
                 $request_id, $session_id, NULL, $started_at, $http_status,
-                $outcome, $error_type, $client, $backend, $model,
-                $correlation_turn_id, $correlation_turn_sequence, $model_load_disposition);
+                $outcome, $error_type, $error_origin, $client, $backend, $model,
+                $correlation_turn_id, $correlation_turn_sequence, $model_load_disposition,
+                $runtime_configuration_id, $inspector_version, $framework_version, $operating_system_version,
+                $telemetry_contract_version, $backend_version, $client_version, $model_version, $gpu_driver_version);
             """;
+        TechnicalRuntimeFacts? runtimeFacts = observation.RuntimeFacts;
         command.Parameters.AddWithValue("$request_id", observation.RequestId.ToString("N"));
         command.Parameters.AddWithValue("$session_id", DbValue(correlation?.SessionId.ToString("N")));
         command.Parameters.AddWithValue("$started_at", ToDbTime(observation.StartedAt));
         command.Parameters.AddWithValue("$http_status", DbValue(observation.HttpStatusCode));
         command.Parameters.AddWithValue("$outcome", (int)observation.Outcome);
         command.Parameters.AddWithValue("$error_type", (int)HistoryErrorClassifier.From(observation));
+        command.Parameters.AddWithValue("$error_origin", (int)HistoryErrorClassifier.OriginFrom(observation));
         command.Parameters.AddWithValue("$client", (int)observation.Client);
         command.Parameters.AddWithValue("$backend", (int)observation.BackendTelemetry.Backend);
         command.Parameters.AddWithValue("$model", DbValue(observation.BackendTelemetry.Model?.Value));
@@ -631,6 +647,15 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.Parameters.AddWithValue(
             "$model_load_disposition",
             (int)observation.BackendTelemetry.ModelLoadDisposition);
+        command.Parameters.AddWithValue("$runtime_configuration_id", DbValue(runtimeFacts?.ConfigurationId.Value));
+        command.Parameters.AddWithValue("$inspector_version", DbValue(runtimeFacts?.InspectorVersion?.Value));
+        command.Parameters.AddWithValue("$framework_version", DbValue(runtimeFacts?.FrameworkVersion?.Value));
+        command.Parameters.AddWithValue("$operating_system_version", DbValue(runtimeFacts?.OperatingSystemVersion?.Value));
+        command.Parameters.AddWithValue("$telemetry_contract_version", DbValue(runtimeFacts?.TelemetryContractVersion?.Value));
+        command.Parameters.AddWithValue("$backend_version", DbValue(runtimeFacts?.BackendVersion?.Value));
+        command.Parameters.AddWithValue("$client_version", DbValue(runtimeFacts?.ClientVersion?.Value));
+        command.Parameters.AddWithValue("$model_version", DbValue(runtimeFacts?.ModelVersion?.Value));
+        command.Parameters.AddWithValue("$gpu_driver_version", DbValue(runtimeFacts?.GpuDriverVersion?.Value));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         foreach ((HistoryMetric key, MetricValue value) in GetObservationMetrics(observation))
@@ -1034,8 +1059,11 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
 
         command.CommandText = $"""
             SELECT r.request_id, r.session_id, r.operation_id, r.started_at_utc,
-                   r.http_status_code, r.outcome, r.error_type, r.client, r.backend, r.model,
+                   r.http_status_code, r.outcome, r.error_type, r.error_origin, r.client, r.backend, r.model,
                    r.model_load_disposition, r.correlation_turn_id, r.correlation_turn_sequence,
+                   r.runtime_configuration_id, r.inspector_version, r.framework_version,
+                   r.operating_system_version, r.telemetry_contract_version, r.backend_version,
+                   r.client_version, r.model_version, r.gpu_driver_version,
                    CASE WHEN r.error_type = 0 THEN 0 ELSE COUNT(*) OVER (PARTITION BY r.error_type) END
             FROM requests r
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
@@ -1079,6 +1107,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             row.CorrelatedTurnSequence)
         {
             ErrorGroupOccurrenceCount = row.ErrorGroupOccurrenceCount,
+            ErrorOrigin = row.ErrorOrigin,
+            RuntimeFacts = row.RuntimeFacts,
         }).ToArray();
     }
 
@@ -1192,13 +1222,15 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         reader.IsDBNull(4) ? null : reader.GetInt32(4),
         (ProxyOutcome)reader.GetInt32(5),
         ReadHistoryErrorType(reader.GetInt32(6)),
-        (ClientKind)reader.GetInt32(7),
-        (BackendKind)reader.GetInt32(8),
-        reader.IsDBNull(9) ? null : ReadIdentifier(reader.GetString(9)),
-        ReadModelLoadDisposition(reader.GetInt32(10)),
-        reader.IsDBNull(11) ? null : Guid.ParseExact(reader.GetString(11), "N"),
-        reader.IsDBNull(12) ? null : reader.GetInt32(12),
-        reader.GetInt32(13));
+        ReadHistoryErrorOrigin(reader.GetInt32(7)),
+        (ClientKind)reader.GetInt32(8),
+        (BackendKind)reader.GetInt32(9),
+        reader.IsDBNull(10) ? null : ReadIdentifier(reader.GetString(10)),
+        ReadModelLoadDisposition(reader.GetInt32(11)),
+        reader.IsDBNull(12) ? null : Guid.ParseExact(reader.GetString(12), "N"),
+        reader.IsDBNull(13) ? null : reader.GetInt32(13),
+        ReadRuntimeFacts(reader, 14),
+        reader.GetInt32(23));
 
     private static async Task<TechnicalOperationRecord?> ReadOperationAsync(
         SqliteConnection connection,
@@ -1717,6 +1749,19 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    private static async Task VerifyIntegrityAsync(
+        SqliteConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "PRAGMA quick_check(1);";
+        object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(Convert.ToString(result, CultureInfo.InvariantCulture), "ok", StringComparison.Ordinal))
+        {
+            throw new InvalidDataException("SQLite startup integrity check failed; history was not opened for writes.");
+        }
+    }
+
     private static void ValidateOperationGraph(TechnicalOperationGraph graph)
     {
         if (graph.Session is not null && graph.Operation.SessionId != graph.Session.SessionId)
@@ -1926,6 +1971,34 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             ? (HistoryErrorType)value
             : throw new InvalidDataException("Persisted history error type is invalid.");
 
+    private static HistoryErrorOrigin ReadHistoryErrorOrigin(int value) =>
+        Enum.IsDefined((HistoryErrorOrigin)value)
+            ? (HistoryErrorOrigin)value
+            : throw new InvalidDataException("Persisted history error origin is invalid.");
+
+    private static TechnicalRuntimeFacts? ReadRuntimeFacts(SqliteDataReader reader, int startOrdinal)
+    {
+        if (reader.IsDBNull(startOrdinal))
+        {
+            return null;
+        }
+
+        return new TechnicalRuntimeFacts(ReadIdentifier(reader.GetString(startOrdinal)))
+        {
+            InspectorVersion = ReadOptionalIdentifier(reader, startOrdinal + 1),
+            FrameworkVersion = ReadOptionalIdentifier(reader, startOrdinal + 2),
+            OperatingSystemVersion = ReadOptionalIdentifier(reader, startOrdinal + 3),
+            TelemetryContractVersion = ReadOptionalIdentifier(reader, startOrdinal + 4),
+            BackendVersion = ReadOptionalIdentifier(reader, startOrdinal + 5),
+            ClientVersion = ReadOptionalIdentifier(reader, startOrdinal + 6),
+            ModelVersion = ReadOptionalIdentifier(reader, startOrdinal + 7),
+            GpuDriverVersion = ReadOptionalIdentifier(reader, startOrdinal + 8),
+        };
+    }
+
+    private static TechnicalIdentifier? ReadOptionalIdentifier(SqliteDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : ReadIdentifier(reader.GetString(ordinal));
+
     private static object DbValue(object? value) => value ?? DBNull.Value;
 
     private static string ToDbTime(DateTimeOffset value) =>
@@ -1942,12 +2015,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         int? HttpStatusCode,
         ProxyOutcome Outcome,
         HistoryErrorType ErrorType,
+        HistoryErrorOrigin ErrorOrigin,
         ClientKind Client,
         BackendKind Backend,
         TechnicalIdentifier? Model,
         ModelLoadDisposition ModelLoadDisposition,
         Guid? CorrelatedTurnId,
         int? CorrelatedTurnSequence,
+        TechnicalRuntimeFacts? RuntimeFacts,
         int ErrorGroupOccurrenceCount);
 
     private static async Task<int> ReadSchemaVersionAsync(
@@ -2178,6 +2253,39 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
 
         CREATE INDEX ix_resource_samples_request ON resource_samples(request_id, captured_at_utc);
         CREATE INDEX ix_resource_samples_operation_stage ON resource_samples(operation_id, stage, captured_at_utc);
+        """;
+
+    private const string Migration5Sql = """
+        ALTER TABLE requests ADD COLUMN error_origin INTEGER NOT NULL DEFAULT 1
+            CHECK(error_origin BETWEEN 0 AND 5);
+        UPDATE requests SET error_origin = CASE
+            WHEN error_type = 0 THEN 0
+            WHEN error_type = 2 THEN 3
+            WHEN error_type IN (5, 8) THEN 5
+            WHEN error_type IN (1, 4, 6, 7, 9) THEN 4
+            ELSE 1
+        END;
+
+        ALTER TABLE requests ADD COLUMN runtime_configuration_id TEXT NULL
+            CHECK(runtime_configuration_id IS NULL OR length(runtime_configuration_id) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN inspector_version TEXT NULL
+            CHECK(inspector_version IS NULL OR length(inspector_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN framework_version TEXT NULL
+            CHECK(framework_version IS NULL OR length(framework_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN operating_system_version TEXT NULL
+            CHECK(operating_system_version IS NULL OR length(operating_system_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN telemetry_contract_version TEXT NULL
+            CHECK(telemetry_contract_version IS NULL OR length(telemetry_contract_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN backend_version TEXT NULL
+            CHECK(backend_version IS NULL OR length(backend_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN client_version TEXT NULL
+            CHECK(client_version IS NULL OR length(client_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN model_version TEXT NULL
+            CHECK(model_version IS NULL OR length(model_version) BETWEEN 1 AND 128);
+        ALTER TABLE requests ADD COLUMN gpu_driver_version TEXT NULL
+            CHECK(gpu_driver_version IS NULL OR length(gpu_driver_version) BETWEEN 1 AND 128);
+        CREATE INDEX ix_requests_runtime_configuration
+            ON requests(runtime_configuration_id, started_at_utc);
         """;
 
     private const string ResourceMetricSystemCpu = "system_cpu_percent";

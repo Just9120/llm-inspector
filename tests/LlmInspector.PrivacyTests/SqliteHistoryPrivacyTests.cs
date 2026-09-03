@@ -142,7 +142,9 @@ public sealed class SqliteHistoryPrivacyTests
                 ["requests"] = [
                     "request_id", "session_id", "operation_id", "started_at_utc", "http_status_code", "outcome",
                     "error_type", "client", "backend", "model", "correlation_turn_id",
-                    "correlation_turn_sequence", "model_load_disposition",
+                    "correlation_turn_sequence", "model_load_disposition", "error_origin",
+                    "runtime_configuration_id", "inspector_version", "framework_version", "operating_system_version",
+                    "telemetry_contract_version", "backend_version", "client_version", "model_version", "gpu_driver_version",
                 ],
                 ["request_metrics"] = ["request_id", "metric_key", "value", "unit", "quality", "source", "source_version", "derivation_version"],
                 ["turns"] = [
