@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T09:20:19Z`: initial release `125/139 = 89.9%`, full roadmap `125/164 = 76.2%`; terminal EPIC-11 state before EPIC-12 implementation. Archived after terminal EPIC-12 Evidence and the independent BACKLOG-06 calculation produced a newer current/previous pair.
 - `2026-09-03T08:53:36Z`: initial release `115/139 = 82.7%`, full roadmap `115/164 = 70.1%`; EPIC-10 terminal state before EPIC-11 implementation. Archived after terminal EPIC-11 Evidence and the independent EPIC-12 calculation produced a newer current/previous pair.
 - `2026-09-03T08:14:33Z`: initial release `107/139 = 77.0%`, full roadmap `107/164 = 65.2%`; EPIC-07 terminal state before EPIC-10 implementation. Archived after terminal EPIC-10 Evidence and the independent EPIC-11 calculation produced a newer current/previous pair.
 - `2026-09-03T07:35:19Z`: initial release `91/139 = 65.5%`, full roadmap `91/164 = 55.5%`; EPIC-06 terminal state before EPIC-07 implementation. Archived after terminal EPIC-07 Evidence and the independent EPIC-10 calculation produced a newer current/previous pair.
@@ -19,6 +20,16 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-005 / EPIC-12 — Reliability and runtime-change correlation
+
+- **Product outcome:** partial `7/13`; `E12-AC07..13` complete with CODE/TEST/CI `✅`, while numeric `E12-AC01..06` remain uncredited because required budgets and frozen fixtures are not approved; SPEC remains `◐` and status `IN PROGRESS ⛔`.
+- **Pull Request:** [#16](https://github.com/Just9120/llm-inspector/pull/16), head `c43564bad67b0dda17c4faf347051da8c8243c41`, PR CI `33741679566` success.
+- **Merge/exact-main Evidence:** merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`; exact-main CI `33741928312` success with every required step.
+- **Delivered:** collector lifecycle isolation, unavailable-source continuity, typed error origin, SQLite startup integrity/process-kill recovery, new writes after restart, schema v5 runtime/version facts and statistically guarded configuration correlation.
+- **Validation:** exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `207/207` tests, clean self-contained `win-x64` publish and smoke `exit 0`.
+- **Cleanup:** local `main` synchronized to exact merge; merged branch removed locally/remotely after ancestry and unique-commit checks.
+- **Terminal Evidence:** [merged PR comment](https://github.com/Just9120/llm-inspector/pull/16#issuecomment-5524011971).
 
 ## GOAL-005 / EPIC-11 — Local anonymized diagnostic snapshot
 

@@ -14,15 +14,16 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 - SQLite WAL schema v5 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; request-correlated resource timeline включает host CPU/RAM, exact process CPU/RAM/disk counters при доказанной listener ownership, gateway traffic и NVIDIA GPU/driver/VRAM/temperature/power либо явные `unavailable`; history хранит typed error origin и available version/runtime configuration facts, а analytics сопоставляет достаточно представительные configuration cohorts; startup выполняет integrity check, normal restart и process-kill recovery покрыты integration test;
 - Windows background runtime продолжает proxy/history monitoring после скрытия main window, предоставляет native tray, per-user autostart и четыре independently configurable content-free notification events с silent mode и versioned anti-spam policy;
 - локальный `diagnostic-snapshot-v1` создаётся по выбранному UTC range или operation: user сначала просматривает exact allowlist JSON и SHA-256, затем сохраняет тот же preview; upload path отсутствует;
+- локальный `analytics-export-v1` экспортирует выбранный UTC range anonymized technical history и раздельные request/resource aggregates (`n`, mean, median, P95); oversized range отклоняется без неполного export, exact JSON preview обязателен до сохранения и проходит тот же negative content corpus;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03/04/05/06/07/08/09/10/11 имеют terminal PR/main CI; EPIC-01 доставлен как честный partial `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
+- EPIC-02/03/04/05/06/07/08/09/10/11 имеют terminal PR/main CI; EPIC-12 доставлен partial `7/13`, EPIC-01 — partial `3/4`, а их release/performance blockers остаются без кредита;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая readiness baseline на merged `main`: `125/139 = 89.9%` initial release и `125/164 = 76.2%` full roadmap. Active EPIC-12 candidate выполняет `E12-AC07..13`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `132/164 = 80.5%`; `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures. Текущий code tree прошёл `207/207` local tests; exact-revision CI остаётся следующим gate.
+Текущая readiness baseline на merged `main` `7c5528ec3c33396ce1068162fc0b6961a0dfe553`: `132/139 = 95.0%` initial release и `132/164 = 80.5%` full roadmap. Active BACKLOG-06 candidate выполняет `B06-AC01..03`, поэтому локальный независимый расчёт составляет `132/139 = 95.0%` и `135/164 = 82.3%`; полный local CI-equivalent прошёл `210/210` tests, exact-revision CI остаётся следующим gate. `E12-AC01..06` не кредитуются до утверждения numeric budgets и frozen benchmark fixtures.
 
 ## Быстрый старт
 
@@ -112,4 +113,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15 в verified `main` commit `9b2933fe802842e60b089a37b1352f393ad94a56`. EPIC-12 candidate пока остаётся локальным.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; EPIC-04 — через PR #7/#9; EPIC-08 — через PR #8; EPIC-01 partial — через PR #10; EPIC-05 — через PR #11; EPIC-06 — через PR #12; EPIC-07 — через PR #13; EPIC-10 — через PR #14; EPIC-11 — через PR #15; EPIC-12 partial — через PR #16 в verified `main` commit `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. BACKLOG-06 candidate находится в отдельной локальной ветке.

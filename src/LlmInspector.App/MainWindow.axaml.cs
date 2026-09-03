@@ -18,9 +18,11 @@ public partial class MainWindow : Window
     private readonly BackgroundSettingsService? _backgroundSettings;
     private readonly BackgroundLifetimeController? _backgroundLifetime;
     private readonly DiagnosticSnapshotService? _snapshotService;
+    private readonly AnalyticsExportService? _analyticsExportService;
     private readonly DispatcherTimer? _liveRefreshTimer;
     private HistoryClearPreview? _clearPreview;
     private DiagnosticSnapshotArtifact? _snapshotPreview;
+    private AnalyticsExportArtifact? _analyticsExportPreview;
 
     public MainWindow()
         : this(AppRuntimeStatus.NotStarted, null, null, null, null, "Technical history is not composed.", null, null)
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
         _backgroundSettings = backgroundSettings;
         _backgroundLifetime = backgroundLifetime;
         _snapshotService = history is null ? null : new DiagnosticSnapshotService(history);
+        _analyticsExportService = history is null ? null : new AnalyticsExportService(history);
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -62,6 +65,7 @@ public partial class MainWindow : Window
         HistoryStateText.Text = _historyState;
         ConfigureHistoryControls();
         ConfigureSnapshotControls();
+        ConfigureAnalyticsExportControls();
         ConfigureBackgroundControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
@@ -283,6 +287,94 @@ public partial class MainWindow : Window
         _snapshotPreview = null;
         SnapshotPreviewText.Text = string.Empty;
         SaveSnapshotButton.IsEnabled = false;
+    }
+
+    private void ConfigureAnalyticsExportControls()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        ExportFromText.Text = now.AddHours(-1).ToString("O");
+        ExportToText.Text = now.ToString("O");
+        try
+        {
+            ExportPathText.Text = AnalyticsExportUi.CreateDefaultLocalPath(now);
+        }
+        catch (IOException)
+        {
+            ExportPathText.Text = string.Empty;
+        }
+
+        bool enabled = _analyticsExportService is not null;
+        ExportFromText.IsEnabled = enabled;
+        ExportToText.IsEnabled = enabled;
+        ExportPathText.IsEnabled = enabled;
+        PreviewExportButton.IsEnabled = enabled;
+        SaveExportButton.IsEnabled = false;
+        ExportStateText.Text = enabled
+            ? "Choose a UTC range, then inspect the generated local analytics JSON preview."
+            : "Analytics export is unavailable while technical history is unavailable.";
+
+        ExportFromText.TextChanged += (_, _) => InvalidateAnalyticsExportPreview();
+        ExportToText.TextChanged += (_, _) => InvalidateAnalyticsExportPreview();
+        PreviewExportButton.Click += async (_, _) =>
+            await RunAnalyticsExportActionAsync(PreviewAnalyticsExportAsync);
+        SaveExportButton.Click += async (_, _) =>
+            await RunAnalyticsExportActionAsync(SaveAnalyticsExportAsync);
+    }
+
+    private async Task PreviewAnalyticsExportAsync()
+    {
+        AnalyticsExportService service = _analyticsExportService ??
+            throw new InvalidOperationException("Analytics export history source is unavailable.");
+        InvalidateAnalyticsExportPreview();
+        AnalyticsExportSelection selection = AnalyticsExportUi.CreateSelection(
+            ExportFromText.Text,
+            ExportToText.Text);
+        AnalyticsExportArtifact preview = await service.CreateAsync(selection);
+        _analyticsExportPreview = preview;
+        ExportPreviewText.Text = preview.Json;
+        SaveExportButton.IsEnabled = true;
+        ExportStateText.Text =
+            $"Local preview ready: schema {preview.Document.SchemaVersion}; " +
+            $"requests {preview.Document.History.Requests.Count}; " +
+            $"resource samples {preview.Document.History.ResourceSamples.Count}; " +
+            $"aggregate days {preview.Document.AggregateMetrics.Count}; " +
+            $"SHA-256 {preview.Sha256}. Nothing was uploaded.";
+    }
+
+    private async Task SaveAnalyticsExportAsync()
+    {
+        AnalyticsExportArtifact preview = _analyticsExportPreview ??
+            throw new InvalidOperationException("Create and inspect an analytics export preview before saving.");
+        await AnalyticsExportService.SaveAsync(preview, ExportPathText.Text ?? string.Empty);
+        ExportStateText.Text =
+            $"Exact analytics preview saved locally to {Path.GetFullPath(ExportPathText.Text!)}; " +
+            $"SHA-256 {preview.Sha256}. No upload was performed.";
+    }
+
+    private async Task RunAnalyticsExportActionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception exception) when (exception is
+            ArgumentException or
+            InvalidOperationException or
+            InvalidDataException or
+            IOException or
+            UnauthorizedAccessException or
+            System.Security.SecurityException or
+            Microsoft.Data.Sqlite.SqliteException)
+        {
+            ExportStateText.Text = $"Analytics export action failed: {exception.Message}";
+        }
+    }
+
+    private void InvalidateAnalyticsExportPreview()
+    {
+        _analyticsExportPreview = null;
+        ExportPreviewText.Text = string.Empty;
+        SaveExportButton.IsEnabled = false;
     }
 
     private async Task SaveBackgroundSettingsAsync()

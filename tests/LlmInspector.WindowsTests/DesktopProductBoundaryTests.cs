@@ -26,6 +26,7 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(headings, "History and analytics");
         CollectionAssert.Contains(headings, "Diagnostics");
         CollectionAssert.Contains(headings, "Anonymized diagnostic snapshot");
+        CollectionAssert.Contains(headings, "Anonymized analytics export");
         CollectionAssert.Contains(headings, "Background and notifications");
 
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -45,6 +46,11 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(namedControls, "SnapshotPreviewText");
         CollectionAssert.Contains(namedControls, "PreviewSnapshotButton");
         CollectionAssert.Contains(namedControls, "SaveSnapshotButton");
+        CollectionAssert.Contains(namedControls, "ExportFromText");
+        CollectionAssert.Contains(namedControls, "ExportToText");
+        CollectionAssert.Contains(namedControls, "ExportPreviewText");
+        CollectionAssert.Contains(namedControls, "PreviewExportButton");
+        CollectionAssert.Contains(namedControls, "SaveExportButton");
         CollectionAssert.Contains(namedControls, "AutostartCheckBox");
         CollectionAssert.Contains(namedControls, "NotifyBackendUnavailableCheckBox");
         CollectionAssert.Contains(namedControls, "NotifyLongOperationCheckBox");
@@ -55,6 +61,9 @@ public sealed class DesktopProductBoundaryTests
         XElement saveSnapshot = xaml.Descendants()
             .Single(element => element.Attribute(x + "Name")?.Value == "SaveSnapshotButton");
         Assert.AreEqual("False", saveSnapshot.Attribute("IsEnabled")?.Value);
+        XElement saveExport = xaml.Descendants()
+            .Single(element => element.Attribute(x + "Name")?.Value == "SaveExportButton");
+        Assert.AreEqual("False", saveExport.Attribute("IsEnabled")?.Value);
     }
 
     [TestMethod]

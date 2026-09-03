@@ -25,13 +25,17 @@ public static class TechnicalDataDisclosure
             "User-created diagnostic snapshot",
             "Versioned selection, availability-marked environment facts, pseudonymous request/operation IDs, normalized model/backend/client identities, typed errors, allowlisted runtime metrics, and interval-correlated system metrics",
             "User-selected local JSON file; retained until the user deletes it"),
+        new(
+            "User-created analytics export",
+            "Versioned time-range selection, pseudonymous request/operation IDs, normalized model/backend/client identities, typed errors, allowlisted runtime and system metrics, and aggregate sample count/mean/median/P95",
+            "User-selected local JSON file; retained until the user deletes it"),
     ];
 
     public const string PersistentDataStatement =
         "Persistent technical history is stored locally per user in %LOCALAPPDATA%\\LLM Inspector\\data\\inspector.db; " +
         "the default retention is 30 days and the selectable options are 7 days, 30 days, 90 days, or indefinite. " +
         "Background preferences are stored separately in %LOCALAPPDATA%\\LLM Inspector\\settings.json until changed or deleted. " +
-        "A diagnostic snapshot is stored only at the local path explicitly selected by the user and is not uploaded.";
+        "Diagnostic snapshots and analytics exports are stored only at local paths explicitly selected by the user and are not uploaded.";
 
     public const string ForbiddenContentStatement =
         "Prompt, response, reasoning, tool arguments/results, user code, credentials and raw headers are never retained.";

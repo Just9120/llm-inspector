@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION; EPIC-02..10 TERMINAL; EPIC-11 LOCAL CANDIDATE`
+> Status: `DECIDED — FOUNDATION; EPIC-02..11 TERMINAL; EPIC-12 PARTIAL TERMINAL; BACKLOG-06 LOCAL CANDIDATE`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#15 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime и local diagnostic snapshot. Exact-main CI `33738059071` подтвердил terminal EPIC-11 baseline на merge SHA `9b2933fe802842e60b089a37b1352f393ad94a56`; active EPIC-12 candidate добавляет failure isolation, typed error origin, restart recovery и runtime-change correlation.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#16 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot и partial EPIC-12 reliability boundary. Exact-main CI `33741928312` подтвердил merge SHA `7c5528ec3c33396ce1068162fc0b6961a0dfe553`; active BACKLOG-06 candidate добавляет local selected-range analytics export.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -86,7 +86,7 @@ App (composition/UI)
 
 Все девять production boundaries содержат product code. `Diagnostics` владеет versioned explainable rules и typed conclusion/evidence contracts, но получает только allowlisted Domain/Application projections. Dependency graph проверяется автоматически в `LlmInspector.UnitTests`. Наличие project boundary само по себе не является implementation Evidence соответствующей product feature.
 
-EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX. EPIC-12 candidate расширяет Domain только typed runtime facts, Application — origin/correlation policy, а SQLite v5 остаётся единственным durable owner.
+EPIC-06 добавил per-request Windows resource sessions через Application ports, не вводя зависимость Gateway от Windows APIs. EPIC-07 добавил versioned diagnostic rules и typed error taxonomy: resource Evidence учитывается только при exact request correlation и само по себе не доказывает root cause. EPIC-10 оставляет gateway/history composition-root owned при скрытом UI; bounded observation channel передаёт только allowlisted terminal records в typed notification rules, а native Win32 tray не получает arbitrary title/body input из proxy data. EPIC-11 читает bounded `TechnicalHistorySlice` через Application port; Diagnostics владеет fixed allowlist DTO и serializer, App — только selection/preview/save UX. EPIC-12 расширил Domain только typed runtime facts, Application — origin/correlation policy, а SQLite v5 остаётся единственным durable owner. BACKLOG-06 повторно использует тот же bounded history projection и atomic local writer; export aggregates строятся только из exact projected records, раздельно для request/resource metric categories.
 
 ## 5. Runtime/process model
 
@@ -156,7 +156,7 @@ Persistent allowlist: timestamps/durations, token counts, normalized model/backe
 
 Всегда запрещены: prompt/response/reasoning text, images/audio, embeddings, tool arguments/results, user code, authorization/cookie values, full request/response/error bodies, raw query strings, arbitrary headers, stack traces с local paths и unsanitized exception messages.
 
-Release configuration не отправляет telemetry, history или settings external services. Crash reporting внешнему service отсутствует. User-created diagnostic snapshot сначала создаётся локально, проходит тот же allowlist/negative corpus и доступен для preview; его дальнейшая передача — отдельное explicit user action вне приложения.
+Release configuration не отправляет telemetry, history или settings external services. Crash reporting внешнему service отсутствует. User-created diagnostic snapshot и analytics export сначала создаются локально, проходят общий allowlist/negative corpus и доступны для exact preview; их дальнейшая передача — отдельное explicit user action вне приложения.
 
 `diagnostic-snapshot-v1` имеет executable schema allowlist. Root содержит только `schema_version`, `generated_at_utc`, `selection`, `environment`, `requests`, `resource_samples`, `truncation`. Selection содержит scope и только UTC bounds либо operation ID. Environment содержит availability/value/source-version facts для OS, GPU driver, backend, client, application и framework versions. Request entry содержит pseudonymous request/operation IDs, UTC start, HTTP status, typed outcome/error, client/backend, normalized model fact, model-load state и allowlisted qualified runtime metrics. Resource entry содержит pseudonymous sample/request/operation IDs, UTC capture, stage/evidence, normalized GPU ID, dropped count и qualified system metrics. Каждый metric содержит только key, numeric value, unit, quality, source/source version и optional derivation version. Output bounded: до `1000` requests и `5000` resource samples с explicit truncation flags. Свободных content/error/path полей в schema нет; DTO reflection test и end-to-end negative corpus блокируют silent allowlist growth.
 
@@ -170,6 +170,7 @@ Release configuration не отправляет telemetry, history или settin
 | Volatile active request/session state | `LlmInspector.Application` | Memory only; reconstructed as incomplete/aborted after restart |
 | Diagnostic logs | Structured safe logger | Size-bounded rolling files under `%LOCALAPPDATA%\LLM Inspector\logs`, default retention 7 days |
 | User-created snapshot | `LlmInspector.Diagnostics` | User-selected local path; not auto-uploaded and not silently indexed |
+| User-created analytics export | `LlmInspector.Diagnostics` | User-selected local path; exact preview required, not auto-uploaded and not silently indexed |
 
 Текущая schema v5 реализует `history_settings`, `requests`, `request_metrics`, `sessions`, `operations`, `turns`, `tool_events`, `resource_samples`, normalized `resource_sample_metrics` и `schema_migrations`. Migration v2 добавляет request correlation/model-load fields; migration v3 — turn/tool quality/provenance; migration v4 — request/stage/process/GPU correlation и allowlisted resource metrics; forward-only transaction migration v5 добавляет typed error origin, runtime configuration fingerprint и optional Inspector/framework/OS/adapter/backend/client/model/GPU-driver version facts. Legacy error origin backfill использует только typed error category, а неоднозначный relay failure остаётся `unknown`. Raw content/blob columns запрещены; derived aggregates являются recomputable read models и следуют той же privacy/retention boundary.
 
@@ -329,7 +330,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-11 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `193/193` tests без skips, self-contained `win-x64` publish и combined Avalonia/gateway smoke. PR #15 CI `33737811632` и exact-main CI `33738059071` завершились успешно на merge `9b2933fe802842e60b089a37b1352f393ad94a56`. Active EPIC-12 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `207/207` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
+Последняя terminal merged-main validation для EPIC-12 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `207/207` tests без skips, self-contained `win-x64` publish и smoke. PR #16 CI `33741679566` и exact-main CI `33741928312` завершились успешно на merge `7c5528ec3c33396ce1068162fc0b6961a0dfe553`. Active BACKLOG-06 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `210/210` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
 
 Configured CI foundation:
 

@@ -110,6 +110,23 @@ public sealed class HistoryUiTests
     }
 
     [TestMethod]
+    public void AnalyticsExportUiCreatesExactRangeAndRejectsInvalidInput()
+    {
+        AnalyticsExportSelection selection = App.AnalyticsExportUi.CreateSelection(
+            "2026-01-01T00:00:00Z",
+            "2026-01-02T00:00:00Z");
+
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), selection.FromUtc);
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), selection.ToUtc);
+        StringAssert.EndsWith(
+            App.AnalyticsExportUi.CreateDefaultLocalPath(DateTimeOffset.UnixEpoch),
+            ".json",
+            StringComparison.OrdinalIgnoreCase);
+        _ = Assert.ThrowsExactly<ArgumentException>(() =>
+            App.AnalyticsExportUi.CreateSelection("not-a-time", "2026-01-02T00:00:00Z"));
+    }
+
+    [TestMethod]
     public void PresentersExposeHistoryStatisticsOperationDetailAndClearScope()
     {
         Guid sessionId = Guid.NewGuid();

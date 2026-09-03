@@ -101,6 +101,16 @@ public sealed class SqliteHistoryPrivacyTests
                 await DiagnosticSnapshotService.SaveAsync(
                     snapshot,
                     Path.Combine(directory, "diagnostic-snapshot.json"));
+                AnalyticsExportService exportService = new(store);
+                AnalyticsExportArtifact export = await exportService.CreateAsync(
+                    AnalyticsExportSelection.ForTimeRange(
+                        DateTimeOffset.UtcNow.AddDays(-1),
+                        DateTimeOffset.UtcNow.AddDays(1)));
+                Assert.AreEqual(AnalyticsExportContract.SchemaVersion1, export.Document.SchemaVersion);
+                Assert.HasCount(1, export.Document.History.Requests);
+                await AnalyticsExportService.SaveAsync(
+                    export,
+                    Path.Combine(directory, "analytics-export.json"));
             }
 
             SqliteConnection.ClearAllPools();
