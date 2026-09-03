@@ -246,6 +246,18 @@ public sealed record TechnicalOperationDetail(
     IReadOnlyList<TechnicalToolEventRecord> ToolEvents,
     IReadOnlyList<TechnicalResourceSampleRecord> ResourceSamples);
 
+public sealed record TechnicalHistorySlice(
+    IReadOnlyList<RequestHistoryItem> Requests,
+    IReadOnlyList<TechnicalResourceSampleRecord> ResourceSamples,
+    bool RequestsTruncated,
+    bool ResourceSamplesTruncated);
+
+public static class TechnicalHistorySnapshotPolicy
+{
+    public const int MaximumRequests = 1_000;
+    public const int MaximumResourceSamples = 5_000;
+}
+
 public sealed record MetricAggregate(
     int SampleCount,
     bool IsStatisticallySufficient,

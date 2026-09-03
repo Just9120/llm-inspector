@@ -52,6 +52,11 @@ public interface ITechnicalHistoryStore : IProxyObservationSink, ITechnicalOpera
         Guid operationId,
         CancellationToken cancellationToken = default);
 
+    Task<TechnicalHistorySlice> QuerySnapshotSliceAsync(
+        HistoryFilter filter,
+        Guid? operationId,
+        CancellationToken cancellationToken = default);
+
     Task<PeriodAnalytics> AnalyzePeriodAsync(
         HistoryFilter filter,
         CancellationToken cancellationToken = default);

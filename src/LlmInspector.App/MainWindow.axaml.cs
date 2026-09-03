@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
 using LlmInspector.Application;
+using LlmInspector.Diagnostics;
 using LlmInspector.Domain;
 using LlmInspector.Gateway;
 
@@ -16,8 +17,10 @@ public partial class MainWindow : Window
     private readonly string _historyState;
     private readonly BackgroundSettingsService? _backgroundSettings;
     private readonly BackgroundLifetimeController? _backgroundLifetime;
+    private readonly DiagnosticSnapshotService? _snapshotService;
     private readonly DispatcherTimer? _liveRefreshTimer;
     private HistoryClearPreview? _clearPreview;
+    private DiagnosticSnapshotArtifact? _snapshotPreview;
 
     public MainWindow()
         : this(AppRuntimeStatus.NotStarted, null, null, null, null, "Technical history is not composed.", null, null)
@@ -43,6 +46,7 @@ public partial class MainWindow : Window
         _historyState = historyState ?? "Technical history state is unavailable.";
         _backgroundSettings = backgroundSettings;
         _backgroundLifetime = backgroundLifetime;
+        _snapshotService = history is null ? null : new DiagnosticSnapshotService(history);
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -57,6 +61,7 @@ public partial class MainWindow : Window
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
         HistoryStateText.Text = _historyState;
         ConfigureHistoryControls();
+        ConfigureSnapshotControls();
         ConfigureBackgroundControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
@@ -184,6 +189,100 @@ public partial class MainWindow : Window
             $"Settings schema v{BackgroundSettings.CurrentSchemaVersion}; Windows autostart is " +
             (_backgroundSettings.Current.AutostartEnabled ? "enabled." : "disabled.");
         SaveBackgroundSettingsButton.Click += async (_, _) => await SaveBackgroundSettingsAsync();
+    }
+
+    private void ConfigureSnapshotControls()
+    {
+        SnapshotScopeCombo.ItemsSource = DiagnosticSnapshotUi.ScopeChoices;
+        SnapshotScopeCombo.SelectedItem = DiagnosticSnapshotUi.TimeRangeScope;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        SnapshotFromText.Text = now.AddHours(-1).ToString("O");
+        SnapshotToText.Text = now.ToString("O");
+        try
+        {
+            SnapshotPathText.Text = DiagnosticSnapshotUi.CreateDefaultLocalPath(now);
+        }
+        catch (IOException)
+        {
+            SnapshotPathText.Text = string.Empty;
+        }
+
+        bool enabled = _snapshotService is not null;
+        SnapshotScopeCombo.IsEnabled = enabled;
+        SnapshotFromText.IsEnabled = enabled;
+        SnapshotToText.IsEnabled = enabled;
+        SnapshotOperationIdText.IsEnabled = enabled;
+        SnapshotPathText.IsEnabled = enabled;
+        PreviewSnapshotButton.IsEnabled = enabled;
+        SaveSnapshotButton.IsEnabled = false;
+        SnapshotStateText.Text = enabled
+            ? "Choose a UTC range or operation, then inspect the generated local JSON preview."
+            : "Diagnostic snapshot is unavailable while technical history is unavailable.";
+
+        SnapshotScopeCombo.SelectionChanged += (_, _) => InvalidateSnapshotPreview();
+        SnapshotFromText.TextChanged += (_, _) => InvalidateSnapshotPreview();
+        SnapshotToText.TextChanged += (_, _) => InvalidateSnapshotPreview();
+        SnapshotOperationIdText.TextChanged += (_, _) => InvalidateSnapshotPreview();
+        PreviewSnapshotButton.Click += async (_, _) => await RunSnapshotActionAsync(PreviewSnapshotAsync);
+        SaveSnapshotButton.Click += async (_, _) => await RunSnapshotActionAsync(SaveSnapshotAsync);
+    }
+
+    private async Task PreviewSnapshotAsync()
+    {
+        DiagnosticSnapshotService service = _snapshotService ??
+            throw new InvalidOperationException("Diagnostic snapshot history source is unavailable.");
+        InvalidateSnapshotPreview();
+        DiagnosticSnapshotSelection selection = DiagnosticSnapshotUi.CreateSelection(
+            SnapshotScopeCombo.SelectedItem?.ToString(),
+            SnapshotFromText.Text,
+            SnapshotToText.Text,
+            SnapshotOperationIdText.Text);
+        DiagnosticSnapshotArtifact preview = await service.CreateAsync(
+            selection,
+            DiagnosticEnvironmentFacts.CaptureLocal());
+        _snapshotPreview = preview;
+        SnapshotPreviewText.Text = preview.Json;
+        SaveSnapshotButton.IsEnabled = true;
+        SnapshotStateText.Text =
+            $"Local preview ready: schema {preview.Document.SchemaVersion}; " +
+            $"requests {preview.Document.Requests.Count}; resource samples {preview.Document.ResourceSamples.Count}; " +
+            $"SHA-256 {preview.Sha256}. Nothing was uploaded.";
+    }
+
+    private async Task SaveSnapshotAsync()
+    {
+        DiagnosticSnapshotArtifact preview = _snapshotPreview ??
+            throw new InvalidOperationException("Create and inspect a preview before saving.");
+        await DiagnosticSnapshotService.SaveAsync(preview, SnapshotPathText.Text ?? string.Empty);
+        SnapshotStateText.Text =
+            $"Exact preview saved locally to {Path.GetFullPath(SnapshotPathText.Text!)}; " +
+            $"SHA-256 {preview.Sha256}. No upload was performed.";
+    }
+
+    private async Task RunSnapshotActionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception exception) when (exception is
+            ArgumentException or
+            InvalidOperationException or
+            InvalidDataException or
+            IOException or
+            UnauthorizedAccessException or
+            System.Security.SecurityException or
+            Microsoft.Data.Sqlite.SqliteException)
+        {
+            SnapshotStateText.Text = $"Diagnostic snapshot action failed: {exception.Message}";
+        }
+    }
+
+    private void InvalidateSnapshotPreview()
+    {
+        _snapshotPreview = null;
+        SnapshotPreviewText.Text = string.Empty;
+        SaveSnapshotButton.IsEnabled = false;
     }
 
     private async Task SaveBackgroundSettingsAsync()

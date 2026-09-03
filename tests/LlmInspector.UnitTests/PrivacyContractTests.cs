@@ -124,7 +124,7 @@ public sealed class PrivacyContractTests
     [TestMethod]
     public void TechnicalDataDisclosureListsFieldsAndRetention()
     {
-        Assert.HasCount(3, TechnicalDataDisclosure.CurrentCategories);
+        Assert.HasCount(4, TechnicalDataDisclosure.CurrentCategories);
 
         foreach (TechnicalDataCategory category in TechnicalDataDisclosure.CurrentCategories)
         {
@@ -137,9 +137,12 @@ public sealed class PrivacyContractTests
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[1].Retention, "30 days (default)", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[2].Fields, "autostart", StringComparison.OrdinalIgnoreCase);
         StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[2].Retention, "settings file", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[3].Fields, "typed errors", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.CurrentCategories[3].Retention, "user deletes", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "%LOCALAPPDATA%", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "30 days", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "settings.json", StringComparison.Ordinal);
+        StringAssert.Contains(TechnicalDataDisclosure.PersistentDataStatement, "not uploaded", StringComparison.Ordinal);
         StringAssert.Contains(TechnicalDataDisclosure.ForbiddenContentStatement, "never retained", StringComparison.Ordinal);
     }
 

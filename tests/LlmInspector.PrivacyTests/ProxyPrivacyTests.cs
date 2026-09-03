@@ -132,6 +132,40 @@ public sealed class ProxyPrivacyTests
     }
 
     [TestMethod]
+    public void DiagnosticSnapshotDtoFieldsMatchDocumentedAllowlist()
+    {
+        IReadOnlyDictionary<Type, IReadOnlyList<string>> allowlists =
+            new Dictionary<Type, IReadOnlyList<string>>
+            {
+                [typeof(DiagnosticSnapshotDocument)] = DiagnosticSnapshotContract.RootFieldAllowlist,
+                [typeof(DiagnosticSnapshotSelection)] = DiagnosticSnapshotContract.SelectionFieldAllowlist,
+                [typeof(DiagnosticEnvironmentFacts)] = DiagnosticSnapshotContract.EnvironmentFieldAllowlist,
+                [typeof(DiagnosticTechnicalFact)] = DiagnosticSnapshotContract.TechnicalFactFieldAllowlist,
+                [typeof(DiagnosticRequestEntry)] = DiagnosticSnapshotContract.RequestFieldAllowlist,
+                [typeof(DiagnosticResourceSampleEntry)] = DiagnosticSnapshotContract.ResourceSampleFieldAllowlist,
+                [typeof(DiagnosticMetricEntry)] = DiagnosticSnapshotContract.MetricFieldAllowlist,
+                [typeof(DiagnosticSnapshotTruncation)] = DiagnosticSnapshotContract.TruncationFieldAllowlist,
+            };
+
+        foreach ((Type type, IReadOnlyList<string> expected) in allowlists)
+        {
+            string[] actual = type.GetProperties()
+                .Select(property => JsonNamingPolicy.SnakeCaseLower.ConvertName(property.Name))
+                .ToArray();
+            CollectionAssert.AreEquivalent(expected.ToArray(), actual, type.Name);
+        }
+
+        string[] forbiddenFieldFragments = ["prompt", "response", "reasoning", "arguments", "results"];
+        string allFields = string.Join('|', allowlists.Values.SelectMany(fields => fields));
+        foreach (string forbidden in forbiddenFieldFragments)
+        {
+            Assert.DoesNotContain(forbidden, allFields, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.DoesNotContain("user_code", allFields, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [TestMethod]
     public async Task ErrorClassifierAndDiagnosticsDiscardBackendErrorMessageContent()
     {
         string canary = $"private-error-message-{Guid.NewGuid():N}";

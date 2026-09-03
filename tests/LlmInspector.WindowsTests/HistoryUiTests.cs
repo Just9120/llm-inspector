@@ -1,4 +1,5 @@
 using LlmInspector.Application;
+using LlmInspector.Diagnostics;
 using LlmInspector.Domain;
 
 namespace LlmInspector.WindowsTests;
@@ -68,6 +69,44 @@ public sealed class HistoryUiTests
         Assert.AreEqual("30 days", App.HistoryUiCatalog.RetentionChoices[1].Label);
         Assert.AreEqual("90 days", App.HistoryUiCatalog.RetentionChoices[2].Label);
         Assert.AreEqual("indefinite", App.HistoryUiCatalog.RetentionChoices[3].Label);
+    }
+
+    [TestMethod]
+    public void DiagnosticSnapshotUiCreatesExactRangeAndOperationSelections()
+    {
+        DiagnosticSnapshotSelection range = App.DiagnosticSnapshotUi.CreateSelection(
+            App.DiagnosticSnapshotUi.TimeRangeScope,
+            "2026-01-01T00:00:00Z",
+            "2026-01-02T00:00:00Z",
+            null);
+        Guid operationId = Guid.NewGuid();
+        DiagnosticSnapshotSelection operation = App.DiagnosticSnapshotUi.CreateSelection(
+            App.DiagnosticSnapshotUi.OperationScope,
+            null,
+            null,
+            operationId.ToString());
+
+        Assert.AreEqual(DiagnosticSnapshotScope.TimeRange, range.Scope);
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), range.FromUtc);
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), range.ToUtc);
+        Assert.AreEqual(DiagnosticSnapshotScope.Operation, operation.Scope);
+        Assert.AreEqual(operationId, operation.OperationId);
+        StringAssert.EndsWith(
+            App.DiagnosticSnapshotUi.CreateDefaultLocalPath(DateTimeOffset.UnixEpoch),
+            ".json",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [TestMethod]
+    public void DiagnosticSnapshotUiRejectsIncompleteOrInvalidScopeInput()
+    {
+        _ = Assert.ThrowsExactly<ArgumentException>(() => App.DiagnosticSnapshotUi.CreateSelection(
+            App.DiagnosticSnapshotUi.TimeRangeScope, null, null, Guid.NewGuid().ToString()));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => App.DiagnosticSnapshotUi.CreateSelection(
+            App.DiagnosticSnapshotUi.OperationScope,
+            "2026-01-01T00:00:00Z",
+            "2026-01-02T00:00:00Z",
+            "not-a-guid"));
     }
 
     [TestMethod]
