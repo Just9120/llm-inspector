@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — FOUNDATION; EPIC-02..11 TERMINAL; EPIC-12 PARTIAL TERMINAL; BACKLOG-06 TERMINAL; BACKLOG-05 LOCAL CANDIDATE`
+> Status: `DECIDED — BACKLOG-05/06 TERMINAL; E12/E01/B01/B02 TARGETS RATIFIED`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-03`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#17 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot, partial EPIC-12 reliability boundary и local analytics export. Exact-main CI `33744027574` подтвердил merge SHA `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`; active BACKLOG-05 candidate добавляет bounded multi-GPU telemetry.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. `GOAL-003` реализовала repository foundation. PR #3–#18 реализовали privacy/proxy core, backend/client adapters, live state, token/context/timing, SQLite history/analytics/retention, agent operations, request-correlated Windows resources, explainable diagnostics, Windows background runtime, local diagnostic snapshot, partial EPIC-12 reliability boundary, local analytics export и bounded multi-GPU telemetry. Exact-main CI `33746269521` подтвердил merge SHA `ecdb542281ca5ad989de0540bf59939f42af8eb7` и `211/211` tests.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -20,10 +20,14 @@ Server/runtime deployment target отсутствует. LLM Inspector уста�
 | `ADR-004` | Один tray-resident process, modular monolith | UI, proxy и collectors имеют общий lifecycle и не требуют IPC/второй installer. Async boundaries изолируют telemetry failures от forwarding; полный process crash остаётся известным риском и покрывается restart/crash tests. |
 | `ADR-005` | SQLite в WAL mode, один application writer | Локальная транзакционная history без отдельного service. WAL допускает параллельное чтение, но только одного writer, поэтому writes сериализуются и checkpoints выполняются явно. DB не поддерживается на network filesystem. |
 | `ADR-006` | NuGet `PackageReference` + Central Package Management + committed lock files | Версии централизуются в `Directory.Packages.props`; floating versions запрещены; CI использует locked restore. SDK фиксируется exact `global.json` с `rollForward: disable`, а upgrade выполняется отдельным reviewed change. |
-| `ADR-007` | `win-x64` self-contained publish как build unit; signed/timestamped MSIX как installable release unit | Self-contained package не требует установленного .NET, но владелец приложения обязан выпускать runtime security updates. MSIX даёт чистые install/uninstall и package integrity; production package нельзя считать release-ready без trusted signature и timestamp. |
-| `ADR-008` | CI и Windows release разделены; CD остаётся disabled | Untrusted PR проверяет code без signing secrets. Trusted release job в будущем packages/signs exact validated artifact. Никакого server deploy или LIVE endpoint нет. |
+| `ADR-007` | Portable unsigned self-contained single-file `win-x64` executable как первый release unit | Не требует установленного .NET, installer или admin rights. GitHub Release публикует exact executable, SHA-256, SBOM/provenance и SmartScreen disclosure. Store/MSIX/trusted signing/automatic Store updates отложены в release backlog. |
+| `ADR-008` | CI и Windows release разделены; server/runtime CD остаётся disabled | Untrusted PR проверяет code без release credentials. Trusted tag job в будущем публикует exact locally/CI-validated artifact; это artifact distribution, не deployment на runtime host. |
+| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable `v1.0.0-rc.1` exact candidate фиксируется до merge lifecycle code; manual Evidence для двух lines не смешивается. |
+| `ADR-010` | Three built-in performance profiles plus bounded custom profile | `Бережный`, `Сбалансированный` и `Детальный` имеют отдельные sampling intervals/budgets и обязаны проходить independently; custom profile не является release Evidence. |
+| `ADR-011` | Lifecycle только для Inspector-owned backend processes через typed capability adapters | Exact process identity, official interface и parameter allowlist ограничивают destructive surface; externally owned process остаётся observation-only, crash recovery — manual. |
+| `ADR-012` | Remote через loopback Inspector + private Tailscale Serve | Inspector не становится LAN/public server. Tailscale обеспечивает encrypted tailnet transport, а отдельный application bearer token защищает Inspector endpoint; Funnel и direct backend exposure запрещены. |
 
-Ни `NativeAOT`, ни trimming не входят в baseline: они допустимы только после compatibility и privacy tests всех UI/serialization/native dependencies. Single-file publish также не является обязательным — native dependencies могут извлекаться на диск и усложнять diagnostics.
+Ни `NativeAOT`, ни trimming не входят в baseline: они допустимы только после compatibility и privacy tests всех UI/serialization/native dependencies. Single-file publish является утверждённым release target, но допустимый self-extract behavior native dependencies должен быть зафиксирован в artifact manifest и проверен до `E01-AC01`.
 
 ## 3. Supported platform matrix
 
@@ -37,7 +41,9 @@ Initial release имеет узкий support contract:
 | Windows 10 и более ранние Windows | any | **NOT SUPPORTED** | Out-of-support platform не используется как release gate |
 | Windows 11 Enterprise/Education/LTSC | `x64` | **UNVERIFIED / best effort** | Требует owner demand и отдельного edition-specific matrix addition |
 
-Hardware baseline: x64 device должен соответствовать системным требованиям Windows 11 и иметь ресурсы для выбранного пользователем local LLM backend. Dedicated GPU не требуется для запуска Inspector; отсутствие supported GPU/driver metric source даёт `unavailable`, а не application failure. Backend/model hardware sizing находится вне ownership Inspector.
+Compatibility minimum: x64 device должен соответствовать системным требованиям Windows 11 и иметь ресурсы для выбранного пользователем local LLM backend. Dedicated GPU не требуется для запуска Inspector; отсутствие supported GPU/driver metric source даёт `unavailable`, а не application failure. Backend/model hardware sizing находится вне ownership Inspector.
+
+Controlled performance reference, не minimum requirement: Windows 11 Pro `25H2` x64 build `26200.9168`; AMD Ryzen 7 9800X3D (`8C/16T`, max `4700 MHz`); `64 GB` nominal RAM (`61.7 GiB` available); NVIDIA RTX 5060 Ti `16311 MiB`, driver `610.74`, плюс integrated AMD Radeon; Samsung SSD 970 EVO Plus 1TB NVMe (`931.5 GiB`) для app/DB/fixtures; WDC WD30EZRZ 3TB HDD фиксируется как inventory, но не benchmark storage; active Balanced power plan `381b4222-f694-41f0-9685-ff5bb260df2e`. Для NVIDIA VRAM authoritative fixture использует `nvidia-smi`; противоречивое WMI `4 GB` значение не принимается.
 
 Matrix пересматривается перед каждой release Goal. Новая Windows release не становится supported автоматически: сначала нужны build/runtime tests. Удаление ещё поддерживаемой версии или добавление architecture/edition изменяет durable compatibility contract и требует explicit owner decision.
 
@@ -107,7 +113,7 @@ Collectors, retention и diagnostics работают как independently super
 
 ## 6. Network boundary и request flow
 
-Inspector — explicit reverse proxy, не system-wide MITM и не backend lifecycle manager.
+Inspector — explicit reverse proxy, не system-wide MITM. На текущем merged revision lifecycle manager ещё отсутствует; авторизованный B01 target добавляет отдельную capability boundary только для Inspector-owned backend processes.
 
 Текущий runtime использует default listener `127.0.0.1:5117`. Versioned launch configuration v1 выбирает Ollama, llama.cpp или LM Studio с default ports `11434`, `8080` и `1234`; explicit backend URL/port остаётся literal-loopback-only. Generic и четыре per-client base paths поддерживают transparent `GET /v1/models` и `POST /v1/chat/completions`, а на backend всегда направляются стандартные `/v1/*` paths. При выбранном LM Studio отдельный generic route `POST /api/v1/chat` прозрачно сохраняет native path и получает отдельный telemetry adapter; для других backend route отсутствует. Dynamic listener port `0` разрешён отдельной factory только для test fixtures. Generic hosting URL configuration очищается и не может добавить wildcard endpoint; `localhost` backend нормализуется в literal `127.0.0.1` без DNS resolution.
 
@@ -132,9 +138,15 @@ Kestrel loopback gateway
   sample queue ─────> SQLite writer
 ```
 
+### Approved remote target (не реализован на текущем revision)
+
+Inspector остаётся literal-loopback listener на `127.0.0.1`; private remote ingress предоставляет Tailscale Serve по HTTPS только внутри tailnet. Funnel, wildcard bind, public Internet и direct backend port exposure запрещены. Remote mode выключен по умолчанию и требует explicit user action плюс отдельный random `256-bit` application bearer token. Token создаётся/ротируется локально, показывается только в этот момент и хранится через Windows current-user protected storage. Inspector показывает setup/status, но не устанавливает Tailscale, не выполняет login и не изменяет ACL.
+
+Explicit remote backend configuration допускает private encrypted overlay target и отделяет measured network/transport latency от inference latency. Недоступная remote telemetry не получает fabricated local attribution. First verified topology — Tailscale; другие WireGuard/private overlays могут называться `Compatible`, но не `Проверено` без отдельного reproduction. `BACKLOG-02` требует actual encrypted Windows↔VPS/second-PC LIVE Evidence; server deployment по-прежнему отсутствует.
+
 ### Forwarding invariants
 
-1. Backend target принимается только из versioned settings и в initial release должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote/LAN target требует backlog authorization.
+1. Backend target принимается только из versioned settings и в observation-only `v1.0` должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote target станет доступен только после B02 implementation через explicit private-overlay configuration.
 2. Generic `ASPNETCORE_URLS`, wildcard hostname, `0.0.0.0`, `[::]` и `ListenAnyIP` не могут расширить listener. Port conflict останавливает listener с явной UI error, а не выбирает скрытый alternate endpoint.
 3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Четыре Inspector-reserved correlation headers (`operation`, `session`, `turn`, `turn sequence`) являются единственным исключением: они читаются локально и удаляются до backend. Inspector не добавляет generation parameters и не заменяет model/tool payload.
 4. Request и response bodies relay-ятся streaming; full-body buffering запрещено. Parser хранит не более `256` bytes текущего lexical token и не влияет на flow control клиента; container depth больше `64`, malformed JSON или parser exception переводят telemetry в `unavailable`, не прерывая relay.
@@ -229,6 +241,16 @@ Agent-operation correlation добавляет optional `operation ID` того 
 
 Adapters не переключают client с OpenAI-compatible protocol на native generation API и не посылают duplicate prompt ради metrics. LM Studio `/api/v1/chat` является отдельным explicit supported flow: его выбирает сам client, а gateway только relays один исходный request. Другие native generation endpoints остаются вне текущего scope.
 
+### Approved lifecycle/compatibility target (не реализован на текущем revision)
+
+Managed built-ins — Ollama, llama.cpp и LM Studio. Generic literal-loopback OpenAI-compatible runtime получает observation, но lifecycle доступен только через capability adapter и только для Inspector-owned process. Discovery проверяет official standard paths/PATH, показывает exact version/path/endpoint для user confirmation и предоставляет manual executable picker; models перечисляются official API/CLI, а llama.cpp model выбирается explicit `.gguf` path. Download/install/update backend или model не выполняется.
+
+Lifecycle command выполняется без shell и сериализуется per backend. Start idempotent; port conflict только диагностируется. Stop/restart/model switch блокируются при active Inspector requests и показывают count. Graceful official stop предшествует bounded force exact PID, причём force допускается лишь при совпадении PID, process start time и executable identity. Restart использует тот же verified executable и last valid typed configuration. Readiness probe направлен на exact endpoint; failed start очищает только частично созданный owned process. Model load считается успешным после official model-identity confirmation. Crash не запускает automatic recovery: UI показывает typed `Crashed` и one-click manual restart.
+
+Parameter UI строится из adapter allowlist и native defaults: Ollama — local port, context, keep-alive, parallel requests, max loaded models, max queue; llama.cpp — local port, context, GPU layers `auto/off/all/N`, CPU threads, parallel slots; LM Studio — local port, context, GPU offload `auto/off/max/0..1`, model TTL, model ID. Unsupported control unavailable; reset возвращает backend default; arbitrary args/env, CORS/public bind и privileged service commands отсутствуют.
+
+Canonical version data будет храниться в embedded `config/runtime-compatibility.json`: exact runtime version, operation capabilities, Windows matrix, verification date, Inspector revision, sanitized Evidence, limitations и status. UI переводит status как `Проверено`, `Совместимо`, `Только наблюдение`, `Не поддерживается`. Unknown/newer versions проходят только safe per-operation probes и не считаются verified; community report получает `community-reported` до reproduction. Первые baselines: локально проверенный Ollama `0.33.2`; llama.cpp `b10516` и LM Studio `lms 0.0.47+` остаются target/PENDING_EXTERNAL_GATE, причём exact LM Studio app/runtime фиксируется при первом actual test. Unsigned remote matrix и automatic runtime update запрещены.
+
 ## 11. Resource collectors
 
 `Resources.Windows` implements a per-request monitor behind Application capability ports. Host CPU/RAM and exact process CPU/RAM/read-write counters come from Windows APIs; process association is accepted only when the configured literal-loopback backend listener has one exact TCP owner PID plus process start time/image identity. Gateway-relayed request/response byte counters provide request-scoped network traffic. A fixed-path, bounded-time `nvidia-smi` provider reports utilization, VRAM, temperature and power for up to 16 ordered distinct NVIDIA devices; absent executable/device/field becomes `unavailable`.
@@ -292,20 +314,37 @@ Privacy tests сканируют structured stores и raw files byte-for-byte af
 
 ## 15. Performance and idle benchmark contract
 
-Numeric budgets отсутствуют в ratified source и **не устанавливаются этой architecture Goal**. До их explicit owner approval `EPIC-12 SPEC` остаётся `◐`, а `E12-AC01..06` не могут считаться выполненными.
+Numeric budgets и frozen reference fixture утверждены в contract `1.2`. Это SPEC Evidence; `E12-AC01..06` не получают completion до implementation harness и controlled measurements.
+
+User-facing profiles:
+
+| Profile | Sampling | Purpose |
+|---|---:|---|
+| `Бережный` | `2 s` | minimum observer impact |
+| `Сбалансированный` | `1 s` | default/recommended |
+| `Детальный` | `500 ms` | denser diagnostics within higher explicit budget |
+| `Свой профиль` | `250 ms`–`10 s` | validated user choice with warning/reset; never release Evidence |
+
+| Gate | Бережный | Сбалансированный | Детальный |
+|---|---:|---:|---:|
+| Active CPU mean / P95, pp total logical capacity | `1.5 / 4` | `3 / 8` | `5 / 12` |
+| Private bytes P95 / growth after warm-up per 30 min | `192 / 16 MiB` | `256 / 32 MiB` | `384 / 64 MiB` |
+| GPU delta mean / P95, pp; dedicated VRAM P95 | `1 / 3; 128 MiB` | `2 / 5; 192 MiB` | `3 / 8; 256 MiB` |
+| Disk writes | `1 MiB/min` | `2 MiB/min` | `5 MiB/min` |
+| Throughput regression median / P95 | `3% / 5%` | `5% / 10%` | `8% / 15%` |
+| Idle CPU mean / P95 | `0.25% / 1%` | `0.5% / 2%` | `1% / 4%` |
+| Idle RAM growth / disk writes per hour | `8 MiB / 0.25 MiB` | `16 MiB / 1 MiB` | `32 MiB / 5 MiB` |
+| Idle wakeups mean / P95 per second | `2 / 8` | `5 / 15` | `15 / 30` |
 
 Воспроизводимый protocol:
 
-1. Зафиксировать Inspector commit/package hash, OS edition/build/update, CPU/RAM, storage, GPU/driver, power plan, backend/version/config, model identity/hash/quantization/context, client/version и Inspector settings.
-2. Использовать один immutable synthetic corpus без real user content; поддерживать deterministic seed/output limit, если backend это допускает.
-3. Снять `Inspector off` baseline и `Inspector on` run на одной машине после одинакового warm-up; чередовать порядок `AB/BA`, минимум три paired repetitions.
-4. Workloads: idle after startup; warm non-streaming; warm streaming; cold model load; one client; concurrent clients; tools with fragmented streaming; collector unavailable/failure.
-5. Измерять process CPU time, working set/private bytes, disk read/write bytes and wakeups, available GPU metrics, request total/TTFT, prompt and generation rate, error/drop counts.
-6. Report median и P95 per run plus paired delta. Throughput regression: `(baseline_rate - inspector_rate) / baseline_rate`; latency/resource overhead: `(inspector - baseline)` в absolute и relative units.
-7. Background activity, antivirus interference, thermal/power throttling и backend cache state фиксировать; contaminated run исключается только по predeclared rule.
-8. Performance suite на GitHub-hosted runner может ловить gross regressions, но numeric release gate требует controlled Windows hardware.
-
-Owner должен отдельно утвердить budgets для CPU, RAM, GPU, disk, wakeups, throughput regression и reference hardware/workloads. До этого результаты только measurements, не pass/fail.
+1. Зафиксировать Inspector commit/package hash, OS edition/build/update, CPU/RAM, storage, GPU/driver, power plan, backend/version/config, model identity/hash/quantization/context, client/version и Inspector profile.
+2. Reference runtime — Ollama `0.33.2`, executable SHA-256 `c79df1e0c1bfa10ed813c7030ac4c3ba38bb0e350bd7322d9bb58320343235c6`; installed community model `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M`, digest `6fac2f98fdf716f292de04c8554681b1e1f3a0d71445e374afebb3433911f705`, GGUF/Q4_K_M, `27.3B`, `17741860746` bytes, fixed context `8192`. Модель не распространяется; size больше `16311 MiB` VRAM, поэтому ожидается hybrid offload.
+3. Использовать immutable synthetic corpus без real user content; deterministic seed/output limit, если backend это допускает. Workloads: idle, cold load, hybrid GPU/CPU, CPU-only, streaming/non-streaming, concurrency `1/4`, tools/fragmented stream, collector unavailable/failure. CPU-only может иметь меньший fixed output.
+4. Снять `Inspector off` baseline и `Inspector on` после одинакового warm-up; чередовать `AB/BA`, минимум `5` paired repetitions для каждого built-in profile. Idle: `10 min` warm-up + `1 h` measurement.
+5. Измерять process-tree CPU/private bytes, RAM growth, disk writes/wakeups, reliable GPU utilization/VRAM, throughput, TTFT и total latency. Throughput regression: `(baseline_rate - inspector_rate) / baseline_rate`; overhead: `(inspector - baseline)` в указанной absolute unit.
+6. Report median и P95, применяя оба соответствующих gates. Unavailable mandatory metric не pass. GPU gate обязателен на supported discrete GPU/reliable source. User customization не меняет pass/fail built-in profile.
+7. Contaminated run исключается только по predeclared OS update, antivirus, thermal/power throttling или foreign-load signal. Hosted CI ловит gross regressions; canonical release gate выполняется на controlled Windows reference hardware.
 
 ## 16. Build, CI и Windows release design
 
@@ -330,7 +369,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для BACKLOG-06 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `210/210` tests без skips, self-contained `win-x64` publish и smoke. PR #17 CI `33743758869` и exact-main CI `33744027574` завершились успешно на merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`. Active BACKLOG-05 candidate прошёл полный local CI-equivalent: locked normal/RID restores, format verification, Release build без warnings/errors, `211/211` tests без skips, clean self-contained `win-x64` publish и smoke exit `0`; exact-revision GitHub CI ещё не выполнен.
+Последняя terminal merged-main validation для BACKLOG-05 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `211/211` tests без skips, self-contained `win-x64` publish и smoke. PR #18 CI `33746022880` и exact-main CI `33746269521` завершились успешно на merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`.
 
 Configured CI foundation:
 
@@ -345,13 +384,13 @@ Configured CI foundation:
 
 Release design:
 
-1. Trusted tag/release flow performs locked restore, build, tests и один self-contained `win-x64` publish; subsequent packaging consumes that exact hashed publish output without rebuilding it.
-2. Package into MSIX; package identity/version are derived from release metadata, not branch name.
-3. Sign with a trusted code-signing identity and trusted timestamp. Signing secret is available only to the trusted release job/environment, never PR jobs.
-4. Verify signature, package manifest, clean install, upgrade, launch, proxy smoke and uninstall on the supported Windows matrix.
-5. Publish checksum, SBOM/provenance and MSIX to the explicitly approved channel.
+1. Trusted tag/release flow performs locked restore, build, tests и один self-contained single-file `win-x64` publish; downstream manifest/checksum/SBOM/provenance consume that exact hashed output without rebuild.
+2. Observation-only exact revision получает SemVer prerelease tag `v1.0.0-rc.1` и GitHub prerelease before B01 lifecycle code enters `main`.
+3. Publish unsigned portable executable, SHA-256, SBOM, provenance and user-facing SmartScreen warning to GitHub Releases. No installer/admin requirement and no automatic update behavior.
+4. Verify artifact identity, launch, tray/background, proxy, SQLite recovery and critical end-to-end behavior on Windows 11 `25H2` Home and Pro. Manual results always reference exact artifact hash.
+5. Lifecycle release line starts at `v1.1`; evidence from v1.0 candidate cannot be reused for changed lifecycle surfaces without explicit applicability.
 
-Production signing identity and distribution channel remain external gates: Microsoft Store can sign/host a submission; direct MSIX distribution needs an appropriately trusted certificate and hosting, while `.appinstaller` can add update behavior. Automatic updates are not a ratified product feature and will not be implemented implicitly. No release artifact is `LIVE`; applicable Evidence is build/package/install validation, while `DEPLOY`/`LIVE` remain `N/A`.
+Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate release backlog and do not block the approved portable channel. No release artifact is a server deployment; applicable Evidence is build/artifact/Windows runtime validation, while `DEPLOY`/`LIVE` remain `N/A` for E01.
 
 ## 17. Known risks and deferred decisions
 
@@ -359,13 +398,13 @@ Production signing identity and distribution channel remain external gates: Micr
 |---|---|---|
 | Full process crash interrupts proxy | Accepted for initial modular-monolith baseline | Reconsider sidecar only if crash/fault tests or uptime requirements justify IPC complexity |
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
-| Numeric overhead/idle/throughput budgets | `BLOCKER` for `EPIC-12 READY`, not for repository bootstrap | Explicit owner approval after baseline measurements |
-| Production signing identity/certificate | `PENDING_EXTERNAL_GATE` for release | Owner selects Store vs trusted direct-signing route |
-| Distribution/update channel | `PENDING_EXTERNAL_GATE` for release | Explicit release Goal; no hidden external network behavior |
+| Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
+| Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
+| Portable distribution | `APPROVED, NOT IMPLEMENTED` | GitHub Releases, unsigned single executable, SHA-256/SBOM/provenance and SmartScreen disclosure |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
-| Remote/LAN listener/backend | `BACKLOG` | Threat model, authentication, encryption and DEPLOY/LIVE applicability decision |
+| Secure remote | `APPROVED, NOT IMPLEMENTED` | Tailscale Serve + application token; actual Windows↔VPS/second-PC LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
-| Versioned settings schema и backend selection UI | `DEFER` | Следующие selected epic PR; текущий backend default `127.0.0.1:11434` immutable в runtime |
+| Lifecycle compatibility versions | `PENDING_EXTERNAL_GATE` for two adapters | Ollama `0.33.2` verified locally; llama.cpp `b10516` and LM Studio/lms target versions require actual-runtime Evidence |
 
 ## 18. Primary evidence sources
 
@@ -381,3 +420,5 @@ Production signing identity and distribution channel remain external gates: Micr
 - [OpenAI Chat Completions API reference](https://developers.openai.com/api/reference/cli/resources/chat/subresources/completions) — canonical `usage`, streaming `choices[].delta.content` и technical token-detail semantics для compatible wire contract.
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) — OpenAI-compatible flow, tools, timings and optional metrics.
 - [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools), [native chat](https://lmstudio.ai/docs/developer/rest/chat) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls, terminal stats and exact model-load lifecycle signals.
+- [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve) and [Funnel](https://tailscale.com/docs/features/tailscale-funnel) — private tailnet HTTPS exposure versus explicitly forbidden public exposure.
+- [OpenCode custom provider](https://opencode.ai/docs/providers/#custom-provider), [Hermes providers](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md) and [Open WebUI OpenAI-compatible connections](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/) — configuration surfaces for the existing `/v1/models` and `/v1/chat/completions` contract; actual client compatibility remains a manual gate.

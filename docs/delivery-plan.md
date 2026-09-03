@@ -1,98 +1,106 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T10:43:46Z`
+> Updated: `2026-09-03T21:18:12Z`
 
 ## Current Goal
 
-### `GOAL-005 — Реализовать все оставшиеся canonical product AC`
+### `GOAL-005 — Завершить согласованный Windows delivery scope`
 
-- **State:** `IN_PROGRESS`.
-- **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
-- **Verified base:** `origin/main` / local `main` = `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`; exact-main CI [33744027574](https://github.com/Just9120/llm-inspector/actions/runs/33744027574) succeeded.
-- **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
+- **State:** `IN_PROGRESS` (`RECOVERED` after PR #18 terminal delivery).
+- **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
+- **Verified base:** `origin/main` / local `main` = `ecdb542281ca5ad989de0540bf59939f42af8eb7`; exact-main CI [33746269521](https://github.com/Just9120/llm-inspector/actions/runs/33746269521) succeeded.
+- **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `138/164`.
+- **Active implementation denominator:** `21` ещё не выполненный и авторизованный AC: `E01-AC01` (`1`) + `E12-AC01..06` (`6`) + `B01-AC01..05` (`5`) + `B02-AC01..09` (`9`).
 
 **Scope**
 
-- Реализовать все ещё не выполненные canonical AC из `docs/project-spec.md` reviewable epic/fix PR.
-- Для каждого increment выполнять focused checks, полный local CI-equivalent перед единственным initial push, required PR CI, merge, exact-main CI, sync/cleanup и независимый readiness recalculation.
-- При product/SPEC/external blocker доставлять только безопасную подтверждаемую часть; невыполненные AC не кредитовать и продолжать fix increment внутри этой Goal, когда gate доступен.
-- Синхронизировать operational fields `project-spec`, architecture facts и delivery metadata без изменения durable requirements.
+- Ратифицировать уже согласованные durable decisions без readiness credit за documentation-only work.
+- Реализовать каждый из четырёх затронутых эпиков отдельным reviewable PR: E12, E01/release, B01, B02.
+- До появления lifecycle controls зафиксировать immutable observation-only `v1.0.0-rc.1` candidate exact SHA/artifact; B01 входит только в линию `v1.1`.
+- После code increments выполнить общую manual-validation phase по exact artifacts/configuration; каждый недоступный внешний target оставить `PENDING_EXTERNAL_GATE`, не подменяя Evidence.
+- После каждого merge подтвердить exact-main CI, синхронизировать local `main`, безопасно удалить merged branch и только затем начать следующий increment.
 
 **Non-goals**
 
-- Изменение canonical scope, business rules, atomic AC, support matrix или CI/CD safety contract.
-- Выдумывание remote topology/authentication, target OS matrix, performance budgets, signing identity, distribution channel, credentials или runtime deployment target.
-- Обход privacy, CI, release, security или repository protection gates.
-- Product behavior вне 92 перечисленных AC и unrelated refactoring.
+- `BACKLOG-03` Linux/macOS (`3` AC): demand не подтверждён, implementation не требуется сейчас.
+- `BACKLOG-04` additional protocols (`2` AC): OpenCode, Hermes и Open WebUI используют существующий OpenAI-compatible contract; `/v1/responses`, Anthropic Messages и Ollama native generation не добавляются.
+- Microsoft Store/MSIX/trusted signing/automatic Store updates; backend/model download/install/update; automatic backend restart after crash.
+- Arbitrary command/args/env execution, privileged service management, public listener/Funnel/direct backend Internet exposure.
+- Изменение остальных canonical AC, privacy/fault-isolation rules или CI/CD safety gates.
 
 **Goal acceptance criteria**
 
-1. Каждый из 92 AC либо выполнен с traceable Evidence, либо явно оставлен невыполненным с точным blocker/gate и без readiness credit.
-2. Каждый bounded epic/fix increment проходит required local validation и exact-revision GitHub CI до merge.
-3. После каждого merge exact-main CI terminal success подтверждён до начала следующего branch; local `main` синхронизирован, merged branch безопасно удалён.
-4. Initial/full readiness каждый раз считается только как `completed atomic AC / 139` и `completed atomic AC / 164`; предыдущие оценки не используются как доказательство.
-5. Goal достигает `DONE` только при `164/164` и required Evidence либо останавливается в `BLOCKED` / `PENDING_EXTERNAL_GATE`, если после всех безопасных increments остаётся внешний gate.
+1. Все `21/21` active AC выполнены либо Goal остановлена в `PENDING_EXTERNAL_GATE` с exact отсутствующим Evidence; частичный AC не получает credit.
+2. Каждый epic increment проходит focused tests, полный local CI-equivalent, PR exact-head CI, merge и exact-main CI.
+3. `v1.0.0-rc.1` observation-only candidate фиксируется до merge B01; `v1.1` lifecycle code не попадает в candidate artifact.
+4. Manual phase проверяет exact frozen artifacts/configuration и не смешивает v1.0/v1.1 Evidence.
+5. Readiness пересчитывается только как completed canonical AC / `139` и / `164`; завершение active scope даёт максимум `139/139` initial и `159/164` full, потому что B03/B04 явно остаются backlog.
+6. Terminal documentation содержит exact commits, PR/CI, artifact hashes, manual results и unresolved gates без metadata-only PR loop.
 
-**Required Evidence:** для feature epics `SPEC`, `CODE`, `TEST`, `CI` согласно их DoD; `DEPLOY`/`LIVE` — `N/A`, кроме ещё не определённой applicability `BACKLOG-02`. Exact status не повышается без фактического Evidence.
+**Required Evidence**
 
-**Known blockers/dependencies**
+- `E12-AC01..06`: SPEC/CODE/TEST/CI `✅` плюс controlled reference benchmark results для каждого built-in profile.
+- `E01-AC01`: SPEC/CODE/TEST/CI `✅`, exact artifact SHA-256/SBOM/provenance и manual Windows 11 `25H2` Home/Pro run Evidence; DEPLOY/LIVE `N/A`.
+- `B01-AC01..05`: SPEC/CODE/TEST/CI `✅`; Ollama `0.33.2` verified, llama.cpp `b10516` и LM Studio/lms target versions требуют отдельного actual-runtime Evidence до compatibility claim.
+- `B02-AC01..09`: security review и SPEC/CODE/TEST/CI `✅`, DEPLOY `N/A`, LIVE `✅` только по фактическому encrypted Windows↔VPS/second-PC test.
 
-- `EPIC-01/E01-AC01`: release Evidence на Windows 11 25H2 Home/Pro требует будущего release Goal, signing/distribution decision и clean install/upgrade/runtime matrix.
-- `EPIC-12`: numeric performance budgets и frozen hardware/workload fixtures отсутствуют; `SPEC: ◐` блокирует READY, но не measurement infrastructure и reliability hardening.
-- `BACKLOG-02`: remote topology, identity/authentication и DEPLOY/LIVE applicability не определены; `SPEC: ◐` блокирует implementation, затрагивающую security boundary.
-- `BACKLOG-03`: supported Linux distributions/macOS versions не определены после demand gate; `SPEC: ◐` блокирует platform-support claim.
+**Known external gates**
 
-**Stop condition:** после `164/164` с required Evidence либо после исчерпания безопасных increments при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к новой Goal без explicit authorization не переходить.
+- Windows Home `25H2` exact-artifact run (ожидается nested VM); Windows Pro доступен локально.
+- llama.cpp `b10516` и LM Studio/lms target runtime ещё не установлены/проверены.
+- Tailscale second PC/VPS encrypted E2E пока недоступен.
+- OpenCode, Hermes и Open WebUI manual E2E могут завершаться по одному; непроверенный client остаётся `PENDING_EXTERNAL_GATE`.
 
-## PR execution sequence
+**Stop condition:** `DONE` после `21/21` с required Evidence; `PENDING_EXTERNAL_GATE`, если safe implementation завершена, но обязательный manual/LIVE target недоступен; `BLOCKED` только при impasse, не сводящемся к ожидаемому внешнему gate. После terminal state не переходить к следующей Goal без explicit authorization.
 
-1. `EPIC-01` — Windows application boundary и доступные product surfaces; release-matrix gate остаётся честно отделён.
-2. `EPIC-05` — agent operations, tools и concurrency.
-3. `EPIC-06` — Windows resource telemetry.
-4. `EPIC-07` — explainable diagnostics и errors.
-5. `EPIC-10` — background/tray/settings/notifications.
-6. `EPIC-11` — anonymized diagnostic snapshot.
-7. `EPIC-12` — reliability/measurement hardening до границы approved numeric budgets.
-8. `BACKLOG-01`, `BACKLOG-04`, `BACKLOG-05`, `BACKLOG-06` — lifecycle, protocols, multi-GPU и export отдельными PR.
-9. `BACKLOG-02`, `BACKLOG-03` — только после закрытия canonical SPEC/external gates; до этого допускаются лишь нерасширяющие boundary seams/tests/docs.
+## Working pipeline
 
-Sequence — рабочий pipeline внутри одной authorized Goal; точный порядок fix PR может меняться по фактическим dependencies, denominator не меняется.
+| Order | Increment | Exit gate |
+|---:|---|---|
+| 0 | Decision ratification | Documentation PR merged; exact-main CI success; denominator unchanged |
+| 1 | EPIC-12 performance profiles/harness | Built-in profiles и immutable fixture implemented/tested; controlled measurements deferred only as explicit external gate |
+| 2 | EPIC-01 portable release | Reproducible single-file artifact, SHA-256, SBOM/provenance and release validation automation |
+| 3 | Freeze v1.0 candidate | Immutable observation-only `v1.0.0-rc.1` exact SHA/artifact before B01 merge |
+| 4 | BACKLOG-01 lifecycle | Inspector-owned process controls, allowlisted parameters, compatibility matrix; no v1.0 contamination |
+| 5 | BACKLOG-02 secure remote | Loopback Inspector + Tailscale Serve guidance/token boundary, remote backend semantics and tests |
+| 6 | Manual validation | E12 controlled profiles; Windows Home/Pro; Ollama/llama.cpp/LM Studio; Tailscale; OpenCode/Hermes/Open WebUI |
+| 7 | Terminal reconciliation | Final readiness/Evidence, Goal `DONE` or `PENDING_EXTERNAL_GATE`, local main sync/cleanup |
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T10:43:46Z` |
+| Updated UTC | `2026-09-03T21:18:12Z` |
 | Expected base branch | `main` |
-| Base SHA | `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4` — verified local/`origin/main`; exact-main CI `33744027574` success |
-| Working branch | `codex/goal-005-backlog-05` |
-| Last verified revision | `f9e5d2fae10607e5c81d330683d57eb62082b1ba` — complete BACKLOG-05 candidate passed the full exact-SDK local CI-equivalent |
-| Initial worktree state | Clean branch created from verified `origin/main` after BACKLOG-06 exact-main success and safe local/remote branch cleanup; no unrelated changes |
-| Current worktree state | Clean expected candidate before this final checkpoint update; no unrelated changes |
-| Completed work | BACKLOG-06 terminal: PR #17, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574` and terminal Evidence comment succeeded. BACKLOG-05 now discovers up to 16 distinct supported NVIDIA devices, publishes and persists a separate GPU sample per device without duplicating host/traffic metrics, renders each device separately in live/history surfaces and explicitly marks workload attribution unavailable for the device-wide source. Exact SDK `10.0.400`: locked normal restore, format verification, Release build with zero warnings/errors, `211/211` tests with zero skips, locked RID restore, clean self-contained publish and smoke exit `0` all passed |
-| Current step | Commit the terminal local-validation checkpoint, then create the single initial remote batch and PR |
-| Next exact action | Commit this checkpoint, fetch and confirm unchanged `origin/main`, perform the one initial push, create the BACKLOG-05 PR and wait for required exact-head CI |
-| PR / CI | BACKLOG-06 terminal: PR #17, head `6361a4ec361e6104cd30559160a78aff478a9315`, PR CI `33743758869`, merge `fa96adfc670e6b2934068681dc5c00e1e8c1fbd4`, exact-main CI `33744027574`, all success. BACKLOG-05 has not been pushed; exact-revision CI pending |
-| Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
-| Blockers | No blocker for BACKLOG-05. `E12-AC01..06` remain separately blocked on owner-approved numeric budgets/reference fixtures |
-| Unverified assumptions | `nvidia-smi` device rows are treated only as device-wide metrics; no request/workload-to-device attribution is inferred. Non-NVIDIA support remains outside current supported source |
-| Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
+| Base SHA | `ecdb542281ca5ad989de0540bf59939f42af8eb7` — verified local/`origin/main`; exact-main CI `33746269521` success |
+| Working branch | `codex/goal-005-ratify-decisions` |
+| Last verified revision | `ecdb542281ca5ad989de0540bf59939f42af8eb7` — last externally verified commit; the ratification diff passed the recorded full local CI-equivalent, while its containing commit deliberately does not self-reference |
+| Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
+| Completed work | BACKLOG-05 terminal: PR [#18](https://github.com/Just9120/llm-inspector/pull/18), head `d834215da8c31a2331bfee880e2b712379b4844e`, PR CI `33746022880`, merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`, exact-main CI `33746269521`; all success, `211/211` tests, terminal Evidence [comment](https://github.com/Just9120/llm-inspector/pull/18#issuecomment-5524584973). All remaining product decisions ratified by user |
+| Current step | Fetch-check the base, then publish the single initial batch |
+| Next exact action | Fetch and confirm unchanged `origin/main`, push once and open the decision-ratification PR |
+| PR / CI | Ratification PR not yet created; exact-revision CI pending |
+| Deployment | N/A; server/runtime CD remains disabled |
+| Validation | Exact SDK `10.0.400`; locked normal restore, format, Release build `0` warnings/errors, `211/211` tests with zero skips, locked RID restore, self-contained `win-x64` publish and smoke `exit 0`. SDK/CLI/NuGet/Avalonia paths were isolated under `%TEMP%`; crash child used the exact SDK via inherited PATH |
+| Blockers | None for ratification or safe implementation. Manual targets listed above remain future external gates |
+| Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
+| Preserved pre-existing changes | None; branch began clean from verified base |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T10:37:48Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation credits B05-AC01..03 from bounded multi-device discovery, separate per-device UI/persistence and explicit unavailable workload attribution; exact-revision CI remains open |
-| Previous | `2026-09-03T10:25:51Z` | `132/139 = 95.0%` | `135/164 = 82.3%` | BACKLOG-06 terminal PR #17 and exact-main CI `33744027574` confirmed `B06-AC01..03` and required CI Evidence |
+| Current | `2026-09-03T20:59:53Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation on exact merged `ecdb542…`; decision ratification changes SPEC completeness but completes no product AC |
+| Previous | `2026-09-03T10:37:48Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | BACKLOG-05 local candidate implemented `B05-AC01..03`; exact-revision CI was then pending |
 
-Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators `139`/`164` не менялись; increment выполнил `3` atomic BACKLOG-05 criteria.
+Delta: `0.0 п.п.` initial и full. Denominators unchanged; terminal CI upgraded BACKLOG-05 Evidence to `✅`, while documentation-only decisions add no AC credit.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS ⛔ | 3/4 | 75% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -103,143 +111,31 @@ Delta: `0.0 п.п.` initial release и `+1.8 п.п.` full roadmap. Denominators 
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS ⛔ | 7/13 | 53.8% | ◐ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
-| BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
+| BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ✅ | — | — | — | N/A | — |
+| BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **—** |
 
-`*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
+## Active AC and gate map
 
-### EPIC-01 AC evidence map
-
-| Atomic AC | Current evidence |
+| AC | Current fact / completion gate |
 |---|---|
-| `E01-AC01` | Не выполнен: self-contained `win-x64` validation publish не заменяет clean install/upgrade/launch/tray/proxy/SQLite recovery suite на Windows 11 25H2 Home/Pro; signing/distribution path не утверждён |
-| `E01-AC02` | MainWindow имеет доступные `Live requests`, `History and analytics` и `Diagnostics` surfaces; `DesktopProductBoundaryTests` проверяет headings и named output controls |
-| `E01-AC03` | `AppLaunchConfiguration` принимает только literal IPv4/IPv6 loopback backend URLs; defaults Ollama/llama.cpp/LM Studio и derived gateway options покрыты focused Windows tests |
-| `E01-AC04` | Versioned launch parser отвергает start/stop/restart/model-load/runtime-mutation commands как unknown; UI не содержит lifecycle controls |
-
-### EPIC-05 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E05-AC01` | `AgentOperationTracker` объединяет explicit request/turn/tool/final lifecycle в один ordered `TechnicalOperationGraph`; SQLite v3 сохраняет request membership, turns и tool events |
-| `E05-AC02` | Operation detail упорядочен по explicit turn sequence и tool index; lifecycle хранит только technical state, без user/assistant/tool/final content |
-| `E05-AC03` | Bounded request projection считает top-level `tools`; turn metric хранит value, quality, source, version и derivation |
-| `E05-AC04` | JSON/SSE response projection считает `tool_calls` и объединяет fragmented function name только по tool index |
-| `E05-AC05` | Tool event хранит normalized name, status/error category и calculated wall duration до exact next tool-result turn; arguments/results не входят в schema |
-| `E05-AC06` | Operation ID и request ID разделяют одновременные requests; parallel integration fixture подтверждает восемь независимых operations |
-| `E05-AC07` | Tracker требует совпадение operation/session/client/backend и rejects cross-session/cross-client continuation; parallel tests подтверждают отсутствие смешения |
-| `E05-AC08` | Missing/malformed/duplicate/gap/out-of-order/inconsistent correlation остаётся ungrouped или `unavailable`; time proximity не используется |
-
-### EPIC-06 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E06-AC01` | Per-request sampler stores NVIDIA GPU utilization, VRAM used/total, temperature and power with device ID; missing executable/device/field is typed `unavailable` |
-| `E06-AC02` | Windows `GetSystemTimes` deltas and `GlobalMemoryStatusEx` provide versioned host CPU utilization plus RAM percent/used bytes |
-| `E06-AC03` | Every sample carries UTC timestamp, exact request ID, optional operation ID and current versioned request stage |
-| `E06-AC04` | Backend process is attributed only from one exact literal-loopback TCP listener owner, PID and start time/image identity; zero/multiple/unreadable owners remain unavailable |
-| `E06-AC05` | Proven process uses Windows cumulative CPU, working set and I/O counters; no process metric is inferred when association/source is absent |
-| `E06-AC06` | Read/write transfer deltas from the proven backend process are stored on the same request/stage timeline with calculated provenance |
-| `E06-AC07` | Gateway counts actually relayed request/response bytes on the exact request timeline without buffering or blocking relay |
-| `E06-AC08` | Live/history UI renders exact request/stage correlation, metric quality/source and explicit unavailable process/GPU state; samples are bounded to 2048 with persisted gap count |
-
-### EPIC-07 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E07-AC01` | `DiagnosticRuleset` version `diagnostic-rules-v1` matches large prompt at explicit `8192`-token boundary; exact and below-boundary tests prevent implicit threshold drift |
-| `E07-AC02` | Versioned slow-generation rule matches exact rate `<=10 tokens/s`; missing and just-above-boundary cases do not produce a false fact |
-| `E07-AC03` | Exact request-correlated high process CPU/low GPU evidence produces only a CPU-offload `HYPOTHESIS`, explicitly avoiding unsupported layer-placement causality |
-| `E07-AC04` | Request-correlated VRAM used/total derives a versioned ratio and detects pressure at `>=90%`; missing, mismatched, estimated and inconsistent evidence fail closed |
-| `E07-AC05` | Cold model-load disposition plus measured duration identifies versioned load-latency contribution; missing duration remains hypothesis/insufficient rather than fabricated timing |
-| `E07-AC06` | Exact backend queue metric is compared with a versioned `1000 ms` threshold; unavailable evidence is explicit |
-| `E07-AC07` | Context used/limit derives a quality-preserving ratio and detects `>=90%`; unavailable or inconsistent numerator/denominator does not assert high usage |
-| `E07-AC08` | Gateway transport classification and diagnostics distinguish connection refused, timeout, backend disconnect/unavailable and relay failure without retaining exception text |
-| `E07-AC09` | Active lifecycle is reported as ongoing work; elapsed `>=30 s` without a request-matched typed backend signal is `INSUFFICIENT_DATA`, while only explicit `Stalled` signal yields confirmed fact |
-| `E07-AC10` | Every ruleset conclusion carries a bounded human-readable explanation rendered by `DiagnosticsSummaryTextPresenter` |
-| `E07-AC11` | Conclusions carry ruleset version and typed metric/stage/error/activity Evidence with quality/source/version; zero-evidence conclusions render explicit `unavailable` |
-| `E07-AC12` | Estimated threshold matches and inferred CPU offload are hypotheses; missing/mismatched inputs are insufficient; boundary tests assert neither is upgraded to fact |
-| `E07-AC13` | `ProxyErrorType`/`HistoryErrorType` distinguish connection refused, model loading/503, HTTP/API, timeout, context overflow, cancellation and backend crash/disconnect; gateway/store tests cover capture and persistence |
-| `E07-AC14` | Analytics groups errors only by explicit operation/session metadata and includes first/last UTC time; a nearby error without metadata remains uncorrelated and arbitrary body content is excluded |
-| `E07-AC15` | Query window count and UI label distinguish `single failure` from `recurring xN` at the versioned minimum of two occurrences |
-| `E07-AC16` | Error-rate period comparison reports baseline/candidate per-type counts, each period's all-request denominator, rates and percentage-point delta for groups recurring in either period |
-
-### EPIC-10 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E10-AC01` | `BackgroundLifetimeController` turns ordinary close into hide-and-continue while a tray is available; only explicit tray Exit requests process shutdown, and the hidden-window refresh timer is suspended independently of monitoring |
-| `E10-AC02` | Gateway, buffered SQLite sink and history store remain composition-root owned until process exit; a real SQLite test records and reads a new observation after the close action becomes background hide |
-| `E10-AC03` | Native per-user Win32 tray exposes Open, Notification settings, Pause/Resume notifications and Exit; typed router tests verify every command without depending on an interactive desktop fixture |
-| `E10-AC04` | Settings UI enables per-user Windows autostart through exact HKCU Run registration with a quoted executable and `--background` launch mode |
-| `E10-AC05` | The same settings surface disables the exact registration without creating a missing Run key; service tests cover enable/disable and rollback on settings-write failure |
-| `E10-AC06` | Four separate persisted toggles gate backend unavailable, long completion, recurring typed error and exact/calculated high-context candidates; typed rules and independent-toggle tests cover all events |
-| `E10-AC07` | Silent mode is persisted and maps to `NIIF_NOSOUND`; automated dispatch tests confirm every published notification carries the silent flag |
-| `E10-AC08` | UI documents `notification-policy-v1`: same event key suppressed for 15 minutes and maximum three published notifications per rolling 10 minutes; exact-boundary tests cover suppression, expiry and rate-window release |
-
-### EPIC-11 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E11-AC01` | `DiagnosticSnapshotService` uses only the local `ITechnicalHistoryStore`, in-process serialization and explicit local file write; UI states that nothing is uploaded and no network/upload dependency exists |
-| `E11-AC02` | Environment block always contains OS, GPU driver, backend and client version facts; trusted local OS value is included, while unavailable sources are explicit typed markers rather than guesses |
-| `E11-AC03` | Each selected request carries normalized model availability, backend/client identities, model-load state and quality/source/version-qualified allowlisted runtime metrics |
-| `E11-AC04` | Selected request entries include typed outcome, HTTP status and `HistoryErrorType`; arbitrary exception/error body text has no DTO field |
-| `E11-AC05` | SQLite applies inclusive UTC bounds directly to `resource_samples.captured_at_utc`; integration tests prove samples outside the selected relevant interval are excluded |
-| `E11-AC06` | End-to-end negative corpus passes prompt, response, reasoning, tool arguments/results and user code through proxy/SQLite, then scans the generated snapshot/file and finds zero occurrences |
-| `E11-AC07` | UI renders read-only exact JSON plus SHA-256 locally; Save is disabled until preview and any scope edit invalidates the preview |
-| `E11-AC08` | Typed UI parser requires explicit ISO-8601 UTC range; SQLite request and resource queries use the same selection |
-| `E11-AC09` | Typed UI parser accepts an exact non-empty operation GUID; SQLite filters both request and resource rows by that operation, covered by integration tests |
-| `E11-AC10` | Root schema is `diagnostic-snapshot-v1`; every DTO shape has an executable field allowlist, output is bounded to 1000 requests/5000 samples with truncation markers, and reflection/privacy tests prevent silent field growth |
-
-### EPIC-12 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E12-AC01` | Не выполнен: CPU budget и frozen reference workload/hardware не утверждены; single scaffold performance test не является measurement Evidence |
-| `E12-AC02` | Не выполнен: RAM budget и frozen reference workload/hardware не утверждены |
-| `E12-AC03` | Не выполнен: GPU budget и frozen reference GPU/driver/workload не утверждены |
-| `E12-AC04` | Не выполнен: disk budget и frozen storage/workload fixture не утверждены |
-| `E12-AC05` | Не выполнен: acceptable paired throughput delta и immutable backend/model benchmark fixture не утверждены |
-| `E12-AC06` | Не выполнен: idle CPU/RAM/disk-wakeup budget и measurement window не утверждены |
-| `E12-AC07` | `ProxyGateway` изолирует resource collector start, stage/traffic callbacks, completion, persistence и disposal; integration test injects failures во все lifecycle seams и подтверждает неизменённый successful response |
-| `E12-AC08` | Windows probe failure создаёт request-correlated sample с affected OS/GPU metrics `unavailable` и exact gateway traffic; gateway integration подтверждает, что unavailable metric не влияет на response |
-| `E12-AC09` | `HistoryErrorOrigin` различает `Inspector`, `Client`, `Backend`, `Model`, `Unknown`, а success — `NotApplicable`; ambiguous relay/legacy failure остаётся `Unknown`. Schema v5 сохраняет origin, UI его показывает, mapping/backfill покрыты tests |
-| `E12-AC10` | Startup выполняет SQLite `quick_check(1)` до migration/write. Integration test сохраняет committed row, подтверждает normal restart, запускает отдельный child testhost, ждёт commit marker, убивает весь process tree без disposal и затем подтверждает обе committed rows после reopen |
-| `E12-AC11` | Тот же normal/process-kill restart test после recovery сохраняет третий request и читает все три records; new-write acceptance подтверждён фактическим SQLite store |
-| `E12-AC12` | Typed `TechnicalRuntimeFacts` содержит configuration fingerprint и allowlisted Inspector/framework/OS/adapter/backend/client/model/GPU-driver versions; schema v5 сохраняет available values, production gateway пишет local/config facts и model, NVIDIA source добавляет driver version. Reflection/schema privacy allowlists исключают free-form carrier |
-| `E12-AC13` | Period analytics группирует полную комбинацию runtime/version facts, сравнивает earliest/latest distinct cohorts по latency/throughput/error rate только при `n >= 3`, сохраняет typed recurring-error deltas и явно различает no facts/single config/undersampled data; unit, SQLite integration и UI presenter paths покрыты tests |
-
-### BACKLOG-05 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `B05-AC01` | `NvidiaSmiGpuProbe` parses, validates, orders and deduplicates every supported NVIDIA device row, with a safety bound of 16 devices; missing executable/device/output remains an empty unavailable result |
-| `B05-AC02` | Request monitor emits one correlated GPU record per device, SQLite preserves equal-timestamp device rows, and live/history presenters render distinct device identity and metrics without duplicating host or gateway traffic totals |
-| `B05-AC03` | `nvidia-smi` readings are explicitly labeled `workload attribution=unavailable (device-wide source)`; no request-to-device assignment is inferred from timing or utilization |
-
-### BACKLOG-06 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `B06-AC01` | `AnalyticsExportService` передаёт exact UTC range в shared SQLite-backed diagnostic projection и сериализует только выбранные pseudonymous request/resource records; truncation отклоняется fail-closed, а UI требует preview до atomic local save |
-| `B06-AC02` | Export группирует все available request и resource metrics по UTC day и отдельной category, публикует unit, exact sample count, minimum-sample sufficiency, arithmetic mean, median и nearest-rank P95; error rate и model-load counts включены отдельно |
-| `B06-AC03` | Export повторно использует versioned diagnostic snapshot DTO allowlists; end-to-end Privacy test прогоняет общий corpus prompt/response/reasoning/tool arguments/results/user code/credentials/raw headers через proxy, SQLite, snapshot и export, затем подтверждает zero occurrences во всех persisted files |
-
-## Current blockers и decisions
-
-1. Partial safe PR разрешён Goal policy, но incomplete AC остаётся открытым и не получает credit.
-2. Required CI failure/skip, privacy/security regression или release safety failure блокирует merge до исправления.
-3. External gates не подменяются code/config assumptions: они остаются explicit blockers до owner Evidence/decision.
-4. Репозиторий не имеет approved post-merge metadata writer; terminal Evidence фиксируется в merged PR comment и восстанавливается в следующий substantive PR без metadata-only loop.
+| `E01-AC01` | Not complete: portable release contract approved; exact artifact/automation and Windows Home/Pro manual Evidence absent |
+| `E12-AC01..06` | Not complete: budgets/reference fixture approved; profiles, harness and controlled results absent |
+| `B01-AC01..05` | Not complete: lifecycle/version contract approved; implementation and runtime Evidence absent |
+| `B02-AC01..09` | Not complete: remote security contract approved; implementation and required LIVE Evidence absent |
+| `B03-AC01..03` | Conditional backlog; no current demand/authorization |
+| `B04-AC01..02` | Conditional backlog; current named clients require no new protocol |
 
 ## Candidate next Goals
 
-Новые Goals не предлагаются, пока `GOAL-005` активна. Implementation authorization относится только к этой Goal; после её terminal state агент останавливается.
+- Store/MSIX/trusted signing/automatic Store updates — release backlog proposal only.
+- Linux/macOS support — only after explicit product demand.
+- Additional protocol — only after a supported client demonstrably requires one.
+
+Эти candidates не авторизуют implementation. Пока `GOAL-005` active, следующая Goal не выбирается.
