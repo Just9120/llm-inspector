@@ -439,7 +439,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`; PR #20 доставил profiles/fail-closed evaluator/frozen corpus, но `E12-AC01..06` не выполнены без controlled results каждого built-in profile. Текущий EPIC-01 candidate реализует portable release automation, но `E01-AC01` не кредитуется до trusted tag artifact и Windows Home/Pro exact-artifact Evidence. `B01-*` и `B02-*` также не кредитуются без required Evidence.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `ff62f54df4fbd4de443144259ac3d89bddff0044` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`; PR #21 доставил portable release automation, но `v1.0.0-rc.1` publication failed после успешных build/payload/attestation stages. `E01-AC01` не кредитуется до успешного trusted tag release и Windows Home/Pro exact-artifact Evidence. `E12-AC01..06`, `B01-*` и `B02-*` также не кредитуются без required Evidence.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
@@ -471,7 +471,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
 
 1. `EPIC-12`: profiles/evaluator/frozen corpus merged; выполнить controlled reference runs для `E12-AC01..06`.
-2. `EPIC-01`: portable workflow/payload реализованы в local candidate; создать exact `v1.0.0-rc.1` и вручную подтвердить Windows 11 `25H2` Home/Pro matrix.
+2. `EPIC-01`: portable workflow/payload merged; immutable `v1.0.0-rc.1` run `33813681861` failed только в final publication из-за отсутствующей repository identity. Доставить forward-fix как новый `v1.0.0-rc.2`, затем вручную подтвердить Windows 11 `25H2` Home/Pro matrix.
 3. `BACKLOG-01`: llama.cpp и LM Studio exact versions остаются `PENDING_EXTERNAL_GATE` до установки и manual compatibility tests; это не блокирует safe code PR.
 4. `BACKLOG-02`: encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE`; это не блокирует safe code PR.
 5. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
@@ -485,16 +485,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T22:15:12Z`.
+- Last recalculation: `2026-09-03T22:46:11Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 partial PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`, decision-ratification PR/main runs `33807351764`/`33807628059`, EPIC-12 profiles/harness PR/main runs `33810069610`/`33810329608`; all completed successfully.
-- Code/tests/runtime: merged base through EPIC-12 profiles/harness is exact-main CI verified at `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`; PR #20 head `5b041ec0ac1b56831671bb4a897ddb0b800d6569` and terminal Evidence are recorded in the merged PR. Local EPIC-01 candidate `1b076ed3fa07a3b68690806e763d29b485eb9a63` adds reproducible single-file payload and a tag-only attested GitHub Release workflow; full local `224/224` tests, dual-publish reproducibility, payload verification and renamed-artifact smoke passed. PR CI and actual release remain pending.
+- GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 partial PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`, decision-ratification PR/main runs `33807351764`/`33807628059`, EPIC-12 profiles/harness PR/main runs `33810069610`/`33810329608`, EPIC-01 release-automation PR/main runs `33812383296`/`33813413498`; all completed successfully. Release run `33813681861` failed only in final publication after successful build, payload verification and both attestation steps.
+- Code/tests/runtime: merged base through EPIC-01 release automation is exact-main CI verified at `ff62f54df4fbd4de443144259ac3d89bddff0044`; PR #21 head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8` passed full local/PR validation. Failed-publication `rc.1` executable SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification. Local forward-fix through `2044bc09a7dd221c2ac9d69bee76e217b08df672` supplies `GH_REPO` to the checkout-free final publish step and adds a policy assertion; full local `224/224` tests and one-file publish smoke pass. Actual successful release remains pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-12 profiles/harness delivered through PR [#20](https://github.com/Just9120/llm-inspector/pull/20), merge `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`, exact-main CI `33810329608`. EPIC-01 branch `codex/goal-005-epic-01-portable-release` starts from that verified base before the v1.0 freeze and B01/B02 increments.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-01 automation delivered through PR [#21](https://github.com/Just9120/llm-inspector/pull/21), merge `ff62f54df4fbd4de443144259ac3d89bddff0044`, exact-main CI `33813413498`. Branch `codex/goal-005-epic-01-release-fix` is the bounded forward-fix before `v1.0.0-rc.2` and B01/B02 increments.

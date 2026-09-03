@@ -31,6 +31,7 @@ public sealed partial class ReleaseWorkflowPolicyTests
         StringAssert.Contains(workflow, "git merge-base --is-ancestor");
         StringAssert.Contains(workflow, "subject-checksums: release-payload/assets/SHA256SUMS.txt");
         StringAssert.Contains(workflow, "--verify-tag");
+        StringAssert.Contains(publishJob, "GH_REPO: ${{ github.repository }}");
         StringAssert.Contains(workflow, "cancel-in-progress: false");
         Assert.DoesNotContain("pull_request", workflow, StringComparison.Ordinal);
         Assert.DoesNotContain("workflow_dispatch", workflow, StringComparison.Ordinal);

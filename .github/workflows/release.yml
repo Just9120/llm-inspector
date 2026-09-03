@@ -195,6 +195,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
           IS_PRERELEASE: ${{ needs.build.outputs.prerelease }}
