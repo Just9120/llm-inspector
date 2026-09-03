@@ -272,6 +272,29 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
+    public async Task RetentionProcessesMoreThanOneOldestFirstBatch()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTimeOffset now = new(2026, 4, 1, 0, 0, 0, TimeSpan.Zero);
+        for (int index = 0; index <= HistoryPolicies.RetentionDeleteBatchSize; index++)
+        {
+            await fixture.Store.RecordAsync(CreateObservation(
+                Guid.NewGuid(), now.AddDays(-40).AddMinutes(index), ClientKind.Cline, BackendKind.Ollama,
+                "retention-model", ProxyOutcome.Completed, 10), CancellationToken.None);
+        }
+
+        Guid boundaryId = Guid.NewGuid();
+        await fixture.Store.RecordAsync(CreateObservation(
+            boundaryId, now.AddDays(-30), ClientKind.Cline, BackendKind.Ollama,
+            "retention-model", ProxyOutcome.Completed, 20), CancellationToken.None);
+
+        int deleted = await fixture.Store.ApplyRetentionAsync(HistoryRetention.ThirtyDays, now);
+
+        Assert.AreEqual(HistoryPolicies.RetentionDeleteBatchSize + 1, deleted);
+        Assert.AreEqual(boundaryId, AssertSingle(await fixture.Store.QueryRequestsAsync(new HistoryFilter())).RequestId);
+    }
+
+    [TestMethod]
     public async Task RetentionSettingDefaultsToThirtyDaysAndPersistsSelection()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();

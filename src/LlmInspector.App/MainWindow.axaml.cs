@@ -211,7 +211,12 @@ public partial class MainWindow : Window
         {
             await action();
         }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException)
+        catch (Exception exception) when (exception is
+            ArgumentException or
+            InvalidOperationException or
+            IOException or
+            UnauthorizedAccessException or
+            Microsoft.Data.Sqlite.SqliteException)
         {
             HistoryStateText.Text = $"History action failed: {exception.Message}";
         }

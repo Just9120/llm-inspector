@@ -325,53 +325,43 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         try
         {
             await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-            await using SqliteTransaction transaction = (SqliteTransaction)await connection
-                .BeginTransactionAsync(cancellationToken)
-                .ConfigureAwait(false);
             int deleted = 0;
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "resource_samples",
-                "captured_at_utc < $cutoff",
+                "captured_at_utc",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "tool_events",
-                "started_at_utc < $cutoff",
+                "started_at_utc",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "turns",
-                "started_at_utc < $cutoff",
+                "started_at_utc",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "requests",
-                "started_at_utc < $cutoff",
+                "started_at_utc",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "operations",
-                "COALESCE(ended_at_utc, started_at_utc) < $cutoff",
+                "COALESCE(ended_at_utc, started_at_utc)",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            deleted += await DeleteInBatchesAsync(
+            deleted += await DeleteBeforeInBatchesAsync(
                 connection,
-                transaction,
                 "sessions",
-                "COALESCE(ended_at_utc, started_at_utc) < $cutoff",
+                "COALESCE(ended_at_utc, started_at_utc)",
                 cutoff,
                 cancellationToken).ConfigureAwait(false);
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             return deleted;
         }
         finally
@@ -1031,6 +1021,18 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             command.Parameters.AddWithValue("$session", filter.SessionId.Value.ToString("N"));
         }
 
+        if (filter.Status is not null)
+        {
+            predicates.Add("EXISTS(SELECT 1 FROM requests r WHERE r.operation_id = s.operation_id AND r.outcome = $status)");
+            command.Parameters.AddWithValue("$status", (int)filter.Status.Value);
+        }
+
+        if (filter.ErrorType is not null)
+        {
+            predicates.Add("EXISTS(SELECT 1 FROM requests r WHERE r.operation_id = s.operation_id AND r.error_type = $error)");
+            command.Parameters.AddWithValue("$error", (int)filter.ErrorType.Value);
+        }
+
         command.CommandText = $"""
             SELECT s.sample_id, s.operation_id, s.captured_at_utc,
                    s.cpu_percent, s.cpu_quality, s.cpu_source, s.cpu_source_version, s.cpu_derivation_version,
@@ -1093,31 +1095,34 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             .ToArray();
     }
 
-    private static async Task<int> DeleteInBatchesAsync(
+    private static async Task<int> DeleteBeforeInBatchesAsync(
         SqliteConnection connection,
-        SqliteTransaction transaction,
         string table,
-        string predicate,
+        string timestampExpression,
         DateTimeOffset cutoff,
         CancellationToken cancellationToken)
     {
         int total = 0;
         while (true)
         {
+            await using SqliteTransaction transaction = (SqliteTransaction)await connection
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false);
             await using SqliteCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = $"""
                 DELETE FROM {table}
                 WHERE rowid IN (
                     SELECT rowid FROM {table}
-                    WHERE {predicate}
-                    ORDER BY rowid
+                    WHERE {timestampExpression} < $cutoff
+                    ORDER BY {timestampExpression}, rowid
                     LIMIT $batch_size
                 );
                 """;
             command.Parameters.AddWithValue("$cutoff", ToDbTime(cutoff));
             command.Parameters.AddWithValue("$batch_size", HistoryPolicies.RetentionDeleteBatchSize);
             int count = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             total += count;
             if (count < HistoryPolicies.RetentionDeleteBatchSize)
             {
