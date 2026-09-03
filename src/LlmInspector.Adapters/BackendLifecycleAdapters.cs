@@ -456,17 +456,42 @@ internal sealed class RuntimeCompatibilityCatalog
             .Single(name => name.EndsWith("runtime-compatibility.json", StringComparison.Ordinal));
         using Stream stream = typeof(RuntimeCompatibilityCatalog).Assembly.GetManifestResourceStream(resource)!;
         using JsonDocument document = JsonDocument.Parse(stream);
+        if (document.RootElement.GetProperty("schemaVersion").GetInt32() != 1)
+        {
+            throw new InvalidDataException("Unsupported runtime compatibility schema.");
+        }
+
         List<Entry> entries = [];
         foreach (JsonElement item in document.RootElement.GetProperty("entries").EnumerateArray())
         {
             if (!Enum.TryParse(item.GetProperty("backend").GetString(), out BackendKind backend))
             {
-                continue;
+                throw new InvalidDataException("Runtime compatibility backend is invalid.");
             }
 
             string match = item.GetProperty("versionMatch").GetString() ?? string.Empty;
             string status = item.GetProperty("status").GetString() ?? string.Empty;
+            string revision = item.GetProperty("inspectorRevision").GetString() ?? string.Empty;
+            bool supportedStatus = status is "verified" or "compatible" or "observation-only" or "unsupported";
+            bool validRevision = revision.Length == 40 && revision.All(Uri.IsHexDigit);
+            bool requiredArraysPresent = RequiredArray(item, "capabilities") &&
+                RequiredArray(item, "windows") &&
+                RequiredArray(item, "evidence") &&
+                RequiredArray(item, "limitations");
+            bool verifiedDatePresent = status != "verified" || item.GetProperty("verifiedAtUtc").ValueKind == JsonValueKind.String;
+            if (string.IsNullOrWhiteSpace(match) || !supportedStatus || !validRevision ||
+                !requiredArraysPresent || !verifiedDatePresent ||
+                entries.Any(entry => entry.Backend == backend && entry.VersionMatch == match))
+            {
+                throw new InvalidDataException("Runtime compatibility entry is incomplete or ambiguous.");
+            }
+
             entries.Add(new Entry(backend, match, status));
+        }
+
+        if (entries.Select(entry => entry.Backend).Distinct().Count() != Enum.GetValues<BackendKind>().Length)
+        {
+            throw new InvalidDataException("Runtime compatibility matrix does not cover every built-in backend.");
         }
 
         return new RuntimeCompatibilityCatalog(entries);
@@ -475,7 +500,7 @@ internal sealed class RuntimeCompatibilityCatalog
     public BackendCompatibilityStatus Classify(BackendKind backend, string version)
     {
         Entry? exact = _entries.FirstOrDefault(entry =>
-            entry.Backend == backend && version.Contains(entry.VersionMatch, StringComparison.OrdinalIgnoreCase));
+            entry.Backend == backend && ContainsVersionToken(version, entry.VersionMatch));
         if (exact is null)
         {
             return BackendCompatibilityStatus.Compatible;
@@ -489,6 +514,33 @@ internal sealed class RuntimeCompatibilityCatalog
             _ => BackendCompatibilityStatus.Unsupported,
         };
     }
+
+    private static bool RequiredArray(JsonElement item, string propertyName) =>
+        item.TryGetProperty(propertyName, out JsonElement value) &&
+        value.ValueKind == JsonValueKind.Array &&
+        value.GetArrayLength() > 0;
+
+    private static bool ContainsVersionToken(string value, string token)
+    {
+        int index = value.IndexOf(token, StringComparison.OrdinalIgnoreCase);
+        while (index >= 0)
+        {
+            int beforeIndex = index - 1;
+            int afterIndex = index + token.Length;
+            bool validBefore = beforeIndex < 0 || !IsVersionCharacter(value[beforeIndex]);
+            bool validAfter = afterIndex >= value.Length || !IsVersionCharacter(value[afterIndex]);
+            if (validBefore && validAfter)
+            {
+                return true;
+            }
+
+            index = value.IndexOf(token, index + 1, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
+    }
+
+    private static bool IsVersionCharacter(char value) => char.IsAsciiDigit(value) || value == '.';
 
     private sealed record Entry(BackendKind Backend, string VersionMatch, string Status);
 }

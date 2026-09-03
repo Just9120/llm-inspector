@@ -53,6 +53,7 @@ public sealed class BackendLifecycleAdapterContractTests
         Assert.AreEqual(BackendCompatibilityStatus.Compatible, llama.ClassifyVersion("llama b10516"));
         Assert.AreEqual(BackendCompatibilityStatus.Compatible, lmStudio.ClassifyVersion("lms 0.0.47"));
         Assert.AreEqual(BackendCompatibilityStatus.Compatible, ollama.ClassifyVersion("ollama version 99.0.0"));
+        Assert.AreEqual(BackendCompatibilityStatus.Compatible, ollama.ClassifyVersion("ollama version 0.33.20"));
         Assert.AreEqual("Проверено", ollama.GetCompatibilityLabel(BackendCompatibilityStatus.Verified));
         Assert.AreEqual("Совместимо", ollama.GetCompatibilityLabel(BackendCompatibilityStatus.Compatible));
         Assert.AreEqual("Только наблюдение", ollama.GetCompatibilityLabel(BackendCompatibilityStatus.ObservationOnly));

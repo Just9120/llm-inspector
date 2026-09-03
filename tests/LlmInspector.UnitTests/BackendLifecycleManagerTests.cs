@@ -123,6 +123,22 @@ public sealed class BackendLifecycleManagerTests
     }
 
     [TestMethod]
+    public async Task FailedReadinessPreservesOwnedIdentityWhenCleanupCannotBeConfirmed()
+    {
+        Fixture fixture = new();
+        fixture.Adapter.Ready = false;
+        fixture.Runtime.ThrowOnStop = true;
+        await fixture.DiscoverAndConfirmAsync();
+
+        BackendLifecycleResult result = await fixture.Manager.StartAsync();
+
+        Assert.IsFalse(result.Succeeded);
+        Assert.AreEqual(BackendLifecycleState.Faulted, result.Snapshot.State);
+        Assert.AreEqual(fixture.Runtime.Identity, result.Snapshot.OwnedProcess);
+        StringAssert.Contains(result.Snapshot.Message, "ручная остановка");
+    }
+
+    [TestMethod]
     public async Task CrashIsTypedAndNeverTriggersAutomaticRestart()
     {
         Fixture fixture = new();
@@ -260,6 +276,8 @@ public sealed class BackendLifecycleManagerTests
 
         public int StopCalls { get; private set; }
 
+        public bool ThrowOnStop { get; set; }
+
         public BackendProcessIdentity? LastStopped { get; private set; }
 
         public ValueTask<string?> ResolveExecutableAsync(
@@ -295,6 +313,11 @@ public sealed class BackendLifecycleManagerTests
         {
             StopCalls++;
             LastStopped = identity;
+            if (ThrowOnStop)
+            {
+                throw new InvalidOperationException("test stop failure");
+            }
+
             ProcessAlive = false;
             return ValueTask.CompletedTask;
         }

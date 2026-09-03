@@ -335,6 +335,10 @@ public sealed class BackendLifecycleManager : IDisposable
                 "Проверьте exact path, version и endpoint, затем подтвердите target.");
             return Success();
         }
+        catch (Exception exception) when (IsExpectedLifecycleFailure(exception))
+        {
+            return Fail($"Runtime discovery не выполнен безопасно ({exception.GetType().Name}).");
+        }
         finally
         {
             _gate.Release();
@@ -415,7 +419,7 @@ public sealed class BackendLifecycleManager : IDisposable
                 Model = key.Equals("model-id", StringComparison.Ordinal) ? normalized : _snapshot.Model,
                 Message = key.Equals("local-port", StringComparison.Ordinal)
                     ? $"Параметр «{definition.DisplayName}» сохранён. Подтвердите обновлённый exact endpoint."
-                    : $"Параметр «{definition.DisplayName}» сохранён. Он применится при следующем запуске/restart.",
+                    : $"Параметр «{definition.DisplayName}» сохранён. Он применится при следующей подходящей операции start/model load/restart.",
             };
             return Success();
         }
@@ -542,6 +546,7 @@ public sealed class BackendLifecycleManager : IDisposable
             }
 
             string normalizedModel = model.Trim();
+            bool restartedForModel = false;
             if (_adapter.Profile.ModelLoadMode == BackendModelLoadMode.RestartProcess)
             {
                 if (!Path.IsPathFullyQualified(normalizedModel) ||
@@ -563,6 +568,8 @@ public sealed class BackendLifecycleManager : IDisposable
                 {
                     return started;
                 }
+
+                restartedForModel = true;
             }
             else
             {
@@ -585,6 +592,25 @@ public sealed class BackendLifecycleManager : IDisposable
             if (!await _adapter.ConfirmModelAsync(
                     _snapshot.Target!, normalizedModel, _runtime, cancellationToken).ConfigureAwait(false))
             {
+                if (restartedForModel && _snapshot.OwnedProcess is BackendProcessIdentity unconfirmed)
+                {
+                    try
+                    {
+                        await _runtime.StopAsync(unconfirmed, null, cancellationToken).ConfigureAwait(false);
+                        _snapshot = _snapshot with
+                        {
+                            State = BackendLifecycleState.Faulted,
+                            OwnedProcess = null,
+                            Message = "Exact model identity не подтверждён; созданный model process остановлен.",
+                        };
+                        return new BackendLifecycleResult(false, _snapshot);
+                    }
+                    catch (Exception cleanupException) when (IsExpectedLifecycleFailure(cleanupException))
+                    {
+                        return Fail("Exact model identity не подтверждён, а owned process требует ручной остановки.");
+                    }
+                }
+
                 return Fail("Backend не подтвердил exact model identity после загрузки.");
             }
 
@@ -594,6 +620,10 @@ public sealed class BackendLifecycleManager : IDisposable
                 Message = $"Backend подтвердил загруженную модель: {normalizedModel}",
             };
             return Success();
+        }
+        catch (Exception exception) when (IsExpectedLifecycleFailure(exception))
+        {
+            return Fail($"Model load не выполнен безопасно ({exception.GetType().Name}).");
         }
         finally
         {
@@ -674,19 +704,29 @@ public sealed class BackendLifecycleManager : IDisposable
             };
             return Success();
         }
-        catch (Exception exception) when (exception is
-            IOException or InvalidOperationException or UnauthorizedAccessException or TimeoutException)
+        catch (Exception exception) when (IsExpectedLifecycleFailure(exception))
         {
+            bool cleaned = started is null;
             if (started is not null)
             {
-                await _runtime.StopAsync(started, null, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await _runtime.StopAsync(started, null, cancellationToken).ConfigureAwait(false);
+                    cleaned = true;
+                }
+                catch (Exception cleanupException) when (IsExpectedLifecycleFailure(cleanupException))
+                {
+                    cleaned = false;
+                }
             }
 
             _snapshot = _snapshot with
             {
                 State = BackendLifecycleState.Faulted,
-                OwnedProcess = null,
-                Message = $"Backend не запущен ({exception.GetType().Name}); созданный Inspector процесс очищен.",
+                OwnedProcess = cleaned ? null : started,
+                Message = cleaned
+                    ? $"Backend не запущен ({exception.GetType().Name}); созданный Inspector process очищен."
+                    : $"Backend не готов ({exception.GetType().Name}); exact owned process не удалось остановить, доступна ручная остановка.",
             };
             return new BackendLifecycleResult(false, _snapshot);
         }
@@ -726,8 +766,7 @@ public sealed class BackendLifecycleManager : IDisposable
             };
             return Success();
         }
-        catch (Exception exception) when (exception is
-            IOException or InvalidOperationException or UnauthorizedAccessException or TimeoutException)
+        catch (Exception exception) when (IsExpectedLifecycleFailure(exception))
         {
             return Fail($"Не удалось безопасно остановить exact owned process ({exception.GetType().Name}).");
         }
@@ -787,4 +826,13 @@ public sealed class BackendLifecycleManager : IDisposable
         string version,
         Uri endpoint) =>
         string.Join('|', backend, executable, version, endpoint);
+
+    private static bool IsExpectedLifecycleFailure(Exception exception) => exception is
+        ArgumentException or
+        IOException or
+        InvalidOperationException or
+        UnauthorizedAccessException or
+        System.ComponentModel.Win32Exception or
+        HttpRequestException or
+        TimeoutException;
 }
