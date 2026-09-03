@@ -4,23 +4,23 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, merged core epics и локально завершённый `EPIC-04` fix-кандидат, ожидающий PR CI:
+Проект имеет repository/CI foundation, пять завершённых core epics и активную `GOAL-005` для всех оставшихся canonical AC:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
 - proxy поддерживает transparent `GET /v1/models`, non-streaming/streaming/tool-calling `POST /v1/chat/completions` и, только при выбранном LM Studio, native `POST /api/v1/chat`; он не следует redirects и propagates cancellation;
 - bounded streaming parser извлекает только allowlisted `model`, OpenAI token usage/details, документированные llama.cpp `timings` и LM Studio native `stats`/`model_load.*`; response/reasoning strings не декодируются в telemetry, отсутствующие или недостоверные metrics имеют `unavailable`;
-- UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, а также latest request tokens/context/timings с quality state; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
+- UI показывает gateway/backend state, generic и per-client base URLs, все active requests с одной текущей stage и qualified elapsed/progress/ETA, latest request tokens/context/timings с quality state и отдельную content-free technical diagnostics summary; streaming TTFT считается только по первому непустому content delta, non-streaming/tool-only TTFT остаётся `unavailable`;
 - SQLite WAL schema v2 в `%LOCALAPPDATA%\LLM Inspector\data\inspector.db` сохраняет только allowlisted technical metadata через bounded non-blocking writer; UI предоставляет history filters, operation detail, daily aggregates, cold/warm breakdown, comparisons, retention и explicit clear preview/confirmation;
 - выбран design stack: C# / `.NET 10 LTS`, Avalonia UI, embedded loopback-only Kestrel proxy и SQLite WAL;
 - initial support matrix: Windows 11 `25H2` Home/Pro, `x64`, с актуальным cumulative update;
 - SDK зафиксирован exact version `10.0.400`, NuGet packages — через Central Package Management, 15 normal и 9 `win-x64` committed lock files;
-- EPIC-02/03 и ранее доставленные части EPIC-04/08/09 имеют terminal PR/main CI; текущий fix локально доводит EPIC-04 до `12/12`, а затронутые EPIC-04/08/09 ожидают CI exact revision этого PR;
+- EPIC-02/03/04/08/09 имеют terminal PR/main CI; `EPIC-01` локально выполняет `3/4`, а release-matrix criterion остаётся без кредита до clean install/upgrade/runtime Evidence на поддерживаемой Windows 11 25H2 Home/Pro;
 - product contract ратифицирован: initial release содержит 139 atomic AC, полный согласованный roadmap — 164 AC;
 - PR/`main` CI определён на ephemeral GitHub-hosted `windows-2025` runner с read-only token и SHA-pinned actions; фактический run Evidence см. в `docs/delivery-plan.md`;
 - server/runtime CD явно не используется: приложение устанавливается на Windows PC, а не deploy-ится на runtime host.
 
-Текущая локальная readiness по независимо проверенным atomic AC: `72/139 = 51.8%` initial release и `72/164 = 43.9%` full roadmap. Выбранная `GOAL-004` достигает `72/72` product AC локально; terminal CI Evidence нового fix-инкремента появится только после PR.
+Текущая readiness baseline на merged `main`: `72/139 = 51.8%` initial release и `72/164 = 43.9%` full roadmap. Активный EPIC-01 candidate локально добавляет три выполненных AC (`75/139 = 54.0%`, `75/164 = 45.7%`) и прошёл полный local pipeline (`133/133` tests); terminal CI Evidence появится только после PR.
 
 ## Быстрый старт
 
@@ -81,6 +81,8 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 
 `artifacts/` — локальный disposable output и не коммитится. CI выполняет ту же последовательность в [`.github/workflows/ci.yml`](.github/workflows/ci.yml), не публикует artifacts и не содержит deployment steps.
 
+Self-contained `win-x64` publish из этой команды является validation build, а не поддерживаемым release package. Clean install, upgrade, launch и другие release-matrix checks на Windows 11 25H2 Home/Pro требуют отдельного release gate; signing identity и distribution channel пока не утверждены.
+
 ## Навигация
 
 - [`AGENTS.md`](AGENTS.md) — главный repository router, authority model и execution boundaries.
@@ -106,4 +108,4 @@ Optional contracts для `Context Bundle Builder`, AI delivery infrastructure �
 - GitHub: <https://github.com/Just9120/llm-inspector>
 - Ожидаемая production/default branch: `main`.
 - На baseline-аудите `2026-09-02` remote repository был пуст; initial documentation bootstrap создал `main`.
-- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; partial EPIC-04 — через PR #7; EPIC-08 — через PR #8 в verified `main` commit `5757652943753e549ef85f81308c0fc0c6d83686`.
+- Repository/CI foundation merged через [PR #2](https://github.com/Just9120/llm-inspector/pull/2); EPIC-09 core — через PR #3; EPIC-02 — через PR #4/#5; EPIC-03 — через PR #6; partial EPIC-04 — через PR #7; EPIC-08 — через PR #8; EPIC-04 fix и terminal core baseline — через PR #9 в verified `main` commit `7110c70b6975c939915273b005f05eedfcd2eb14`.

@@ -1,188 +1,136 @@
 # Delivery plan
 
-> Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-03T05:43:59Z`
+> Dashboard status: `GOAL-005 IN_PROGRESS`
+> Updated: `2026-09-03T06:11:45Z`
 
 ## Current Goal
 
-### `GOAL-004 — Реализовать 72-AC core product tranche отдельными epic PR`
+### `GOAL-005 — Реализовать все оставшиеся canonical product AC`
 
 - **State:** `IN_PROGRESS`.
-- **Authorization source:** explicit user instruction от `2026-09-03`: «Бери как единую goal и начинай постепенную реализацию проекта. За ориентир возьми скажем 70 AC. Разноси по разным ПРам эпики. В случае блокера это не должно мешать ПРу, коммит и мердж. Потом фиксы».
-- **Fix authorization:** explicit user instruction от `2026-09-03`: «делай» в ответ на bounded proposal добавить stable pseudonymous session/turn correlation и native LM Studio `/api/v1/chat` telemetry для закрытия `E04-AC03`/`E04-AC12`.
-- **Exact product denominator:** `72` atomic AC: `EPIC-09 14 + EPIC-02 15 + EPIC-03 13 + EPIC-04 12 + EPIC-08 18`.
+- **Authorization source:** explicit user instruction от `2026-09-03`: «Теперь бери оставшиеся AC и реализуй в рамках Goal» после указания вести эпики разными PR, не останавливать безопасный partial PR из-за product blocker и закрывать gaps последующими fix PR.
+- **Verified base:** `origin/main` / local `main` = `7110c70b6975c939915273b005f05eedfcd2eb14`; exact-main CI [33720428488](https://github.com/Just9120/llm-inspector/actions/runs/33720428488) succeeded.
+- **Exact product denominator:** `92` оставшихся atomic AC: initial release `67` (`EPIC-01 4 + EPIC-05 8 + EPIC-06 8 + EPIC-07 16 + EPIC-10 8 + EPIC-11 10 + EPIC-12 13`) и backlog `25` (`BACKLOG-01 5 + BACKLOG-02 9 + BACKLOG-03 3 + BACKLOG-04 2 + BACKLOG-05 3 + BACKLOG-06 3`).
 
 **Scope**
 
-- Реализовать privacy/locality/pass-through foundation и OpenAI-compatible gateway.
-- Реализовать Ollama, llama.cpp и LM Studio adapters, known-client attribution и supported OpenAI-compatible flows.
-- Реализовать live request state/quality model.
-- Реализовать token/context/timing projections.
-- Реализовать SQLite technical history, analytics и retention.
-- Реализовать Inspector-only pseudonymous correlation headers и native LM Studio `/api/v1/chat` telemetry как узко авторизованные исключения для двух оставшихся EPIC-04 AC; headers не передаются backend, content не сохраняется.
-- Проводить delivery отдельными reviewable PR по эпикам; cross-epic gaps закрывать последующими fix-PR внутри этой Goal.
-- После каждого PR независимо пересчитывать atomic AC и Evidence; partial implementation не получает полный AC credit.
+- Реализовать все ещё не выполненные canonical AC из `docs/project-spec.md` reviewable epic/fix PR.
+- Для каждого increment выполнять focused checks, полный local CI-equivalent перед единственным initial push, required PR CI, merge, exact-main CI, sync/cleanup и независимый readiness recalculation.
+- При product/SPEC/external blocker доставлять только безопасную подтверждаемую часть; невыполненные AC не кредитовать и продолжать fix increment внутри этой Goal, когда gate доступен.
+- Синхронизировать operational fields `project-spec`, architecture facts и delivery metadata без изменения durable requirements.
 
 **Non-goals**
 
-- `EPIC-01`, `EPIC-05`–`EPIC-07`, `EPIC-10`–`EPIC-12` за пределами минимальных seams, необходимых выбранным эпикам.
-- Resource collectors, diagnostic rules, tray/autostart/notifications и diagnostic snapshots.
-- Backend/model lifecycle management, remote/LAN listening, additional protocols кроме явно авторизованного LM Studio `/api/v1/chat`, multi-GPU и analytics export.
-- MSIX, signing, release publication, automatic update и любой server/runtime CD.
-- Изменение ratified product requirements, business rules или atomic AC.
+- Изменение canonical scope, business rules, atomic AC, support matrix или CI/CD safety contract.
+- Выдумывание remote topology/authentication, target OS matrix, performance budgets, signing identity, distribution channel, credentials или runtime deployment target.
+- Обход privacy, CI, release, security или repository protection gates.
+- Product behavior вне 92 перечисленных AC и unrelated refactoring.
 
 **Goal acceptance criteria**
 
-1. `EPIC-09` достигает `14/14` с required privacy/pass-through Evidence.
-2. `EPIC-02` достигает `15/15` на versioned fixtures/stub E2E Evidence.
-3. `EPIC-03` достигает `13/13` с state/quality/UI Evidence.
-4. `EPIC-04` достигает `12/12` с token/context/timing/UI Evidence.
-5. `EPIC-08` достигает `18/18` с SQLite/analytics/retention/UI Evidence.
-6. Каждый bounded epic/fix PR проходит local CI-equivalent validation и green exact-revision GitHub CI до merge; delivery state синхронизируется без fabricated claims.
+1. Каждый из 92 AC либо выполнен с traceable Evidence, либо явно оставлен невыполненным с точным blocker/gate и без readiness credit.
+2. Каждый bounded epic/fix increment проходит required local validation и exact-revision GitHub CI до merge.
+3. После каждого merge exact-main CI terminal success подтверждён до начала следующего branch; local `main` синхронизирован, merged branch безопасно удалён.
+4. Initial/full readiness каждый раз считается только как `completed atomic AC / 139` и `completed atomic AC / 164`; предыдущие оценки не используются как доказательство.
+5. Goal достигает `DONE` только при `164/164` и required Evidence либо останавливается в `BLOCKED` / `PENDING_EXTERNAL_GATE`, если после всех безопасных increments остаётся внешний gate.
 
-**Required Evidence:** для каждого выбранного эпика `SPEC: ✅`; `CODE: ✅`; `TEST: ✅`; `CI: ✅`; `DEPLOY: N/A`; `LIVE: N/A`.
+**Required Evidence:** для feature epics `SPEC`, `CODE`, `TEST`, `CI` согласно их DoD; `DEPLOY`/`LIVE` — `N/A`, кроме ещё не определённой applicability `BACKLOG-02`. Exact status не повышается без фактического Evidence.
 
-**Increment policy**
+**Known blockers/dependencies**
 
-- Функциональный blocker не запрещает commit/PR/merge безопасного инкремента, если incomplete AC и Evidence явно остаются partial/absent.
-- Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
-- После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
+- `EPIC-01/E01-AC01`: release Evidence на Windows 11 25H2 Home/Pro требует будущего release Goal, signing/distribution decision и clean install/upgrade/runtime matrix.
+- `EPIC-12`: numeric performance budgets и frozen hardware/workload fixtures отсутствуют; `SPEC: ◐` блокирует READY, но не measurement infrastructure и reliability hardening.
+- `BACKLOG-02`: remote topology, identity/authentication и DEPLOY/LIVE applicability не определены; `SPEC: ◐` блокирует implementation, затрагивающую security boundary.
+- `BACKLOG-03`: supported Linux distributions/macOS versions не определены после demand gate; `SPEC: ◐` блокирует platform-support claim.
 
-**Current Goal verification:** `72/72 = 100%` selected product AC complete locally. EPIC-02/03 имеют terminal exact-revision Evidence; EPIC-04 был доставлен как честный `10/12` partial increment в PR #7, а текущий bounded fix реализует оставшиеся `E04-AC03`/`E04-AC12`. EPIC-08/09 имели terminal PR/main CI до текущих schema/privacy изменений. Полный local pipeline зелёный; Goal delivery AC #6 и required CI остаются открыты до fix PR, merge и exact-main CI.
-
-**Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
+**Stop condition:** после `164/164` с required Evidence либо после исчерпания безопасных increments при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к новой Goal без explicit authorization не переходить.
 
 ## PR execution sequence
 
-1. **PR-09:** `EPIC-09` privacy/locality/transparent proxying core.
-2. **PR-02:** `EPIC-02` backend/client adapters и полный supported OpenAI-compatible subset.
-3. **PR-03:** `EPIC-03` live state и metric quality UI.
-4. **PR-04:** `EPIC-04` tokens/context/timings.
-5. **PR-08:** `EPIC-08` SQLite history/analytics/retention.
-6. **Fix PRs:** только подтверждённые cross-epic gaps до `72/72`.
+1. `EPIC-01` — Windows application boundary и доступные product surfaces; release-matrix gate остаётся честно отделён.
+2. `EPIC-05` — agent operations, tools и concurrency.
+3. `EPIC-06` — Windows resource telemetry.
+4. `EPIC-07` — explainable diagnostics и errors.
+5. `EPIC-10` — background/tray/settings/notifications.
+6. `EPIC-11` — anonymized diagnostic snapshot.
+7. `EPIC-12` — reliability/measurement hardening до границы approved numeric budgets.
+8. `BACKLOG-01`, `BACKLOG-04`, `BACKLOG-05`, `BACKLOG-06` — lifecycle, protocols, multi-GPU и export отдельными PR.
+9. `BACKLOG-02`, `BACKLOG-03` — только после закрытия canonical SPEC/external gates; до этого допускаются лишь нерасширяющие boundary seams/tests/docs.
 
-Sequence задаёт delivery order внутри одной authorized Goal. Следующий PR начинается после merge/cleanup предыдущего и sync нового `origin/main`.
+Sequence — рабочий pipeline внутри одной authorized Goal; точный порядок fix PR может меняться по фактическим dependencies, denominator не меняется.
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T05:43:59Z` |
+| Updated UTC | `2026-09-03T06:11:45Z` |
 | Expected base branch | `main` |
-| Base SHA | `5757652943753e549ef85f81308c0fc0c6d83686` — verified local/`origin/main` after PR #8 merge and successful exact-merge CI `33702791561` |
-| Working branch | `codex/fix-epic-04-correlation-lmstudio` |
-| Last verified revision | `85187b7aed4931bdda22664abfbc12475d9c17a3` — complete branch tree passed local CI-equivalent |
-| Initial worktree state | Clean branch created from synchronized local/`origin/main`; no open PR and no unrelated changes |
-| Current worktree state | Clean at validation checkpoint; this row update is the only expected post-validation metadata change, no unrelated changes |
-| Completed work | Commits `8dfa561`/`686c206` implement fail-closed correlation and LM Studio native telemetry; `5b8655b` adds SQLite v2 migration plus persisted cold/warm analytics/privacy disclosure; `7713c3d` adds native SSE gateway E2E; `85187b7` synchronizes docs. Full pipeline: locked normal/RID restores; format; Release build `0` warnings/errors; `125/125` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
-| Current step | Record final local checkpoint, then perform the one authorized initial push and create the fix PR |
-| Next exact action | Commit this checkpoint, push `codex/fix-epic-04-correlation-lmstudio` once, create PR against `main`, then wait for exact-head required CI |
-| PR / CI | Fix PR not created; remote branch does not exist; no CI run for this branch |
-| Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | None currently. PR/main CI is a pending gate, not yet Evidence |
-| Unverified assumptions | Real external LM Studio runtime is not required by Goal DoD; official protocol documentation, versioned JSON/SSE fixtures and loopback stub E2E are the agreed Evidence boundary |
-| Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
+| Base SHA | `7110c70b6975c939915273b005f05eedfcd2eb14` — verified local/`origin/main`; exact-main CI `33720428488` success |
+| Working branch | `codex/goal-005-epic-01` |
+| Last verified revision | `bb664d0f4c29dc01d15f3d728f5557a5bf00c8de` — complete branch tree covered by full local CI-equivalent |
+| Initial worktree state | Clean branch created from verified `origin/main`; no open PR and no unrelated changes |
+| Current worktree state | Clean at validation checkpoint except this expected post-validation metadata update; no unrelated changes |
+| Completed work | Commits `9958783`/`8c4ab10`/`bb664d0` recover Goal state, add diagnostics UI/boundary tests and record `E01-AC02..04`. Full pipeline: locked normal/RID restores; format; Release build `0` warnings/errors; `133/133` tests, zero skips; clean self-contained `win-x64` publish; smoke `exit 0` |
+| Current step | Record final local checkpoint, then perform the one initial push and create EPIC-01 PR |
+| Next exact action | Commit this checkpoint, push `codex/goal-005-epic-01` once, create PR against `main`, then wait for exact-head required CI |
+| PR / CI | No GOAL-005 PR yet; branch has not been pushed; no CI for this branch |
+| Deployment | N/A for current Windows desktop feature DoD; server/runtime CD remains disabled |
+| Blockers | `E01-AC01` lacks clean install/upgrade/runtime Evidence on Windows 11 25H2 Home/Pro and approved signing/distribution path; safe `3/4` increment may merge without crediting it |
+| Unverified assumptions | None used for readiness; supported Windows matrix and release Evidence are taken only from canonical spec |
+| Preserved pre-existing changes | Goal started from clean synchronized worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T05:32:19Z` | `72/139 = 51.8%` | `72/164 = 43.9%` | Independent AC-by-AC recalculation credits E04-AC03/E04-AC12 after focused CODE/TEST Evidence; exact-revision CI is pending |
-| Previous | `2026-09-03T05:10:51Z` | `70/139 = 50.4%` | `70/164 = 42.7%` | Terminal EPIC-08 state before the bounded EPIC-04 fix |
+| Current | `2026-09-03T06:08:39Z` | `75/139 = 54.0%` | `75/164 = 45.7%` | Independent AC-by-AC calculation credits E01-AC02..04 after focused CODE/TEST Evidence; E01-AC01 and exact-revision CI remain open |
+| Previous | `2026-09-03T06:01:33Z` | `72/139 = 51.8%` | `72/164 = 43.9%` | Exact merged-main recovery before EPIC-01 changes |
 
-Delta: `+1.4 п.п.` initial release и `+1.2 п.п.` full roadmap; меньше 10 п.п. Причина — два вновь выполненных AC при неизменных denominators `139`/`164`.
+Delta: `+2.2 п.п.` initial release и `+1.8 п.п.` full roadmap; меньше 10 п.п. Причина — локально подтверждены три ранее невыполненных EPIC-01 criteria при неизменных denominators `139`/`164`.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-02 Backends/clients/API | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-03 Live state/quality | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-04 Tokens/context/timings | 🟦 IN PROGRESS | 12/12 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-08 History/analytics/retention | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| Other initial-release epics | ⬜ BACKLOG | 0/67 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **72/139** | **51.8%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
-| Canonical backlog | ⬜ BACKLOG | 0/25 | 0% | ◐ | — | — | — | —* | —* |
-| **Full roadmap** | **🟦 IN PROGRESS** | **72/164** | **43.9%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| EPIC-01 | 🟦 IN PROGRESS ⛔ | 3/4 | 75% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-05 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-06 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-07 | ⬜ BACKLOG | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-10 | ⬜ BACKLOG | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-11 | ⬜ BACKLOG | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-12 | ⬜ BACKLOG ⛔ | 0/13 | 0% | ◐ | — | — | — | N/A | N/A |
+| **Initial release** | **🟦 IN PROGRESS** | **75/139** | **54.0%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-02 | ⬜ BACKLOG ⛔ | 0/9 | 0% | ◐ | — | — | — | —* | —* |
+| BACKLOG-03 | ⬜ BACKLOG ⛔ | 0/3 | 0% | ◐ | — | — | — | N/A | N/A |
+| BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-05 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-06 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
+| **Full roadmap** | **🟦 IN PROGRESS** | **75/164** | **45.7%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
-`*` Remote/LAN backlog DEPLOY/LIVE applicability remains undecided and is outside this Goal.
+`*` Applicability `BACKLOG-02` DEPLOY/LIVE остаётся canonical SPEC gap.
 
-### EPIC-02 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E02-AC01..03` | `BackendTelemetryAdapters` profiles plus versioned Ollama/llama.cpp/LM Studio JSON+SSE fixtures; `NonStreamingFixturesProduceCommonTelemetryWithIdenticalSemantics`, `StreamingFixturesExtractFinalUsageAcrossArbitraryByteBoundaries` and Gateway E2E projection |
-| `E02-AC04` | One `MetricValue`/`MetricUnit` contract for all adapters; token counts are whole `TokenCount` values with identical quality/provenance semantics |
-| `E02-AC05` | llama.cpp native `cache_n`, `prompt_n`, `predicted_n`, `*_ms` and `*_per_second` remain namespaced backend metrics with exact native names and units |
-| `E02-AC06` | Constructor invariants plus missing/malformed/oversized/deep/fractional negative corpus; absent or ambiguous values have `Value = null`, `Quality = Unavailable` |
-| `E02-AC07..10` | Dedicated loopback base paths for OpenCode Desktop, Hermes Desktop, Cline and Open WebUI; route attribution is tested and shown in UI/README |
-| `E02-AC11` | Generic `/v1` path is always `GenericUnknown` while retaining the same request telemetry |
-| `E02-AC12` | Standard configurable base URLs plus transparent `GET /models` handshake for generic/known paths; primary client configuration sources recorded with fixture set |
-| `E02-AC13..15` | Non-streaming, fragmented SSE and fragmented tool-call flows are relayed byte-for-byte/order-preserving through stub-backend integration tests; telemetry/parser failure isolation is tested |
-
-EPIC-02 terminal Evidence: PR #5 run `33691566607` and exact-merge `main` run `33691761413` succeeded; all required dimensions are complete.
-
-### EPIC-03 AC evidence map
+### EPIC-01 AC evidence map
 
 | Atomic AC | Current evidence |
 |---|---|
-| `E03-AC01` | `LiveRequestTracker` keeps one atomic stage and monotonic calculated elapsed per active request; concurrent isolation unit test and Gateway/UI integration |
-| `E03-AC02..06` | Domain enum/state contract and presenter labels distinguish model loading, queue/waiting, prompt processing, reasoning/generation and tool wait; richer stages require typed backend-reported evidence |
-| `E03-AC07..09` | Proxy outcomes deterministically map to completed, cancelled or error terminal stage; unit tests plus success/cancellation/backend-failure integration paths |
-| `E03-AC10` | Bounded ETA estimator requires at least three increasing same-source backend samples spanning at least five percentage points; UI renders only qualified `estimated` ETA |
-| `E03-AC11..12` | Percentage originates only from `BackendProgressSignal` as exact backend metric; absent/regressed/changed-source evidence yields stage plus `unavailable` without percentage |
-| `E03-AC13` | Presenter emits `[exact]`, `[calculated]`, `[estimated]` or `[unavailable]` on every displayed numeric metric; Windows tests cover all branches |
-
-The deterministic handshake fix passed follow-up PR CI `33694308639`; merge commit `ba63d0b219e61527d3d81994638dee39a11c14bf` passed exact-merge `main` CI `33694559218`. EPIC-03 is `READY`.
-
-### EPIC-04 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E04-AC01` | Versioned OpenAI Chat fixture v2 and contract/UI tests expose input, output and cached input separately when exact counters exist |
-| `E04-AC02` | Request detail shows exact current context usage from `prompt_tokens`; typed context limit renders exact when supplied and `unavailable` in current adapters without a source |
-| `E04-AC03` | Complete Inspector-reserved GUID session/turn + positive sequence triplet is stripped before backend, persisted as pseudonymous metadata and yields signed delta only for adjacent exact context counts; first/duplicate/gap/out-of-order/incomplete evidence is `unavailable` |
-| `E04-AC04` | Typed history/tools/cache breakdown renders exact supplied components and explicit unavailable values; current fixture proves cache contribution only |
-| `E04-AC05` | Only the whole-number `reasoning_tokens` technical counter is allowlisted; fixture sentinel and privacy projection test prove reasoning content is absent, and parser does not decode non-telemetry response strings |
-| `E04-AC06..07` | llama.cpp fixture maps exact `prompt_per_second`/`predicted_per_second` to common prompt/generation rates while retaining native metrics |
-| `E04-AC08` | Contract/integration tests emit calculated monotonic TTFT only after first non-empty streaming content delta; role-only, tool-only and non-streaming flows stay unavailable |
-| `E04-AC09..10` | LM Studio native adapter maps exact documented model-load duration; queue remains `unavailable` without exact source |
-| `E04-AC11` | Every terminal proxy observation receives monotonic total duration and the latest-request detail renders it with `calculated` quality |
-| `E04-AC12` | Versioned LM Studio native JSON/SSE fixtures and gateway E2E distinguish cold by exact load duration/event, warm only by complete terminal stats without a load signal, and unavailable on incomplete lifecycle; request detail and period analytics expose the classification |
-
-EPIC-04 baseline Evidence: PR #7 run `33696539694` and exact-merge `main` run `33696722298` succeeded for `10/12`. Active fix CODE/TEST Evidence covers `12/12`; exact-revision CI remains pending.
-
-### EPIC-08 AC evidence map
-
-| Atomic AC | Current evidence |
-|---|---|
-| `E08-AC01..03` | Transactional schema v2 and migration test persist typed request/session/operation records plus pseudonymous turn correlation and linked turns/tools/resources; schema has no content carrier and preserves v1 rows |
-| `E08-AC04` | Typed `HistoryFilter`, SQL predicates, UI parser/controls and integration/Windows tests cover period, client, backend, model, session, status and error type |
-| `E08-AC05` | `GetOperationDetailAsync` and presenter return turns/tools in sequence with timings, typed errors and provenance-preserving CPU/memory samples |
-| `E08-AC06` | UTC-day read model exposes input/output tokens, TTFT, prompt/generation speed, context usage, CPU, memory and error-rate trends without fabricating missing resource samples |
-| `E08-AC07..10` | `HistoryStatisticsTests` prove arithmetic mean, median, nearest-rank P95 and `n >= 3` sufficiency boundary; method/policy are documented in architecture and visible in UI |
-| `E08-AC11..15` | Typed comparison filters and UI cover period/model/backend/client; direction-aware degradation requires sufficient baseline and candidate samples and a selected metric |
-| `E08-AC16` | Persistent setting and UI expose exactly `7 days`, `30 days`, `90 days`, `indefinite`; default is `30 days` |
-| `E08-AC17` | Startup/save cleanup uses cutoff boundaries, oldest-first batches of 500 and separate short transactions; integration tests cover 7/30/90, indefinite, exact boundary and multi-batch deletion |
-| `E08-AC18` | Clear API/UI requires an explicit all/range scope, exact preview and separate confirmation; preview invalidation/staleness are fail-closed and tested |
-
-Cross-epic Evidence: `SqliteHistoryPrivacyTests` asserts exact schema v2 column allowlists and relays runtime-generated prompt/response/reasoning/tool/credential/raw-header canaries through the gateway before scanning DB/WAL files. PR #8 and exact-main runs `33702613336`/`33702791561` terminally confirmed EPIC-08/09 baseline; current migration/privacy fix passed the full local pipeline and awaits PR/main CI.
+| `E01-AC01` | Не выполнен: self-contained `win-x64` validation publish не заменяет clean install/upgrade/launch/tray/proxy/SQLite recovery suite на Windows 11 25H2 Home/Pro; signing/distribution path не утверждён |
+| `E01-AC02` | MainWindow имеет доступные `Live requests`, `History and analytics` и `Diagnostics` surfaces; `DesktopProductBoundaryTests` проверяет headings и named output controls |
+| `E01-AC03` | `AppLaunchConfiguration` принимает только literal IPv4/IPv6 loopback backend URLs; defaults Ollama/llama.cpp/LM Studio и derived gateway options покрыты focused Windows tests |
+| `E01-AC04` | Versioned launch parser отвергает start/stop/restart/model-load/runtime-mutation commands как unknown; UI не содержит lifecycle controls |
 
 ## Current blockers и decisions
 
-1. `GOAL-004`: exact target is 72 atomic AC, not a subjective percentage.
-2. `DELIVERY`: epic PR may merge partial safe Evidence; incomplete AC remains open and receives no credit.
-3. `SECURITY`: listener and backend target remain loopback-only; no generic hosting bind override or redirect escape.
-4. `PRIVACY`: raw content can exist transiently only in relay memory; it cannot enter metadata types, logs, persistence or analytics.
-5. `EPIC-12`: numeric performance budgets remain outside this Goal and do not block selected epics.
-6. `E04-AC03`: correlation is opt-in and unavailable for clients that do not emit the complete Inspector-reserved triplet; no time-proximity inference is allowed.
-7. `DELIVERY`: all `72/72` selected product AC have local CODE/TEST Evidence; exact-revision CI and merge remain mandatory before READY/DONE.
+1. Partial safe PR разрешён Goal policy, но incomplete AC остаётся открытым и не получает credit.
+2. Required CI failure/skip, privacy/security regression или release safety failure блокирует merge до исправления.
+3. External gates не подменяются code/config assumptions: они остаются explicit blockers до owner Evidence/decision.
+4. Репозиторий не имеет approved post-merge metadata writer; terminal Evidence фиксируется в merged PR comment и восстанавливается в следующий substantive PR без metadata-only loop.
 
-## Roadmap after current Goal
+## Candidate next Goals
 
-Roadmap beyond `GOAL-004` is informational only and has no implementation authorization.
-
-1. Remaining initial epics: agent operations, resources, diagnostics, Windows background UX, snapshots and reliability/performance.
-2. Windows release Goal: signed package/distribution validation without server CD.
-3. Canonical backlog epics only after separate explicit authorization.
+Новые Goals не предлагаются, пока `GOAL-005` активна. Implementation authorization относится только к этой Goal; после её terminal state агент останавливается.

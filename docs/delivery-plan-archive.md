@@ -4,6 +4,7 @@
 
 ## Replaced readiness snapshots
 
+- `2026-09-03T05:10:51Z`: initial release `70/139 = 50.4%`, full roadmap `70/164 = 42.7%`; terminal EPIC-08 state before the bounded EPIC-04 fix. Archived when GOAL-004 reached terminal `72/72` with exact-main CI.
 - `2026-09-02T21:05:52Z`: initial release `0/139 = 0%`, full roadmap `0/164 = 0%`; start-of-GOAL-004 foundation had no completed product AC. Snapshot archived when it ceased to be one of the current/previous independently calculated states.
 - `2026-09-02T21:43:13Z`: initial release `13/139 = 9.4%`, full roadmap `13/164 = 7.9%`; only EPIC-09 core AC were complete after PR #3. Archived when EPIC-02 terminal CI produced a newer snapshot without changing its already credited AC.
 - `2026-09-02T22:15:32Z`: initial release `28/139 = 20.1%`, full roadmap `28/164 = 17.1%`; EPIC-02 product AC were complete but terminal CI Evidence was not. Archived after EPIC-03 produced a newer independent readiness calculation.
@@ -12,6 +13,17 @@
 - `2026-09-02T23:12:59Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; initial PR #6 CI had exposed an inherited abort-fixture race and the deterministic fix was still local. Archived after the grouped follow-up passed.
 - `2026-09-02T23:21:16Z`: initial release `41/139 = 29.5%`, full roadmap `41/164 = 25.0%`; EPIC-03 exact-merge `main` CI was terminal success. Archived after EPIC-04 produced a newer independently calculated product state.
 - `2026-09-03T00:03:30Z`: initial release `51/139 = 36.7%`, full roadmap `51/164 = 31.1%`; EPIC-04 partial `10/12` was merged, while EPIC-08 and `E09-AC06` were not implemented. Archived after terminal EPIC-08 delivery produced a newer current/previous pair.
+
+## GOAL-004 — 72-AC core product tranche
+
+- **State:** `DONE`; `72/72` selected product AC and all required Evidence completed.
+- **Authorization:** explicit user instruction от `2026-09-03` to implement an approximately 70-AC unified Goal through separate epic PRs and continue fixes despite product blockers.
+- **Scope/outcome:** EPIC-02 `15/15`, EPIC-03 `13/13`, EPIC-04 `12/12`, EPIC-08 `18/18`, EPIC-09 `14/14`; all five epics `READY` with SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Terminal fix PR:** [#9](https://github.com/Just9120/llm-inspector/pull/9), head `74024d15e7556f4deac4f30f2bb4a1001e725d95`, PR CI `33720248633` success, merged as `7110c70b6975c939915273b005f05eedfcd2eb14`.
+- **Exact-main Evidence:** CI [33720428488](https://github.com/Just9120/llm-inspector/actions/runs/33720428488) success on merge SHA; every required step completed successfully.
+- **Product readiness at closure:** initial release `72/139 = 51.8%`; full roadmap `72/164 = 43.9%`.
+- **Cleanup:** local `main` and `origin/main` synchronized; merged branch safely removed before GOAL-005 branch creation.
+- **Metadata limitation:** terminal Evidence was recorded in the merged PR comment and recovered in the next substantive PR because no approved post-merge writer exists.
 
 ## GOAL-004 / EPIC-08 — History, analytics и retention
 
