@@ -29,6 +29,8 @@ public interface IRequestResourceSession : IAsyncDisposable
 public interface IResourceTelemetrySnapshotSource
 {
     TechnicalResourceSampleRecord? Latest { get; }
+
+    IReadOnlyList<TechnicalResourceSampleRecord> LatestSamples { get; }
 }
 
 public sealed class NullRequestResourceMonitor : IRequestResourceMonitor, IResourceTelemetrySnapshotSource
@@ -40,6 +42,8 @@ public sealed class NullRequestResourceMonitor : IRequestResourceMonitor, IResou
     }
 
     public TechnicalResourceSampleRecord? Latest => null;
+
+    public IReadOnlyList<TechnicalResourceSampleRecord> LatestSamples => [];
 
     public IRequestResourceSession Start(RequestResourceContext context) => NullRequestResourceSession.Instance;
 

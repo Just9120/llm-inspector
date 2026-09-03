@@ -21,6 +21,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
     private readonly IBackendProcessResolver _processResolver;
     private readonly TimeSpan _samplingInterval;
     private TechnicalResourceSampleRecord? _latest;
+    private TechnicalResourceSampleRecord[] _latestSamples = [];
 
     public WindowsRequestResourceMonitor(
         IWindowsResourceProbe? probe = null,
@@ -37,6 +38,9 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
     }
 
     public TechnicalResourceSampleRecord? Latest => Volatile.Read(ref _latest);
+
+    public IReadOnlyList<TechnicalResourceSampleRecord> LatestSamples =>
+        Volatile.Read(ref _latestSamples);
 
     public IRequestResourceSession Start(RequestResourceContext context)
     {
@@ -59,6 +63,12 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         return new Session(this, context, association);
     }
 
+    private void PublishLatest(TechnicalResourceSampleRecord[] samples)
+    {
+        Volatile.Write(ref _latestSamples, samples);
+        Volatile.Write(ref _latest, samples.Length == 0 ? null : samples[0]);
+    }
+
     private sealed class Session : IRequestResourceSession
     {
         private readonly WindowsRequestResourceMonitor _owner;
@@ -69,6 +79,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         private readonly object _samplesLock = new();
         private readonly List<TechnicalResourceSampleRecord> _samples = [];
         private readonly Task _samplingTask;
+        private TechnicalResourceSampleRecord[] _latestCapture = [];
         private RequestStageValue _stage = RequestStageValue.ProtocolObserved(
             RequestStage.QueueWaiting,
             "gateway-resource-stage-v1");
@@ -77,6 +88,8 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         private long _backendToClientBytes;
         private int _droppedSamples;
         private int _completed;
+        private int _lastStoredGroupStart = -1;
+        private int _lastStoredGroupLength;
 
         public Session(
             WindowsRequestResourceMonitor owner,
@@ -148,40 +161,55 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
 
         private void AddTerminalProjection()
         {
-            TechnicalResourceSampleRecord sample;
+            TechnicalResourceSampleRecord[] projected;
             lock (_samplesLock)
             {
-                TechnicalResourceSampleRecord? previous = _samples.Count == 0 ? null : _samples[^1];
-                sample = previous is null
-                    ? CreateSample(null)
-                    : previous with
+                TechnicalResourceSampleRecord[] previous = _latestCapture;
+                projected = previous.Length == 0
+                    ? CreateSamples(null)
+                    : previous.Select((sample, index) => sample with
                     {
                         SampleId = Guid.NewGuid(),
                         CapturedAt = DateTimeOffset.UtcNow,
                         Stage = Volatile.Read(ref _stage),
                         DroppedSampleCount = Volatile.Read(ref _droppedSamples),
-                        ClientToBackendBytes = MetricValue.Exact(
-                            Interlocked.Read(ref _clientToBackendBytes),
-                            MetricUnit.Bytes,
-                            MetricSource.GatewayTraffic,
-                            TrafficSourceVersion),
-                        BackendToClientBytes = MetricValue.Exact(
-                            Interlocked.Read(ref _backendToClientBytes),
-                            MetricUnit.Bytes,
-                            MetricSource.GatewayTraffic,
-                            TrafficSourceVersion),
-                    };
-                if (_samples.Count < MaximumSamplesPerRequest)
+                        ClientToBackendBytes = index == 0
+                            ? ExactTraffic(Interlocked.Read(ref _clientToBackendBytes))
+                            : Unavailable(MetricUnit.Bytes, TrafficSourceVersion, MetricSource.GatewayTraffic),
+                        BackendToClientBytes = index == 0
+                            ? ExactTraffic(Interlocked.Read(ref _backendToClientBytes))
+                            : Unavailable(MetricUnit.Bytes, TrafficSourceVersion, MetricSource.GatewayTraffic),
+                    }).ToArray();
+                if (_samples.Count + projected.Length <= MaximumSamplesPerRequest)
                 {
-                    _samples.Add(sample);
+                    _lastStoredGroupStart = _samples.Count;
+                    _lastStoredGroupLength = projected.Length;
+                    _samples.AddRange(projected);
                 }
                 else
                 {
-                    _samples[^1] = sample;
+                    int removeStart = _lastStoredGroupStart >= 0 &&
+                                      _lastStoredGroupStart + _lastStoredGroupLength == _samples.Count
+                        ? _lastStoredGroupStart
+                        : Math.Max(0, _samples.Count - Math.Min(_samples.Count, projected.Length));
+                    int removed = _samples.Count - removeStart;
+                    _samples.RemoveRange(removeStart, removed);
+                    Interlocked.Add(ref _droppedSamples, removed);
+                    projected = projected
+                        .Select(sample => sample with
+                        {
+                            DroppedSampleCount = Volatile.Read(ref _droppedSamples),
+                        })
+                        .ToArray();
+                    _lastStoredGroupStart = _samples.Count;
+                    _lastStoredGroupLength = projected.Length;
+                    _samples.AddRange(projected);
                 }
+
+                _latestCapture = projected;
             }
 
-            Volatile.Write(ref _owner._latest, sample);
+            _owner.PublishLatest(projected);
         }
 
         private async Task CaptureOnceAsync(CancellationToken cancellationToken)
@@ -198,20 +226,30 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
                 {
                 }
 
-                TechnicalResourceSampleRecord sample = CreateSample(current);
+                TechnicalResourceSampleRecord[] samples = CreateSamples(current);
                 lock (_samplesLock)
                 {
-                    if (_samples.Count < MaximumSamplesPerRequest)
+                    if (_samples.Count + samples.Length <= MaximumSamplesPerRequest)
                     {
-                        _samples.Add(sample);
+                        _lastStoredGroupStart = _samples.Count;
+                        _lastStoredGroupLength = samples.Length;
+                        _samples.AddRange(samples);
                     }
                     else
                     {
-                        Interlocked.Increment(ref _droppedSamples);
+                        Interlocked.Add(ref _droppedSamples, samples.Length);
+                        samples = samples
+                            .Select(sample => sample with
+                            {
+                                DroppedSampleCount = Volatile.Read(ref _droppedSamples),
+                            })
+                            .ToArray();
                     }
+
+                    _latestCapture = samples;
                 }
 
-                Volatile.Write(ref _owner._latest, sample);
+                _owner.PublishLatest(samples);
                 if (current is not null)
                 {
                     _previous = current;
@@ -223,7 +261,19 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             }
         }
 
-        private TechnicalResourceSampleRecord CreateSample(WindowsResourceSnapshot? current)
+        private TechnicalResourceSampleRecord[] CreateSamples(WindowsResourceSnapshot? current)
+        {
+            IReadOnlyList<GpuResourceSnapshot> gpus = current?.Gpus ?? [];
+            return gpus.Count == 0
+                ? [CreateSample(current, null, includeHostMetrics: true)]
+                : gpus.Select((gpu, index) =>
+                    CreateSample(current, gpu, includeHostMetrics: index == 0)).ToArray();
+        }
+
+        private TechnicalResourceSampleRecord CreateSample(
+            WindowsResourceSnapshot? current,
+            GpuResourceSnapshot? gpu,
+            bool includeHostMetrics)
         {
             MetricValue unavailablePercent = Unavailable(MetricUnit.Percent, WindowsSourceVersion);
             MetricValue unavailableBytes = Unavailable(MetricUnit.Bytes, WindowsSourceVersion);
@@ -234,7 +284,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             MetricValue processMemory = unavailableBytes;
             MetricValue diskRead = unavailableBytes;
             MetricValue diskWrite = unavailableBytes;
-            TechnicalIdentifier? gpuDevice = null;
+            TechnicalIdentifier? gpuDevice = gpu?.DeviceId;
             MetricValue gpuUtilization = Unavailable(MetricUnit.Percent, NvidiaSourceVersion, MetricSource.NvidiaSmi);
             MetricValue gpuUsed = Unavailable(MetricUnit.Bytes, NvidiaSourceVersion, MetricSource.NvidiaSmi);
             MetricValue gpuTotal = Unavailable(MetricUnit.Bytes, NvidiaSourceVersion, MetricSource.NvidiaSmi);
@@ -242,7 +292,8 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             MetricValue gpuPower = Unavailable(MetricUnit.Watts, NvidiaSourceVersion, MetricSource.NvidiaSmi);
             DateTimeOffset capturedAt = current?.CapturedAt ?? DateTimeOffset.UtcNow;
 
-            if (current is not null &&
+            if (includeHostMetrics &&
+                current is not null &&
                 current.TotalPhysicalMemoryBytes > 0 &&
                 current.AvailablePhysicalMemoryBytes <= current.TotalPhysicalMemoryBytes)
             {
@@ -274,15 +325,15 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
                         current.Process?.WriteTransferBytes);
                 }
 
-                if (current.Gpu is GpuResourceSnapshot gpu)
-                {
-                    gpuDevice = gpu.DeviceId;
-                    gpuUtilization = OptionalExact(gpu.UtilizationPercent, MetricUnit.Percent);
-                    gpuUsed = OptionalMebibytes(gpu.VramUsedMebibytes);
-                    gpuTotal = OptionalMebibytes(gpu.VramTotalMebibytes);
-                    gpuTemperature = OptionalExact(gpu.TemperatureCelsius, MetricUnit.Celsius);
-                    gpuPower = OptionalExact(gpu.PowerWatts, MetricUnit.Watts);
-                }
+            }
+
+            if (gpu is not null)
+            {
+                gpuUtilization = OptionalExact(gpu.UtilizationPercent, MetricUnit.Percent);
+                gpuUsed = OptionalMebibytes(gpu.VramUsedMebibytes);
+                gpuTotal = OptionalMebibytes(gpu.VramTotalMebibytes);
+                gpuTemperature = OptionalExact(gpu.TemperatureCelsius, MetricUnit.Celsius);
+                gpuPower = OptionalExact(gpu.PowerWatts, MetricUnit.Watts);
             }
 
             return new TechnicalResourceSampleRecord(
@@ -294,25 +345,21 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             {
                 RequestId = _context.RequestId,
                 Stage = Volatile.Read(ref _stage),
-                RelatedProcess = _process,
+                RelatedProcess = includeHostMetrics ? _process : null,
                 GpuDeviceId = gpuDevice,
-                GpuDriverVersion = current?.Gpu?.DriverVersion,
+                GpuDriverVersion = gpu?.DriverVersion,
                 DroppedSampleCount = Volatile.Read(ref _droppedSamples),
                 MemoryUsedBytes = memoryUsed,
                 ProcessCpuPercent = processCpu,
                 ProcessMemoryBytes = processMemory,
                 DiskReadBytes = diskRead,
                 DiskWriteBytes = diskWrite,
-                ClientToBackendBytes = MetricValue.Exact(
-                    Interlocked.Read(ref _clientToBackendBytes),
-                    MetricUnit.Bytes,
-                    MetricSource.GatewayTraffic,
-                    TrafficSourceVersion),
-                BackendToClientBytes = MetricValue.Exact(
-                    Interlocked.Read(ref _backendToClientBytes),
-                    MetricUnit.Bytes,
-                    MetricSource.GatewayTraffic,
-                    TrafficSourceVersion),
+                ClientToBackendBytes = includeHostMetrics
+                    ? ExactTraffic(Interlocked.Read(ref _clientToBackendBytes))
+                    : Unavailable(MetricUnit.Bytes, TrafficSourceVersion, MetricSource.GatewayTraffic),
+                BackendToClientBytes = includeHostMetrics
+                    ? ExactTraffic(Interlocked.Read(ref _backendToClientBytes))
+                    : Unavailable(MetricUnit.Bytes, TrafficSourceVersion, MetricSource.GatewayTraffic),
                 GpuUtilizationPercent = gpuUtilization,
                 GpuVramUsedBytes = gpuUsed,
                 GpuVramTotalBytes = gpuTotal,
@@ -397,6 +444,13 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
                 MetricUnit.Percent,
                 MetricSource.WindowsApi,
                 WindowsSourceVersion);
+
+        private static MetricValue ExactTraffic(long value) =>
+            MetricValue.Exact(
+                value,
+                MetricUnit.Bytes,
+                MetricSource.GatewayTraffic,
+                TrafficSourceVersion);
 
         private static MetricValue OptionalExact(decimal? value, MetricUnit unit) => value is decimal exact
             ? MetricValue.Exact(exact, unit, MetricSource.NvidiaSmi, NvidiaSourceVersion)
