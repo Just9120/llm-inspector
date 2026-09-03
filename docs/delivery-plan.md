@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T21:44:21Z`
+> Updated: `2026-09-03T21:47:57Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T21:44:21Z` |
+| Updated UTC | `2026-09-03T21:47:57Z` |
 | Expected base branch | `main` |
 | Base SHA | `97866b3c69d60105bfe57fec94f4dbb6b9981ad7` — verified local/`origin/main`; exact-main CI `33807628059` success |
 | Working branch | `codex/goal-005-epic-12-performance` |
-| Last verified revision | `ccf6a5a` — local candidate: solution Release build succeeded; focused UnitTests `71/71`, WindowsTests `64/64`, PerformanceTests `6/6`, zero skips; full CI-equivalent pending |
+| Last verified revision | `e326845` — full local CI-equivalent succeeded; this checkpoint commit will not self-reference its own containing revision |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | Decision ratification terminal via PR #19: head `f82ec878986ddbc19b7e93f218f4ebe440683ad8`, PR CI `33807351764`, merge `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`, exact-main CI `33807628059`, Evidence [comment](https://github.com/Just9120/llm-inspector/pull/19#issuecomment-5532345500). EPIC-12 local commits: `556b1bd` profiles/settings/UI/runtime; `ccf6a5a` fail-closed evaluator and immutable fixture SHA-256 `1c38874fb393cfe094bf1d44a281859c2a6e340b9acb46b86df3b458a41f3aca` |
-| Current step | Synchronize documentation, run full local CI-equivalent and review the complete EPIC-12 diff |
-| Next exact action | Execute locked restore → format → Release build → full tests → RID restore → publish → smoke on exact local head |
+| Current step | Create final checkpoint commit, revalidate exact local head, then fetch-check the unchanged base before the single initial push |
+| Next exact action | Re-run full CI-equivalent on the final local head, fetch and confirm unchanged `origin/main`, then push once and open the EPIC-12 PR |
 | PR / CI | EPIC-12 PR not yet created; initial push and exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Exact SDK `10.0.400`; local candidate Release build `0` warnings/errors; focused UnitTests `71/71`, WindowsTests `64/64`, PerformanceTests `6/6`, zero skips; format verification passed. Full tests/publish/smoke pending |
+| Validation | Exact SDK `10.0.400`; locked normal/RID restores, format, Release build `0` warnings/errors, `221/221` tests with zero skips, clean self-contained `win-x64` publish and smoke `exit 0`; final documentation-only head revalidation pending |
 | Blockers | None for safe EPIC-12 PR. Controlled measurements for all three built-in profiles remain the explicit external gate and therefore no `E12-AC01..06` credit is claimed |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
