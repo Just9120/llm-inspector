@@ -109,7 +109,11 @@ public sealed class SqliteHistoryPrivacyTests
                 ["request_metrics"] = ["request_id", "metric_key", "value", "unit", "quality", "source", "source_version", "derivation_version"],
                 ["turns"] = ["turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type"],
                 ["tool_events"] = ["tool_event_id", "operation_id", "turn_sequence", "sequence", "tool_name", "started_at_utc", "duration_ms", "status", "error_type"],
-                ["resource_samples"] = ["sample_id", "operation_id", "captured_at_utc", "cpu_percent", "cpu_quality", "memory_percent", "memory_quality", "source_version"],
+                ["resource_samples"] = [
+                    "sample_id", "operation_id", "captured_at_utc",
+                    "cpu_percent", "cpu_quality", "cpu_source", "cpu_source_version", "cpu_derivation_version",
+                    "memory_percent", "memory_quality", "memory_source", "memory_source_version", "memory_derivation_version",
+                ],
             };
             await using SqliteConnection connection = new($"Data Source={databasePath};Mode=ReadOnly");
             await connection.OpenAsync();

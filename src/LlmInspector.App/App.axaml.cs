@@ -18,7 +18,9 @@ public partial class App : Avalonia.Application
             desktop.MainWindow = new MainWindow(
                 Program.RuntimeStatus,
                 Program.LiveStateTracker,
-                Program.ObservationStore);
+                Program.ObservationStore,
+                Program.HistoryStore,
+                Program.HistoryState);
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
 using LlmInspector.Application;
+using LlmInspector.Domain;
 using LlmInspector.Gateway;
 
 namespace LlmInspector.App;
@@ -9,21 +10,26 @@ public partial class MainWindow : Window
 {
     private readonly ILiveRequestSnapshotSource? _liveRequestState;
     private readonly IProxyObservationSnapshotSource? _observationSource;
+    private readonly ITechnicalHistoryStore? _history;
     private readonly DispatcherTimer? _liveRefreshTimer;
+    private HistoryClearPreview? _clearPreview;
 
     public MainWindow()
-        : this(AppRuntimeStatus.NotStarted, null, null)
+        : this(AppRuntimeStatus.NotStarted, null, null, null, "Technical history is not composed.")
     {
     }
 
     public MainWindow(
         AppRuntimeStatus runtimeStatus,
         ILiveRequestSnapshotSource? liveRequestState = null,
-        IProxyObservationSnapshotSource? observationSource = null)
+        IProxyObservationSnapshotSource? observationSource = null,
+        ITechnicalHistoryStore? history = null,
+        string? historyState = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
         _observationSource = observationSource;
+        _history = history;
 
         GatewayStateText.Text = runtimeStatus.State;
         ListenerText.Text = $"Listener: {runtimeStatus.Listener}";
@@ -36,6 +42,8 @@ public partial class MainWindow : Window
                 category => $"{category.Name}: {category.Fields}. Retention: {category.Retention}."));
         PersistentDataText.Text = TechnicalDataDisclosure.PersistentDataStatement;
         ForbiddenContentText.Text = TechnicalDataDisclosure.ForbiddenContentStatement;
+        HistoryStateText.Text = historyState ?? "Technical history state is unavailable.";
+        ConfigureHistoryControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
 
@@ -53,7 +61,173 @@ public partial class MainWindow : Window
             _liveRefreshTimer.Start();
             Closed += (_, _) => _liveRefreshTimer.Stop();
         }
+
+        Opened += OnOpened;
     }
+
+    private async void OnOpened(object? sender, EventArgs eventArgs)
+    {
+        if (_history is null)
+        {
+            return;
+        }
+
+        await RunHistoryActionAsync(async () =>
+        {
+            RetentionCombo.SelectedItem = await _history.GetRetentionAsync();
+            await LoadHistoryAsync();
+        });
+    }
+
+    private void ConfigureHistoryControls()
+    {
+        FilterClientCombo.ItemsSource = WithAny<ClientKind>();
+        FilterBackendCombo.ItemsSource = WithAny<BackendKind>();
+        FilterStatusCombo.ItemsSource = WithAny<ProxyOutcome>();
+        FilterErrorCombo.ItemsSource = WithAny<HistoryErrorType>();
+        FilterClientCombo.SelectedIndex = 0;
+        FilterBackendCombo.SelectedIndex = 0;
+        FilterStatusCombo.SelectedIndex = 0;
+        FilterErrorCombo.SelectedIndex = 0;
+        ComparisonDimensionCombo.ItemsSource = new[] { "Period", "Model", "Backend", "Client" };
+        ComparisonDimensionCombo.SelectedIndex = 0;
+        ComparisonMetricCombo.ItemsSource = Enum.GetValues<HistoryMetric>();
+        ComparisonMetricCombo.SelectedItem = HistoryMetric.TimeToFirstTokenMilliseconds;
+        RetentionCombo.ItemsSource = HistoryPolicies.RetentionOptions;
+        RetentionCombo.SelectedItem = HistoryRetention.ThirtyDays;
+
+        LoadHistoryButton.Click += async (_, _) => await RunHistoryActionAsync(LoadHistoryAsync);
+        LoadAnalyticsButton.Click += async (_, _) => await RunHistoryActionAsync(LoadAnalyticsAsync);
+        LoadOperationButton.Click += async (_, _) => await RunHistoryActionAsync(LoadOperationAsync);
+        CompareButton.Click += async (_, _) => await RunHistoryActionAsync(CompareAsync);
+        ApplyRetentionButton.Click += async (_, _) => await RunHistoryActionAsync(ApplyRetentionAsync);
+        PreviewClearButton.Click += async (_, _) => await RunHistoryActionAsync(PreviewClearAsync);
+        ConfirmClearButton.Click += async (_, _) => await RunHistoryActionAsync(ConfirmClearAsync);
+        ClearAllCheckBox.IsCheckedChanged += (_, _) => InvalidateClearPreview();
+        ClearFromText.TextChanged += (_, _) => InvalidateClearPreview();
+        ClearToText.TextChanged += (_, _) => InvalidateClearPreview();
+
+        bool enabled = _history is not null;
+        LoadHistoryButton.IsEnabled = enabled;
+        LoadAnalyticsButton.IsEnabled = enabled;
+        LoadOperationButton.IsEnabled = enabled;
+        CompareButton.IsEnabled = enabled;
+        ApplyRetentionButton.IsEnabled = enabled;
+        PreviewClearButton.IsEnabled = enabled;
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        HistoryFilter filter = CreateCurrentFilter();
+        IReadOnlyList<RequestHistoryItem> requests = await RequireHistory().QueryRequestsAsync(filter);
+        HistoryOutputText.Text = HistoryTextPresenter.FormatRequests(requests);
+    }
+
+    private async Task LoadAnalyticsAsync()
+    {
+        PeriodAnalytics analytics = await RequireHistory().AnalyzePeriodAsync(CreateCurrentFilter());
+        AnalyticsOutputText.Text = HistoryTextPresenter.FormatAnalytics(analytics);
+    }
+
+    private async Task LoadOperationAsync()
+    {
+        if (!Guid.TryParse(OperationIdText.Text, out Guid operationId))
+        {
+            throw new ArgumentException("Operation must be a GUID from the technical history list.");
+        }
+
+        TechnicalOperationDetail? detail = await RequireHistory().GetOperationDetailAsync(operationId);
+        OperationOutputText.Text = HistoryTextPresenter.FormatOperation(detail);
+    }
+
+    private async Task CompareAsync()
+    {
+        string dimension = ComparisonDimensionCombo.SelectedItem?.ToString() ?? string.Empty;
+        HistoryComparisonFilters filters = HistoryUiParser.CreateComparisonFilters(
+            dimension,
+            ComparisonBaselineText.Text ?? string.Empty,
+            ComparisonCandidateText.Text ?? string.Empty);
+        if (ComparisonMetricCombo.SelectedItem is not HistoryMetric metric)
+        {
+            throw new ArgumentException("Select a comparison metric.");
+        }
+
+        AnalyticsComparison comparison = await RequireHistory().CompareAsync(
+            filters.Baseline,
+            filters.Candidate,
+            metric);
+        ComparisonOutputText.Text = HistoryTextPresenter.FormatComparison(comparison);
+    }
+
+    private async Task ApplyRetentionAsync()
+    {
+        if (RetentionCombo.SelectedItem is not HistoryRetention retention)
+        {
+            throw new ArgumentException("Select a retention option.");
+        }
+
+        ITechnicalHistoryStore history = RequireHistory();
+        await history.SetRetentionAsync(retention);
+        int deleted = await history.ApplyRetentionAsync(retention, DateTimeOffset.UtcNow);
+        RetentionOutputText.Text = $"Retention {retention} saved and applied; deleted {deleted} old technical record(s).";
+        await LoadHistoryAsync();
+    }
+
+    private async Task PreviewClearAsync()
+    {
+        HistoryClearScope scope = HistoryUiParser.CreateClearScope(
+            ClearAllCheckBox.IsChecked == true,
+            ClearFromText.Text,
+            ClearToText.Text);
+        _clearPreview = await RequireHistory().PreviewClearAsync(scope);
+        ClearOutputText.Text = HistoryTextPresenter.FormatClearPreview(_clearPreview);
+        ConfirmClearButton.IsEnabled = true;
+    }
+
+    private async Task ConfirmClearAsync()
+    {
+        HistoryClearPreview preview = _clearPreview ??
+            throw new InvalidOperationException("Preview the exact clear scope before confirmation.");
+        HistoryClearPreview cleared = await RequireHistory().ClearAsync(preview, confirmed: true);
+        ClearOutputText.Text = $"Cleared the confirmed scope ({cleared.TotalRecords} technical record(s)).";
+        _clearPreview = null;
+        ConfirmClearButton.IsEnabled = false;
+        await LoadHistoryAsync();
+    }
+
+    private HistoryFilter CreateCurrentFilter() => HistoryUiParser.CreateFilter(
+        FilterFromText.Text,
+        FilterToText.Text,
+        FilterClientCombo.SelectedItem?.ToString(),
+        FilterBackendCombo.SelectedItem?.ToString(),
+        FilterModelText.Text,
+        FilterSessionText.Text,
+        FilterStatusCombo.SelectedItem?.ToString(),
+        FilterErrorCombo.SelectedItem?.ToString());
+
+    private async Task RunHistoryActionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException)
+        {
+            HistoryStateText.Text = $"History action failed: {exception.Message}";
+        }
+    }
+
+    private void InvalidateClearPreview()
+    {
+        _clearPreview = null;
+        ConfirmClearButton.IsEnabled = false;
+    }
+
+    private ITechnicalHistoryStore RequireHistory() =>
+        _history ?? throw new InvalidOperationException("Technical history is unavailable.");
+
+    private static string[] WithAny<T>()
+        where T : struct, Enum => ["Any", .. Enum.GetNames<T>()];
 
     private void RefreshLiveRequests()
     {

@@ -697,17 +697,26 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         command.CommandText = """
             INSERT INTO resource_samples(
                 sample_id, operation_id, captured_at_utc,
-                cpu_percent, cpu_quality, memory_percent, memory_quality, source_version)
-            VALUES($id, $operation, $captured, $cpu, $cpu_quality, $memory, $memory_quality, $source_version);
+                cpu_percent, cpu_quality, cpu_source, cpu_source_version, cpu_derivation_version,
+                memory_percent, memory_quality, memory_source, memory_source_version, memory_derivation_version)
+            VALUES(
+                $id, $operation, $captured,
+                $cpu, $cpu_quality, $cpu_source, $cpu_source_version, $cpu_derivation_version,
+                $memory, $memory_quality, $memory_source, $memory_source_version, $memory_derivation_version);
             """;
         command.Parameters.AddWithValue("$id", sample.SampleId.ToString("N"));
         command.Parameters.AddWithValue("$operation", DbValue(sample.OperationId?.ToString("N")));
         command.Parameters.AddWithValue("$captured", ToDbTime(sample.CapturedAt));
         command.Parameters.AddWithValue("$cpu", DbValue(sample.CpuPercent.Value));
         command.Parameters.AddWithValue("$cpu_quality", (int)sample.CpuPercent.Quality);
+        command.Parameters.AddWithValue("$cpu_source", (int)sample.CpuPercent.Source);
+        command.Parameters.AddWithValue("$cpu_source_version", sample.CpuPercent.SourceVersion);
+        command.Parameters.AddWithValue("$cpu_derivation_version", DbValue(sample.CpuPercent.DerivationVersion));
         command.Parameters.AddWithValue("$memory", DbValue(sample.MemoryPercent.Value));
         command.Parameters.AddWithValue("$memory_quality", (int)sample.MemoryPercent.Quality);
-        command.Parameters.AddWithValue("$source_version", sample.CpuPercent.SourceVersion);
+        command.Parameters.AddWithValue("$memory_source", (int)sample.MemoryPercent.Source);
+        command.Parameters.AddWithValue("$memory_source_version", sample.MemoryPercent.SourceVersion);
+        command.Parameters.AddWithValue("$memory_derivation_version", DbValue(sample.MemoryPercent.DerivationVersion));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -978,7 +987,8 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """
             SELECT sample_id, operation_id, captured_at_utc,
-                   cpu_percent, cpu_quality, memory_percent, memory_quality, source_version
+                   cpu_percent, cpu_quality, cpu_source, cpu_source_version, cpu_derivation_version,
+                   memory_percent, memory_quality, memory_source, memory_source_version, memory_derivation_version
             FROM resource_samples
             WHERE operation_id = $id
             ORDER BY captured_at_utc, sample_id;
@@ -1023,7 +1033,9 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
 
         command.CommandText = $"""
             SELECT s.sample_id, s.operation_id, s.captured_at_utc,
-                   s.cpu_percent, s.cpu_quality, s.memory_percent, s.memory_quality, s.source_version
+                   s.cpu_percent, s.cpu_quality, s.cpu_source, s.cpu_source_version, s.cpu_derivation_version,
+                   s.memory_percent, s.memory_quality, s.memory_source, s.memory_source_version,
+                   s.memory_derivation_version
             FROM resource_samples s
             LEFT JOIN operations o ON o.operation_id = s.operation_id
             {(predicates.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", predicates))}
@@ -1040,13 +1052,12 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            string sourceVersion = reader.GetString(7);
             result.Add(new TechnicalResourceSampleRecord(
                 Guid.ParseExact(reader.GetString(0), "N"),
                 reader.IsDBNull(1) ? null : Guid.ParseExact(reader.GetString(1), "N"),
                 ParseDbTime(reader.GetString(2)),
-                CreateStoredPercentMetric(reader, 3, 4, sourceVersion),
-                CreateStoredPercentMetric(reader, 5, 6, sourceVersion)));
+                CreateStoredPercentMetric(reader, 3, 4, 5, 6, 7),
+                CreateStoredPercentMetric(reader, 8, 9, 10, 11, 12)));
         }
 
         return result;
@@ -1291,7 +1302,9 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
         SqliteDataReader reader,
         int valueOrdinal,
         int qualityOrdinal,
-        string sourceVersion)
+        int sourceOrdinal,
+        int sourceVersionOrdinal,
+        int derivationVersionOrdinal)
     {
         MetricQuality quality = (MetricQuality)reader.GetInt32(qualityOrdinal);
         decimal? value = reader.IsDBNull(valueOrdinal) ? null : reader.GetDecimal(valueOrdinal);
@@ -1299,9 +1312,9 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             value,
             MetricUnit.Percent,
             quality,
-            MetricSource.Inspector,
-            sourceVersion,
-            quality is MetricQuality.Calculated or MetricQuality.Estimated ? "stored-resource-sample-v1" : null);
+            (MetricSource)reader.GetInt32(sourceOrdinal),
+            reader.GetString(sourceVersionOrdinal),
+            reader.IsDBNull(derivationVersionOrdinal) ? null : reader.GetString(derivationVersionOrdinal));
     }
 
     private static HistoryErrorType MapErrorType(ProxyOutcome outcome) => outcome switch
@@ -1472,9 +1485,14 @@ public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsync
             captured_at_utc TEXT NOT NULL,
             cpu_percent REAL NULL CHECK(cpu_percent IS NULL OR cpu_percent BETWEEN 0 AND 100),
             cpu_quality INTEGER NOT NULL,
+            cpu_source INTEGER NOT NULL,
+            cpu_source_version TEXT NOT NULL CHECK(length(cpu_source_version) BETWEEN 1 AND 128),
+            cpu_derivation_version TEXT NULL CHECK(cpu_derivation_version IS NULL OR length(cpu_derivation_version) BETWEEN 1 AND 128),
             memory_percent REAL NULL CHECK(memory_percent IS NULL OR memory_percent BETWEEN 0 AND 100),
             memory_quality INTEGER NOT NULL,
-            source_version TEXT NOT NULL CHECK(length(source_version) BETWEEN 1 AND 128)
+            memory_source INTEGER NOT NULL,
+            memory_source_version TEXT NOT NULL CHECK(length(memory_source_version) BETWEEN 1 AND 128),
+            memory_derivation_version TEXT NULL CHECK(memory_derivation_version IS NULL OR length(memory_derivation_version) BETWEEN 1 AND 128)
         ) STRICT;
 
         CREATE INDEX IF NOT EXISTS ix_requests_period ON requests(started_at_utc);

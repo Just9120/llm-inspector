@@ -4,15 +4,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         x:Class="LlmInspector.App.MainWindow"
         mc:Ignorable="d"
-        d:DesignWidth="820"
-        d:DesignHeight="620"
-        Width="820"
-        Height="620"
-        MinWidth="620"
+        d:DesignWidth="980"
+        d:DesignHeight="900"
+        Width="980"
+        Height="900"
+        MinWidth="760"
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -64,6 +64,68 @@
       </Border>
 
       <Border Grid.Row="5"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="10">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="History and analytics" />
+          <TextBlock x:Name="HistoryStateText" TextWrapping="Wrap" />
+
+          <TextBlock FontWeight="SemiBold" Text="History filters" />
+          <WrapPanel Orientation="Horizontal">
+            <TextBox x:Name="FilterFromText" Width="210" Margin="0,0,8,8" PlaceholderText="From UTC (ISO-8601)" />
+            <TextBox x:Name="FilterToText" Width="210" Margin="0,0,8,8" PlaceholderText="To UTC (ISO-8601)" />
+            <ComboBox x:Name="FilterClientCombo" Width="150" Margin="0,0,8,8" />
+            <ComboBox x:Name="FilterBackendCombo" Width="140" Margin="0,0,8,8" />
+            <TextBox x:Name="FilterModelText" Width="170" Margin="0,0,8,8" PlaceholderText="Model" />
+            <TextBox x:Name="FilterSessionText" Width="250" Margin="0,0,8,8" PlaceholderText="Session GUID" />
+            <ComboBox x:Name="FilterStatusCombo" Width="170" Margin="0,0,8,8" />
+            <ComboBox x:Name="FilterErrorCombo" Width="190" Margin="0,0,8,8" />
+            <Button x:Name="LoadHistoryButton" Margin="0,0,8,8" Content="Load history" />
+            <Button x:Name="LoadAnalyticsButton" Margin="0,0,8,8" Content="Build trends" />
+          </WrapPanel>
+          <TextBlock x:Name="HistoryOutputText" TextWrapping="Wrap" />
+          <TextBlock x:Name="AnalyticsOutputText" TextWrapping="Wrap" />
+
+          <TextBlock FontWeight="SemiBold" Text="Operation detail" />
+          <WrapPanel Orientation="Horizontal">
+            <TextBox x:Name="OperationIdText" Width="340" Margin="0,0,8,8" PlaceholderText="Operation GUID" />
+            <Button x:Name="LoadOperationButton" Margin="0,0,8,8" Content="Load operation" />
+          </WrapPanel>
+          <TextBlock x:Name="OperationOutputText" TextWrapping="Wrap" />
+
+          <TextBlock FontWeight="SemiBold" Text="Comparison" />
+          <TextBlock Text="Period values use start..end; other dimensions use one exact model/backend/client value."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="ComparisonDimensionCombo" Width="130" Margin="0,0,8,8" />
+            <ComboBox x:Name="ComparisonMetricCombo" Width="240" Margin="0,0,8,8" />
+            <TextBox x:Name="ComparisonBaselineText" Width="260" Margin="0,0,8,8" PlaceholderText="Baseline selection" />
+            <TextBox x:Name="ComparisonCandidateText" Width="260" Margin="0,0,8,8" PlaceholderText="Candidate selection" />
+            <Button x:Name="CompareButton" Margin="0,0,8,8" Content="Compare" />
+          </WrapPanel>
+          <TextBlock x:Name="ComparisonOutputText" TextWrapping="Wrap" />
+
+          <TextBlock FontWeight="SemiBold" Text="Retention" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="RetentionCombo" Width="180" Margin="0,0,8,8" />
+            <Button x:Name="ApplyRetentionButton" Margin="0,0,8,8" Content="Save and apply" />
+          </WrapPanel>
+          <TextBlock x:Name="RetentionOutputText" TextWrapping="Wrap" />
+
+          <TextBlock FontWeight="SemiBold" Text="Clear local history" />
+          <WrapPanel Orientation="Horizontal">
+            <CheckBox x:Name="ClearAllCheckBox" Margin="0,0,8,8" Content="All history" />
+            <TextBox x:Name="ClearFromText" Width="210" Margin="0,0,8,8" PlaceholderText="From UTC (ISO-8601)" />
+            <TextBox x:Name="ClearToText" Width="210" Margin="0,0,8,8" PlaceholderText="To UTC (ISO-8601)" />
+            <Button x:Name="PreviewClearButton" Margin="0,0,8,8" Content="Preview clear" />
+            <Button x:Name="ConfirmClearButton" Margin="0,0,8,8" Content="Confirm exact preview" IsEnabled="False" />
+          </WrapPanel>
+          <TextBlock x:Name="ClearOutputText" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="6"
               Padding="20"
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
