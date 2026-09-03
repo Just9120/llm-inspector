@@ -348,53 +348,11 @@ public sealed class DiagnosticSnapshotService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(artifact);
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            throw new ArgumentException("A local snapshot path is required.", nameof(path));
-        }
-
-        string fullPath = Path.GetFullPath(path);
-        if (!string.Equals(Path.GetExtension(fullPath), ".json", StringComparison.OrdinalIgnoreCase) ||
-            fullPath.StartsWith(@"\\", StringComparison.Ordinal))
-        {
-            throw new ArgumentException("Snapshot output must be a local .json path.", nameof(path));
-        }
-
-        string? directory = Path.GetDirectoryName(fullPath);
-        if (string.IsNullOrWhiteSpace(directory))
-        {
-            throw new ArgumentException("Snapshot output directory is unavailable.", nameof(path));
-        }
-
-        Directory.CreateDirectory(directory);
-        string temporaryPath = Path.Combine(
-            directory,
-            $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (FileStream stream = new(
-                temporaryPath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None,
-                4096,
-                FileOptions.Asynchronous | FileOptions.WriteThrough))
-            {
-                byte[] bytes = Utf8WithoutBom.GetBytes(artifact.Json);
-                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                stream.Flush(flushToDisk: true);
-            }
-
-            File.Move(temporaryPath, fullPath, overwrite: true);
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath))
-            {
-                File.Delete(temporaryPath);
-            }
-        }
+        await LocalJsonArtifactWriter.SaveAsync(
+            artifact.Json,
+            path,
+            "Diagnostic snapshot",
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static DiagnosticRequestEntry CreateRequest(RequestHistoryItem request) => new(
@@ -457,4 +415,66 @@ public sealed class DiagnosticSnapshotService
         metric.Source,
         metric.SourceVersion,
         metric.DerivationVersion);
+}
+
+internal static class LocalJsonArtifactWriter
+{
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+
+    public static async Task SaveAsync(
+        string json,
+        string path,
+        string artifactName,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(artifactName);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException($"A local {artifactName.ToLowerInvariant()} path is required.", nameof(path));
+        }
+
+        string fullPath = Path.GetFullPath(path);
+        if (!string.Equals(Path.GetExtension(fullPath), ".json", StringComparison.OrdinalIgnoreCase) ||
+            fullPath.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"{artifactName} output must be a local .json path.", nameof(path));
+        }
+
+        string? directory = Path.GetDirectoryName(fullPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            throw new ArgumentException($"{artifactName} output directory is unavailable.", nameof(path));
+        }
+
+        Directory.CreateDirectory(directory);
+        string temporaryPath = Path.Combine(
+            directory,
+            $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (FileStream stream = new(
+                temporaryPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                4096,
+                FileOptions.Asynchronous | FileOptions.WriteThrough))
+            {
+                byte[] bytes = Utf8WithoutBom.GetBytes(json);
+                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporaryPath, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
 }

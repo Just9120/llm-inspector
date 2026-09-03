@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -183,6 +183,33 @@
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
         <StackPanel Spacing="8">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Anonymized analytics export" />
+          <TextBlock Text="Schema analytics-export-v1 contains selected-range technical history and aggregate metrics. Preview is required before local save; content fields are excluded and nothing is uploaded."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <TextBox x:Name="ExportFromText" Width="210" Margin="0,0,8,8" PlaceholderText="From UTC (ISO-8601)" />
+            <TextBox x:Name="ExportToText" Width="210" Margin="0,0,8,8" PlaceholderText="To UTC (ISO-8601)" />
+          </WrapPanel>
+          <TextBox x:Name="ExportPathText" PlaceholderText="Local .json output path" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="PreviewExportButton" Margin="0,0,8,8" Content="Create export preview" />
+            <Button x:Name="SaveExportButton" Margin="0,0,8,8" Content="Save exact export" IsEnabled="False" />
+          </WrapPanel>
+          <TextBlock x:Name="ExportStateText" TextWrapping="Wrap" />
+          <TextBox x:Name="ExportPreviewText"
+                   MinHeight="180"
+                   AcceptsReturn="True"
+                   IsReadOnly="True"
+                   TextWrapping="NoWrap"
+                   PlaceholderText="Previewed analytics JSON appears here" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="10"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="8">
           <TextBlock FontSize="18" FontWeight="SemiBold" Text="Background and notifications" />
           <CheckBox x:Name="AutostartCheckBox" Content="Start LLM Inspector with Windows in background" />
           <TextBlock FontWeight="SemiBold" Text="Notify me when" />
@@ -200,7 +227,7 @@
         </StackPanel>
       </Border>
 
-      <Border Grid.Row="10"
+      <Border Grid.Row="11"
               Padding="20"
               Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
               CornerRadius="8">
