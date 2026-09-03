@@ -139,6 +139,7 @@ public sealed class HistoryUiTests
         RequestHistoryItem recurring = request with
         {
             ErrorType = HistoryErrorType.ConnectionRefused,
+            ErrorOrigin = HistoryErrorOrigin.Backend,
             ErrorGroupOccurrenceCount = 2,
         };
         StringAssert.Contains(
@@ -146,6 +147,20 @@ public sealed class HistoryUiTests
             "ConnectionRefused [recurring x2]");
 
         MetricAggregate aggregate = new(3, true, 20m, 20m, 30m);
+        TechnicalRuntimeFacts baselineFacts = new(Id("config-a")) { BackendVersion = Id("backend-1") };
+        TechnicalRuntimeFacts candidateFacts = new(Id("config-b")) { BackendVersion = Id("backend-2") };
+        RuntimeConfigurationAggregate baselineConfiguration = new(
+            baselineFacts,
+            request.StartedAt,
+            request.StartedAt.AddMinutes(2),
+            3,
+            new Dictionary<HistoryMetric, MetricAggregate>());
+        RuntimeConfigurationAggregate candidateConfiguration = new(
+            candidateFacts,
+            request.StartedAt.AddDays(1),
+            request.StartedAt.AddDays(1).AddMinutes(2),
+            3,
+            new Dictionary<HistoryMetric, MetricAggregate>());
         PeriodAnalytics analytics = new(
             new HistoryFilter(),
             [new AnalyticsTrendPoint(
@@ -173,6 +188,23 @@ public sealed class HistoryUiTests
                     [HistoryErrorType.ConnectionRefused, HistoryErrorType.ClientCancelled],
                     2)],
                 1),
+            RuntimeCorrelation = new RuntimeChangeCorrelation(
+                RuntimeCorrelationStatus.Sufficient,
+                [baselineConfiguration, candidateConfiguration],
+                baselineConfiguration,
+                candidateConfiguration,
+                [new AnalyticsComparison(
+                    HistoryMetric.TimeToFirstTokenMilliseconds,
+                    aggregate,
+                    aggregate with { ArithmeticMean = 40m },
+                    20m,
+                    true)],
+                new AnalyticsComparison(
+                    HistoryMetric.ErrorRatePercent,
+                    aggregate,
+                    aggregate with { ArithmeticMean = 40m },
+                    20m,
+                    true)),
         };
         string trend = App.HistoryTextPresenter.FormatAnalytics(analytics);
         StringAssert.Contains(trend, "cold=1 | warm=2 | unavailable=3");
@@ -182,6 +214,8 @@ public sealed class HistoryUiTests
         StringAssert.Contains(trend, "ConnectionRefused | occurrences=2 | recurring");
         StringAssert.Contains(trend, "Confirmed error correlation by Operation=");
         StringAssert.Contains(trend, "Uncorrelated errors: 1");
+        StringAssert.Contains(trend, "baseline=config-a | candidate=config-b");
+        StringAssert.Contains(trend, "CONFIRMED REGRESSION");
 
         TechnicalOperationDetail detail = new(
             new TechnicalOperationRecord(

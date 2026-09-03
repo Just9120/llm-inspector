@@ -383,7 +383,7 @@ public sealed class NvidiaSmiGpuProbe
 
         return new GpuResourceSnapshot(
             deviceId,
-            TechnicalIdentifier.FromBackend(primary[2]),
+            ParseIdentifier(primary[2]),
             ParseMetric(primary[3]),
             ParseMetric(primary[4]),
             ParseMetric(primary[5]),
@@ -395,6 +395,12 @@ public sealed class NvidiaSmiGpuProbe
         decimal.TryParse(value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0
             ? parsed
             : null;
+
+    private static TechnicalIdentifier? ParseIdentifier(string value) =>
+        value.Equals("N/A", StringComparison.OrdinalIgnoreCase) ||
+        value.Equals("[Not Supported]", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : TechnicalIdentifier.FromBackend(value);
 
     private static string? FindExecutable()
     {

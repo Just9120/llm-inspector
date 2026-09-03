@@ -109,6 +109,7 @@ public sealed class ResourceMonitoringTests
         Assert.AreEqual(250m, gpu.VramTotalMebibytes);
         Assert.AreEqual(65m, gpu.TemperatureCelsius);
         Assert.IsNull(gpu.PowerWatts);
+        Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("0, GPU-primary, N/A, 50, 100, 250, 65, 90")?.DriverVersion);
         Assert.IsNull(NvidiaSmiGpuProbe.ParseCsv("malformed content"));
     }
 
