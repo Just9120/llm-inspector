@@ -664,6 +664,55 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task LmStudioNativeStreamingEventsAreRelayedInOrderAndProjectColdEvidence()
+    {
+        string[] events =
+        [
+            "event: chat.start\ndata: {\"type\":\"chat.start\",\"model_instance_id\":\"native-stream-model\"}\n\n",
+            "event: model_load.start\ndata: {\"type\":\"model_load.start\"}\n\n",
+            "event: model_load.end\ndata: {\"type\":\"model_load.end\",\"load_time_seconds\":2.5}\n\n",
+            "event: message.delta\ndata: {\"type\":\"message.delta\",\"content\":\"opaque-response\"}\n\n",
+            "event: chat.end\ndata: {\"type\":\"chat.end\",\"result\":{\"stats\":{\"input_tokens\":12,\"total_output_tokens\":4,\"reasoning_output_tokens\":1,\"tokens_per_second\":20}}}\n\n",
+        ];
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            context.Response.ContentType = "text/event-stream";
+            foreach (string item in events)
+            {
+                await context.Response.WriteAsync(item, context.RequestAborted);
+                await context.Response.Body.FlushAsync(context.RequestAborted);
+            }
+        });
+        SequenceObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(
+            0,
+            backend.Address,
+            BackendKind.LmStudio);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            sink,
+            BackendTelemetryAdapters.Create(BackendKind.LmStudio),
+            lmStudioNativeTelemetryAdapter: BackendTelemetryAdapters.CreateLmStudioNative());
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.LmStudioNativeChatPath,
+            new StringContent("{\"stream\":true}", Encoding.UTF8, "application/json"));
+        string actualBody = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.ReadAsync();
+
+        response.EnsureSuccessStatusCode();
+        Assert.AreEqual(string.Concat(events), actualBody);
+        Assert.AreEqual(ModelLoadDisposition.Cold, observation.BackendTelemetry.ModelLoadDisposition);
+        Assert.AreEqual(2500, observation.BackendTelemetry.ModelLoadTime.Value);
+        Assert.AreEqual(12, observation.BackendTelemetry.PromptTokens.Value);
+        Assert.AreEqual(4, observation.BackendTelemetry.CompletionTokens.Value);
+        Assert.AreEqual(16, observation.BackendTelemetry.TotalTokens.Value);
+        Assert.AreEqual(MetricQuality.Calculated, observation.TimeToFirstToken.Quality);
+    }
+
+    [TestMethod]
     public async Task TelemetryParserFailureCannotBreakRelay()
     {
         const string backendBody = "{\"choices\":[{\"message\":{\"content\":\"synthetic\"}}]}";
