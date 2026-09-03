@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-004 IN_PROGRESS`
-> Updated: `2026-09-02T23:44:27Z`
+> Updated: `2026-09-03T01:05:08Z`
 
 ## Current Goal
 
@@ -46,7 +46,7 @@
 - Failed CI, privacy/security regression или обязательный safety gate не обходятся и блокируют merge до исправления.
 - После partial epic PR работа продолжается fix-PR внутри `GOAL-004`; переход к новой Goal не происходит.
 
-**Current Goal verification:** `51/72 = 70.8%` selected product AC complete locally. EPIC-02 is `READY 15/15`. EPIC-03 is `READY 13/13`: PR [#6](https://github.com/Just9120/llm-inspector/pull/6) follow-up CI `33694308639` and exact-merge `main` CI `33694559218` succeeded. EPIC-04 candidate is `10/12`: `E04-AC01..02` and `E04-AC04..11` have local CODE/TEST Evidence, while `E04-AC03`/`E04-AC12` remain open without trustworthy cross-turn/cold-warm evidence and CI is pending. EPIC-09 remains `13/14`; persistent-schema `E09-AC06` stays open for EPIC-08. EPIC-08 is authorized but not started.
+**Current Goal verification:** `70/72 = 97.2%` selected product AC complete locally. EPIC-02 is `READY 15/15`; EPIC-03 is `READY 13/13`. EPIC-04 was delivered as an honest `10/12` partial increment: PR [#7](https://github.com/Just9120/llm-inspector/pull/7) and exact merge commit `b29d80a788942938ad4246ab4cd358e7b41a71a8` passed CI runs `33696539694` and `33696722298`; `E04-AC03`/`E04-AC12` remain open without trustworthy cross-turn/cold-warm evidence. EPIC-08 locally reaches `18/18`, and its real-schema/runtime-canary tests locally close `E09-AC06`, making EPIC-09 `14/14`; both changes still require PR/main CI before terminal Evidence.
 
 **Stop condition:** остановиться после `72/72` и required Evidence либо при подтверждённом `BLOCKED` / `PENDING_EXTERNAL_GATE`; к остальным эпикам или новой Goal не переходить.
 
@@ -65,30 +65,30 @@ Sequence задаёт delivery order внутри одной authorized Goal. С
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-02T23:44:27Z` |
+| Updated UTC | `2026-09-03T01:05:08Z` |
 | Expected base branch | `main` |
-| Base SHA | `ba63d0b219e61527d3d81994638dee39a11c14bf` — verified local/`origin/main` after PR #6 merge and successful exact-merge CI |
-| Working branch | `codex/epic-04-tokens-context-timings` |
-| Last verified revision | `473a6a5fd12c7e908cc6229771254175b2da36ac` — complete EPIC-04 candidate including readiness/Evidence docs covered by the full local CI-equivalent pipeline; containing final checkpoint update is intentionally not self-referenced |
-| Initial worktree state | Clean EPIC-04 branch created from synchronized local/`origin/main`; merged EPIC-03 branch had zero unique commits and was safely removed locally/remotely |
-| Current worktree state | Seven reviewable EPIC-04 commits; worktree was clean before this final checkpoint-only update; generated `artifacts/` is ignored; unrelated changes absent |
-| Completed work | Added OpenAI Chat fixture v2 nested cached/reasoning counters, normalized llama.cpp cache/prompt/generation rates, typed conditional context/load/queue values, latest-request UI with quality, privacy-safe streaming TTFT, monotonic total duration and content non-decoding. Full pipeline passed: exact SDK `10.0.400`, normal/RID locked restores, format, Release build `0` warnings/errors, `86/86` tests with zero skips, self-contained `win-x64` publish and smoke |
-| Current step | Perform the one initial push and open the EPIC-04 partial PR |
-| Next exact action | Push `codex/epic-04-tokens-context-timings` once, create PR against `main`, and inspect the exact-head CI without speculative rerun |
-| PR / CI | EPIC-04 PR not created; no remote branch or CI run exists yet |
+| Base SHA | `b29d80a788942938ad4246ab4cd358e7b41a71a8` — verified local/`origin/main` after PR #7 merge and successful exact-merge CI `33696722298` |
+| Working branch | `codex/epic-08-history-analytics-retention` |
+| Last verified revision | `6b4ec003fb879ffd56a61c85ef00fc2f31e82450` — complete EPIC-08 code candidate covered by the full local CI-equivalent pipeline; final documentation commit is intentionally not self-referenced |
+| Initial worktree state | Clean EPIC-08 branch created from synchronized local/`origin/main`; merged EPIC-04 branch had zero unique commits and was safely removed locally/remotely |
+| Current worktree state | Six reviewable EPIC-08 commits before this documentation sync; worktree contained only expected documentation updates after the full local pipeline; unrelated changes absent |
+| Completed work | Added Microsoft.Data.Sqlite `10.0.11` locked graphs; WAL/foreign-key/privacy-allowlisted schema; request/session/operation/turn/tool/resource stores; seven history filters; ordered detail; UTC trends; mean/median/nearest-rank P95; four comparison dimensions; exact four-option retention with persisted setting and short oldest-first batches; explicit preview/confirm clear; bounded non-blocking writer; degraded history runtime; user-facing controls. Full local pipeline passed exact SDK `10.0.400`, locked restores, format, Release build `0` warnings/errors, `112/112` tests, self-contained publish and smoke |
+| Current step | Synchronize recalculated readiness/Evidence and prepare the single initial EPIC-08 push/PR |
+| Next exact action | Commit final EPIC-08 documentation/checkpoint, verify clean diff/base, push once, open PR against `main`, then inspect exact-head CI without speculative rerun |
+| PR / CI | EPIC-08 PR not created; remote branch does not exist and no EPIC-08 CI run exists |
 | Deployment | N/A — Windows desktop product; no runtime deployment target |
-| Blockers | No delivery gate blocker. `E09-AC06` still requires the later EPIC-08 persistent schema. EPIC-04 `E04-AC03` and `E04-AC12` lack trustworthy session/model-load correlation; per increment policy they remain open but do not block a safe partial epic PR/merge |
-| Unverified assumptions | Supported responses may expose nested cached/reasoning token counters, but coverage must be established by versioned fixtures. Current supported flows provide no trustworthy context limit, history/tools attribution, per-request model-load duration or queue duration; these values must remain `unavailable` unless exact source evidence is added |
+| Blockers | No EPIC-08 delivery gate blocker. Goal closure remains blocked at `70/72` by EPIC-04 `E04-AC03`/`E04-AC12`: supported flows expose no trustworthy session/agent-turn identity or cold/warm model-load evidence, and time proximity is forbidden as proof. Per increment policy this does not block the EPIC-08 PR/merge; a bounded fix/reconciliation PR follows |
+| Unverified assumptions | GitHub PR/main CI have not run for this branch. Runtime resource trends accept typed resource samples, but real collectors remain outside this Goal; no resource values are fabricated. Real client session IDs and cold/warm load events remain absent in supported OpenAI-compatible flows |
 | Preserved pre-existing changes | Goal started from clean worktree; unrelated changes absent |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-02T23:41:31Z` | `51/139 = 36.7%` | `51/164 = 31.1%` | Ten EPIC-04 AC independently mapped to local code/tests; cross-turn context delta and cold/warm analytics remain uncredited; CI pending |
-| Previous | `2026-09-02T23:25:41Z` | `41/139 = 29.5%` | `41/164 = 25.0%` | Same 41 completed AC after starting EPIC-04 and before its implementation |
+| Current | `2026-09-03T01:05:08Z` | `70/139 = 50.4%` | `70/164 = 42.7%` | Independent AC map credits EPIC-08 `18/18` plus E09-AC06 after full local pipeline; GitHub CI remains pending |
+| Previous | `2026-09-03T00:03:30Z` | `51/139 = 36.7%` | `51/164 = 31.1%` | Exact state after merged EPIC-04: ten EPIC-04 AC complete; E04-AC03/E04-AC12 and E09-AC06 open |
 
-Delta: `+7.2 п.п.` initial release and `+6.1 п.п.` full roadmap from ten newly completed EPIC-04 AC; denominators are unchanged.
+Delta: `+13.7 п.п.` initial release and `+11.6 п.п.` full roadmap. Изменение больше 10 п.п. объясняется одним independently validated tranche из 19 AC: EPIC-08 `18/18` и закрытый real-schema privacy criterion `E09-AC06`; denominators `139`/`164` не менялись.
 
 ## Epic readiness и Evidence
 
@@ -96,13 +96,13 @@ Delta: `+7.2 п.п.` initial release and `+6.1 п.п.` full roadmap from ten new
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-02 Backends/clients/API | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 Live state/quality | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-04 Tokens/context/timings | 🟦 IN PROGRESS | 10/12 | 83.3% | ✅ | ◐ | ◐ | — | N/A | N/A |
-| EPIC-08 History/analytics/retention | ⬜ BACKLOG | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 13/14 | 93% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-04 Tokens/context/timings | 🟦 IN PROGRESS | 10/12 | 83.3% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-08 History/analytics/retention | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | — | N/A | N/A |
+| EPIC-09 Privacy/locality/pass-through | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
 | Other initial-release epics | ⬜ BACKLOG | 0/67 | 0% | ◐ | — | — | — | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **51/139** | **36.7%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **70/139** | **50.4%** | **◐** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | Canonical backlog | ⬜ BACKLOG | 0/25 | 0% | ◐ | — | — | — | —* | —* |
-| **Full roadmap** | **🟦 IN PROGRESS** | **51/164** | **31.1%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **70/164** | **42.7%** | **◐** | **◐** | **◐** | **◐** | **—*** | **—*** |
 
 `*` Remote/LAN backlog DEPLOY/LIVE applicability remains undecided and is outside this Goal.
 
@@ -147,9 +147,25 @@ The deterministic handshake fix passed follow-up PR CI `33694308639`; merge comm
 | `E04-AC08` | Contract/integration tests emit calculated monotonic TTFT only after first non-empty streaming content delta; role-only, tool-only and non-streaming flows stay unavailable |
 | `E04-AC09..10` | Typed model-load/queue metrics render exact supplied values; current supported adapters expose no trustworthy source and therefore render unavailable instead of zero |
 | `E04-AC11` | Every terminal proxy observation receives monotonic total duration and the latest-request detail renders it with `calculated` quality |
-| `E04-AC12` | **Open:** neither current request detail nor unimplemented analytics can distinguish cold/warm without model-load/session evidence |
+| `E04-AC12` | **Open:** analytics can compare exact model-load metrics, but current supported flows provide no trustworthy cold/warm model-load/session evidence |
 
-Local Evidence: exact SDK and locked normal/RID restore, format, Release build `0` warnings/errors, `86/86` tests without skips, self-contained `win-x64` publish and smoke all passed. CI remains absent until the initial PR push.
+EPIC-04 terminal Evidence: PR #7 run `33696539694` and exact-merge `main` run `33696722298` succeeded. Open AC remain uncredited; Evidence for the partial epic is CODE/TEST/CI `◐`.
+
+### EPIC-08 AC evidence map
+
+| Atomic AC | Current evidence |
+|---|---|
+| `E08-AC01..03` | Transactional schema v1 and `SqliteTechnicalHistoryStoreTests` persist typed request/session/operation records plus linked turns/tools/resources; schema has no content carrier |
+| `E08-AC04` | Typed `HistoryFilter`, SQL predicates, UI parser/controls and integration/Windows tests cover period, client, backend, model, session, status and error type |
+| `E08-AC05` | `GetOperationDetailAsync` and presenter return turns/tools in sequence with timings, typed errors and provenance-preserving CPU/memory samples |
+| `E08-AC06` | UTC-day read model exposes input/output tokens, TTFT, prompt/generation speed, context usage, CPU, memory and error-rate trends without fabricating missing resource samples |
+| `E08-AC07..10` | `HistoryStatisticsTests` prove arithmetic mean, median, nearest-rank P95 and `n >= 3` sufficiency boundary; method/policy are documented in architecture and visible in UI |
+| `E08-AC11..15` | Typed comparison filters and UI cover period/model/backend/client; direction-aware degradation requires sufficient baseline and candidate samples and a selected metric |
+| `E08-AC16` | Persistent setting and UI expose exactly `7 days`, `30 days`, `90 days`, `indefinite`; default is `30 days` |
+| `E08-AC17` | Startup/save cleanup uses cutoff boundaries, oldest-first batches of 500 and separate short transactions; integration tests cover 7/30/90, indefinite, exact boundary and multi-batch deletion |
+| `E08-AC18` | Clear API/UI requires an explicit all/range scope, exact preview and separate confirmation; preview invalidation/staleness are fail-closed and tested |
+
+Cross-epic Evidence: `SqliteHistoryPrivacyTests` asserts exact table-column allowlists and relays runtime-generated prompt/response/reasoning/tool canaries through the gateway before scanning DB/WAL files. This locally completes `E09-AC06`. Full local validation: exact SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, `112/112` tests without skips, self-contained `win-x64` publish and smoke. CI is absent until the one initial PR push.
 
 ## Current blockers и decisions
 
@@ -158,7 +174,8 @@ Local Evidence: exact SDK and locked normal/RID restore, format, Release build `
 3. `SECURITY`: listener and backend target remain loopback-only; no generic hosting bind override or redirect escape.
 4. `PRIVACY`: raw content can exist transiently only in relay memory; it cannot enter metadata types, logs, persistence or analytics.
 5. `EPIC-12`: numeric performance budgets remain outside this Goal and do not block selected epics.
-6. `EPIC-09`: `E09-AC06` remains open until real EPIC-08 schema/migration Evidence exists; a placeholder schema is not acceptable evidence.
+6. `EPIC-09`: `E09-AC06` is locally complete on the real EPIC-08 schema/runtime canary corpus; EPIC-09 remains non-READY only until the new PR/main CI Evidence is terminal.
+7. `EPIC-04`: exactly `E04-AC03` and `E04-AC12` remain outside current evidence because supported flows provide neither exact session/agent-turn identity nor trustworthy cold/warm model-load signal; no time-proximity inference is allowed.
 
 ## Roadmap after current Goal
 
