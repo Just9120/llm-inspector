@@ -369,7 +369,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для BACKLOG-05 подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `211/211` tests без skips, self-contained `win-x64` publish и smoke. PR #18 CI `33746022880` и exact-main CI `33746269521` завершились успешно на merge `ecdb542281ca5ad989de0540bf59939f42af8eb7`.
+Последняя terminal merged-main validation для EPIC-12 profiles/harness подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `221/221` tests без skips, self-contained `win-x64` publish и smoke. PR #20 CI `33810069610` и exact-main CI `33810329608` завершились успешно на merge `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`.
 
 Configured CI foundation:
 
@@ -381,6 +381,8 @@ Configured CI foundation:
 - external actions pinned by full commit SHA per [`ci-cd-rules.md`](ci-cd-rules.md); policy tests проверяют pins, read-only permissions и отсутствие privileged triggers/secrets/environments;
 - artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
+
+EPIC-01 release candidate добавляет отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer/main ancestry, выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. До merge/tag execution это CODE/TEST capability, а не terminal CI/release Evidence. Защищённый Project CI/CD profile в `ci-cd-rules.md` намеренно не изменён без отдельного explicit CI/CD policy request; фактическое расхождение записано в delivery checkpoint.
 
 Release design:
 
@@ -400,7 +402,7 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `APPROVED, NOT IMPLEMENTED` | GitHub Releases, unsigned single executable, SHA-256/SBOM/provenance and SmartScreen disclosure |
+| Portable distribution | `IMPLEMENTATION CANDIDATE` | Merge/tag execution, attestation verification and Windows Home/Pro exact-artifact runs pending |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Secure remote | `APPROVED, NOT IMPLEMENTED` | Tailscale Serve + application token; actual Windows↔VPS/second-PC LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |

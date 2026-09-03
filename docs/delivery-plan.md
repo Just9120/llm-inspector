@@ -1,15 +1,15 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T21:47:57Z`
+> Updated: `2026-09-03T22:08:21Z`
 
 ## Current Goal
 
 ### `GOAL-005 — Завершить согласованный Windows delivery scope`
 
-- **State:** `IN_PROGRESS` (EPIC-12 implementation increment).
+- **State:** `IN_PROGRESS` (EPIC-01 portable-release increment).
 - **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
-- **Verified base:** `origin/main` / local `main` = `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`; decision PR [#19](https://github.com/Just9120/llm-inspector/pull/19) and exact-main CI [33807628059](https://github.com/Just9120/llm-inspector/actions/runs/33807628059) succeeded.
+- **Verified base:** `origin/main` / local `main` = `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`; EPIC-12 PR [#20](https://github.com/Just9120/llm-inspector/pull/20) and exact-main CI [33810329608](https://github.com/Just9120/llm-inspector/actions/runs/33810329608) succeeded.
 - **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `138/164`.
 - **Active implementation denominator:** `21` ещё не выполненный и авторизованный AC: `E01-AC01` (`1`) + `E12-AC01..06` (`6`) + `B01-AC01..05` (`5`) + `B02-AC01..09` (`9`).
 
@@ -71,19 +71,19 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T21:47:57Z` |
+| Updated UTC | `2026-09-03T22:08:21Z` |
 | Expected base branch | `main` |
-| Base SHA | `97866b3c69d60105bfe57fec94f4dbb6b9981ad7` — verified local/`origin/main`; exact-main CI `33807628059` success |
-| Working branch | `codex/goal-005-epic-12-performance` |
-| Last verified revision | `e326845` — full local CI-equivalent succeeded; this checkpoint commit will not self-reference its own containing revision |
+| Base SHA | `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1` — verified local/`origin/main`; exact-main CI `33810329608` success |
+| Working branch | `codex/goal-005-epic-01-portable-release` |
+| Last verified revision | `e4d992e` — focused local release validation; full CI-equivalent pending |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
-| Completed work | Decision ratification terminal via PR #19: head `f82ec878986ddbc19b7e93f218f4ebe440683ad8`, PR CI `33807351764`, merge `97866b3c69d60105bfe57fec94f4dbb6b9981ad7`, exact-main CI `33807628059`, Evidence [comment](https://github.com/Just9120/llm-inspector/pull/19#issuecomment-5532345500). EPIC-12 local commits: `556b1bd` profiles/settings/UI/runtime; `ccf6a5a` fail-closed evaluator and immutable fixture SHA-256 `1c38874fb393cfe094bf1d44a281859c2a6e340b9acb46b86df3b458a41f3aca` |
-| Current step | Create final checkpoint commit, revalidate exact local head, then fetch-check the unchanged base before the single initial push |
-| Next exact action | Re-run full CI-equivalent on the final local head, fetch and confirm unchanged `origin/main`, then push once and open the EPIC-12 PR |
-| PR / CI | EPIC-12 PR not yet created; initial push and exact-head CI pending |
+| Completed work | EPIC-12 terminal: PR #20 head `5b041ec0ac1b56831671bb4a897ddb0b800d6569`, PR CI `33810069610`, merge `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`, exact-main CI `33810329608`, Evidence [comment](https://github.com/Just9120/llm-inspector/pull/20#issuecomment-5532656301); local/remote branch cleaned. EPIC-01 local commits: `74d50e3` portable payload, `e4d992e` trusted tag workflow |
+| Current step | Finish release runbook/docs, validate current exact local head, then one initial push and EPIC-01 PR |
+| Next exact action | Commit docs, execute full CI-equivalent plus dual-publish/payload validation on exact head, fetch-check base, push once and open PR |
+| PR / CI | EPIC-01 PR not yet created; initial push and exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Exact SDK `10.0.400`; locked normal/RID restores, format, Release build `0` warnings/errors, `221/221` tests with zero skips, clean self-contained `win-x64` publish and smoke `exit 0`; final documentation-only head revalidation pending |
-| Blockers | None for safe EPIC-12 PR. Controlled measurements for all three built-in profiles remain the explicit external gate and therefore no `E12-AC01..06` credit is claimed |
+| Validation | Exact SDK `10.0.400`; focused `74/74` UnitTests; two clean `v1.0.0-rc.1` publishes produced the same single executable SHA-256 `8df2d2c189eb932988e6aa804268547a7e5d15542630ff14cd2347a726f59dad`; manifest/SPDX/checksums verifier and renamed-artifact smoke passed. Hash is local-candidate evidence only and will change with source revision; full validation pending |
+| Blockers | None for safe EPIC-01 PR. Actual tag/release/attestations and Windows Home/Pro exact-artifact tests remain delivery/manual gates. `docs/ci-cd-rules.md` profile will remain stale (`windows_release.enabled: false`) until an explicit CI/CD policy-document request; safety contract itself is unchanged |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
 
@@ -91,10 +91,10 @@
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T21:44:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation on local EPIC-12 candidate `ccf6a5a`; implementation mechanics exist, but all six active performance AC require missing controlled measurements |
-| Previous | `2026-09-03T20:59:53Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent calculation on pre-ratification exact merged `ecdb542…`; PR #19 later closed SPEC decisions without product AC credit |
+| Current | `2026-09-03T22:08:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation on local EPIC-01 candidate `e4d992e`; automation/payload exists, but `E01-AC01` requires missing trusted release and Windows Home/Pro runtime Evidence |
+| Previous | `2026-09-03T21:44:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Local EPIC-12 candidate mechanics existed; all six performance AC still required controlled measurements, as remains true after PR #20 delivery |
 
-Delta: `0.0 п.п.` initial и full. Denominators unchanged; profiles/evaluator/fixture are supporting CODE/TEST evidence, while `E12-AC01..06` each remain binary-fail until their controlled measurement gate passes.
+Delta: `0.0 п.п.` initial и full. Denominators unchanged; release automation is supporting CODE/TEST evidence, while `E01-AC01` remains binary-fail until the exact-artifact Windows matrix passes.
 
 ## Epic readiness и Evidence
 
@@ -125,8 +125,8 @@ Delta: `0.0 п.п.` initial и full. Denominators unchanged; profiles/evaluator/
 
 | AC | Current fact / completion gate |
 |---|---|
-| `E01-AC01` | Not complete: portable release contract approved; exact artifact/automation and Windows Home/Pro manual Evidence absent |
-| `E12-AC01..06` | Not complete: profiles, fail-closed evaluator and frozen fixture implemented locally; full PR CI and controlled results for every built-in profile absent |
+| `E01-AC01` | Not complete: reproducible single-file payload and trusted tag workflow implemented locally; actual release/attestations and Windows Home/Pro Evidence absent |
+| `E12-AC01..06` | Not complete: profiles, fail-closed evaluator and frozen fixture merged through PR #20; controlled results for every built-in profile absent |
 | `B01-AC01..05` | Not complete: lifecycle/version contract approved; implementation and runtime Evidence absent |
 | `B02-AC01..09` | Not complete: remote security contract approved; implementation and required LIVE Evidence absent |
 | `B03-AC01..03` | Conditional backlog; no current demand/authorization |
