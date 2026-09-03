@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T22:08:21Z`
+> Updated: `2026-09-03T22:15:12Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T22:08:21Z` |
+| Updated UTC | `2026-09-03T22:15:12Z` |
 | Expected base branch | `main` |
 | Base SHA | `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1` — verified local/`origin/main`; exact-main CI `33810329608` success |
 | Working branch | `codex/goal-005-epic-01-portable-release` |
-| Last verified revision | `e4d992e` — focused local release validation; full CI-equivalent pending |
+| Last verified revision | `1b076ed3fa07a3b68690806e763d29b485eb9a63` — full local CI-equivalent and release-payload validation succeeded; this checkpoint commit will not self-reference its own containing revision |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | EPIC-12 terminal: PR #20 head `5b041ec0ac1b56831671bb4a897ddb0b800d6569`, PR CI `33810069610`, merge `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`, exact-main CI `33810329608`, Evidence [comment](https://github.com/Just9120/llm-inspector/pull/20#issuecomment-5532656301); local/remote branch cleaned. EPIC-01 local commits: `74d50e3` portable payload, `e4d992e` trusted tag workflow |
-| Current step | Finish release runbook/docs, validate current exact local head, then one initial push and EPIC-01 PR |
-| Next exact action | Commit docs, execute full CI-equivalent plus dual-publish/payload validation on exact head, fetch-check base, push once and open PR |
+| Current step | Create final checkpoint commit, revalidate its exact local head, then one initial push and EPIC-01 PR |
+| Next exact action | Re-run full CI-equivalent on final local head, fetch-check unchanged `origin/main`, push once and open PR |
 | PR / CI | EPIC-01 PR not yet created; initial push and exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Exact SDK `10.0.400`; focused `74/74` UnitTests; two clean `v1.0.0-rc.1` publishes produced the same single executable SHA-256 `8df2d2c189eb932988e6aa804268547a7e5d15542630ff14cd2347a726f59dad`; manifest/SPDX/checksums verifier and renamed-artifact smoke passed. Hash is local-candidate evidence only and will change with source revision; full validation pending |
+| Validation | Exact SDK `10.0.400`; locked normal/RID restores, format, Release build `0` warnings/errors, `224/224` tests with zero skips, clean canonical single-file publish and smoke `exit 0`. Two clean `v1.0.0-rc.1` publishes at `1b076ed…` produced identical executable SHA-256 `3b4b016e353a9d7e8fbcbf3b26ff80f17262be52261b5c8b5f2470a2bad27654`; exact four-asset payload, three checksums, 31-package SPDX SBOM, manifest and renamed-artifact smoke verified. Hash is local-candidate evidence only and will change with source revision |
 | Blockers | None for safe EPIC-01 PR. Actual tag/release/attestations and Windows Home/Pro exact-artifact tests remain delivery/manual gates. `docs/ci-cd-rules.md` profile will remain stale (`windows_release.enabled: false`) until an explicit CI/CD policy-document request; safety contract itself is unchanged |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
@@ -91,7 +91,7 @@
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T22:08:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation on local EPIC-01 candidate `e4d992e`; automation/payload exists, but `E01-AC01` requires missing trusted release and Windows Home/Pro runtime Evidence |
+| Current | `2026-09-03T22:15:12Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation on local EPIC-01 candidate `1b076ed…`; automation/payload passes full local validation, but `E01-AC01` requires missing trusted release and Windows Home/Pro runtime Evidence |
 | Previous | `2026-09-03T21:44:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Local EPIC-12 candidate mechanics existed; all six performance AC still required controlled measurements, as remains true after PR #20 delivery |
 
 Delta: `0.0 п.п.` initial и full. Denominators unchanged; release automation is supporting CODE/TEST evidence, while `E01-AC01` remains binary-fail until the exact-artifact Windows matrix passes.

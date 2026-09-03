@@ -485,14 +485,14 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-03T22:08:21Z`.
+- Last recalculation: `2026-09-03T22:15:12Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
 - GitHub Actions: EPIC-04 partial PR/main runs `33696539694`/`33696722298`, EPIC-08 PR/main runs `33702613336`/`33702791561`, EPIC-04 fix PR/main runs `33720248633`/`33720428488`, EPIC-05 PR/main runs `33724914481`/`33725139103`, EPIC-06 PR/main runs `33728471307`/`33728697717`, EPIC-07 PR/main runs `33731824812`/`33732075018`, EPIC-10 PR/main runs `33735289296`/`33735585399`, EPIC-11 PR/main runs `33737811632`/`33738059071`, EPIC-12 partial PR/main runs `33741679566`/`33741928312`, BACKLOG-06 PR/main runs `33743758869`/`33744027574`, BACKLOG-05 PR/main runs `33746022880`/`33746269521`, decision-ratification PR/main runs `33807351764`/`33807628059`, EPIC-12 profiles/harness PR/main runs `33810069610`/`33810329608`; all completed successfully.
-- Code/tests/runtime: merged base through EPIC-12 profiles/harness is exact-main CI verified at `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`; PR #20 head `5b041ec0ac1b56831671bb4a897ddb0b800d6569` and terminal Evidence are recorded in the merged PR. Local EPIC-01 candidate `e4d992e` adds reproducible single-file payload and a tag-only attested GitHub Release workflow; focused `74/74` UnitTests and dual-publish reproducibility/payload smoke passed, full PR CI and actual release remain pending.
+- Code/tests/runtime: merged base through EPIC-12 profiles/harness is exact-main CI verified at `bc53378019b8c62b6ee7cdbdb1af7036b1eb98e1`; PR #20 head `5b041ec0ac1b56831671bb4a897ddb0b800d6569` and terminal Evidence are recorded in the merged PR. Local EPIC-01 candidate `1b076ed3fa07a3b68690806e763d29b485eb9a63` adds reproducible single-file payload and a tag-only attested GitHub Release workflow; full local `224/224` tests, dual-publish reproducibility, payload verification and renamed-artifact smoke passed. PR CI and actual release remain pending.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.
