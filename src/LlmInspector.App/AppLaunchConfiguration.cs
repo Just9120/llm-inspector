@@ -14,6 +14,9 @@ public sealed record AppLaunchConfiguration(
     private const string BackendPrefix = "--backend=";
     private const string BackendUrlPrefix = "--backend-url=";
     private const string ListenerPortPrefix = "--listener-port=";
+    private const string BackgroundOption = "--background";
+
+    public bool StartInBackground { get; init; }
 
     public static AppLaunchConfiguration Parse(IEnumerable<string> arguments)
     {
@@ -22,6 +25,7 @@ public sealed record AppLaunchConfiguration(
         BackendKind backend = BackendKind.Ollama;
         Uri? backendAddress = null;
         int listenerPort = ProxyGatewayOptions.DefaultListenerPort;
+        bool startInBackground = false;
         HashSet<string> seenOptions = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (string argument in arguments)
@@ -51,6 +55,11 @@ public sealed record AppLaunchConfiguration(
                     throw new ArgumentException("Listener port must be an integer.", nameof(arguments));
                 }
             }
+            else if (string.Equals(argument, BackgroundOption, StringComparison.OrdinalIgnoreCase))
+            {
+                EnsureSingle(seenOptions, BackgroundOption);
+                startInBackground = true;
+            }
             else
             {
                 throw new ArgumentException("Unknown application option.", nameof(arguments));
@@ -59,7 +68,10 @@ public sealed record AppLaunchConfiguration(
 
         backendAddress ??= ProxyGatewayOptions.GetDefaultBackendBaseAddress(backend);
         _ = ProxyGatewayOptions.Create(listenerPort, backendAddress, backend);
-        return new AppLaunchConfiguration(backend, backendAddress, listenerPort);
+        return new AppLaunchConfiguration(backend, backendAddress, listenerPort)
+        {
+            StartInBackground = startInBackground,
+        };
     }
 
     public ProxyGatewayOptions CreateProxyOptions() =>
