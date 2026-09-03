@@ -54,6 +54,13 @@ public enum BackendMetricKey
     LlamaCppPredictedTokensPerSecond,
 }
 
+public enum ModelLoadDisposition
+{
+    Unavailable,
+    Cold,
+    Warm,
+}
+
 public sealed record TechnicalIdentifier
 {
     private const int MaximumLength = 128;
@@ -215,7 +222,8 @@ public sealed record BackendResponseTelemetry(
     MetricValue CompletionTokensPerSecond,
     MetricValue ModelLoadTime,
     MetricValue QueueTime,
-    IReadOnlyList<BackendMetric> BackendSpecificMetrics)
+    IReadOnlyList<BackendMetric> BackendSpecificMetrics,
+    ModelLoadDisposition ModelLoadDisposition = ModelLoadDisposition.Unavailable)
 {
     public static BackendResponseTelemetry Unavailable(BackendKind backend, string sourceVersion) =>
         new(

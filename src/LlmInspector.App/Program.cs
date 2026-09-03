@@ -1,6 +1,7 @@
 using Avalonia;
 using LlmInspector.Adapters;
 using LlmInspector.Application;
+using LlmInspector.Domain;
 using LlmInspector.Gateway;
 using LlmInspector.Storage.Sqlite;
 using LlmInspector.Telemetry;
@@ -89,7 +90,10 @@ public static class Program
                 options,
                 observationSink,
                 telemetryAdapter: BackendTelemetryAdapters.Create(options.Backend),
-                liveRequestStateSink: LiveStateTracker);
+                liveRequestStateSink: LiveStateTracker,
+                lmStudioNativeTelemetryAdapter: options.Backend == BackendKind.LmStudio
+                    ? BackendTelemetryAdapters.CreateLmStudioNative()
+                    : null);
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(
                 gateway.ListeningAddress!,

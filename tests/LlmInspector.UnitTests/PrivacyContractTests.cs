@@ -78,6 +78,7 @@ public sealed class PrivacyContractTests
             "Key",
             "Metric",
             "Model",
+            "ModelLoadDisposition",
             "ModelLoadTime",
             "NativeName",
             "PromptTokens",

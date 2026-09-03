@@ -321,6 +321,28 @@ internal sealed class StreamingJsonTelemetryExtractor
     private const int MaximumTokenBytes = 256;
     private const int MaximumContainerDepth = 64;
     private const string DiscardedProperty = "#discarded-property#";
+    private static readonly string[] AllowedLmStudioEventTypes =
+    [
+        "chat.start",
+        "model_load.start",
+        "model_load.progress",
+        "model_load.end",
+        "prompt_processing.start",
+        "prompt_processing.progress",
+        "prompt_processing.end",
+        "reasoning.start",
+        "reasoning.delta",
+        "reasoning.end",
+        "tool_call.start",
+        "tool_call.arguments",
+        "tool_call.success",
+        "tool_call.failure",
+        "message.start",
+        "message.delta",
+        "message.end",
+        "error",
+        "chat.end",
+    ];
 
     private readonly Stack<ContainerFrame> _frames = new();
     private readonly List<byte> _token = new(MaximumTokenBytes);
@@ -338,6 +360,14 @@ internal sealed class StreamingJsonTelemetryExtractor
     private decimal? _cachedPromptTokens;
     private decimal? _reasoningTokens;
     private bool _hasObservedOutputContent;
+    private string? _lmStudioEventType;
+    private decimal? _lmStudioInputTokens;
+    private decimal? _lmStudioOutputTokens;
+    private decimal? _lmStudioReasoningTokens;
+    private decimal? _lmStudioTokensPerSecond;
+    private decimal? _lmStudioModelLoadSeconds;
+    private bool _hasLmStudioStats;
+    private bool _hasRootContent;
 
     public void Observe(ReadOnlySpan<byte> bytes)
     {
@@ -420,7 +450,15 @@ internal sealed class StreamingJsonTelemetryExtractor
             _cachedPromptTokens,
             _reasoningTokens,
             _hasObservedOutputContent,
-            new Dictionary<string, decimal>(_backendMetrics, StringComparer.Ordinal));
+            new Dictionary<string, decimal>(_backendMetrics, StringComparer.Ordinal),
+            _lmStudioEventType,
+            _lmStudioInputTokens,
+            _lmStudioOutputTokens,
+            _lmStudioReasoningTokens,
+            _lmStudioTokensPerSecond,
+            _lmStudioModelLoadSeconds,
+            _hasLmStudioStats,
+            _hasRootContent);
     }
 
     private void ObserveNormalByte(byte value)
@@ -551,6 +589,12 @@ internal sealed class StreamingJsonTelemetryExtractor
             return;
         }
 
+        if (kind == ContainerKind.Object &&
+            (path is ["stats"] or ["result", "stats"]))
+        {
+            _hasLmStudioStats = true;
+        }
+
         _frames.Push(new ContainerFrame(kind, path));
     }
 
@@ -632,15 +676,24 @@ internal sealed class StreamingJsonTelemetryExtractor
             return;
         }
 
-        if (path is ["model"])
+        if (path is ["model"] or ["model_instance_id"] or ["result", "model_instance_id"])
         {
             _model = DecodeStringToken();
+        }
+        else if (path is ["type"])
+        {
+            _lmStudioEventType = GetAllowedLmStudioEventType();
         }
 
         // Non-allowlisted string values are never decoded into managed strings.
         if (_token.Count > 0 && path is ["choices", "delta", "content"])
         {
             _hasObservedOutputContent = true;
+        }
+
+        else if (_token.Count > 0 && path is ["content"])
+        {
+            _hasRootContent = true;
         }
     }
 
@@ -709,10 +762,76 @@ internal sealed class StreamingJsonTelemetryExtractor
 
             _reasoningTokens = value;
         }
+        else if (path is ["stats", "input_tokens"] or ["result", "stats", "input_tokens"])
+        {
+            SetWholeNumber(value, result => _lmStudioInputTokens = result);
+        }
+        else if (path is ["stats", "total_output_tokens"] or ["result", "stats", "total_output_tokens"])
+        {
+            SetWholeNumber(value, result => _lmStudioOutputTokens = result);
+        }
+        else if (path is ["stats", "reasoning_output_tokens"] or ["result", "stats", "reasoning_output_tokens"])
+        {
+            SetWholeNumber(value, result => _lmStudioReasoningTokens = result);
+        }
+        else if (path is ["stats", "tokens_per_second"] or ["result", "stats", "tokens_per_second"])
+        {
+            _lmStudioTokensPerSecond = value;
+        }
+        else if (path is ["stats", "model_load_time_seconds"] or
+                 ["result", "stats", "model_load_time_seconds"] or
+                 ["load_time_seconds"])
+        {
+            _lmStudioModelLoadSeconds = value;
+        }
         else if (path is ["timings", string timingName] && IsAllowedTimingName(timingName))
         {
             _backendMetrics[timingName] = value;
         }
+    }
+
+    private void SetWholeNumber(decimal value, Action<decimal> assign)
+    {
+        if (value != decimal.Truncate(value))
+        {
+            _invalid = true;
+            return;
+        }
+
+        assign(value);
+    }
+
+    private string? GetAllowedLmStudioEventType()
+    {
+        if (_tokenTruncated)
+        {
+            return null;
+        }
+
+        foreach (string candidate in AllowedLmStudioEventTypes)
+        {
+            if (_token.Count != candidate.Length)
+            {
+                continue;
+            }
+
+            bool equal = true;
+            for (int index = 0; index < candidate.Length; index++)
+            {
+                if (_token[index] != (byte)candidate[index])
+                {
+                    equal = false;
+                    break;
+                }
+            }
+
+            if (equal)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private void EmitLiteral()
@@ -911,4 +1030,12 @@ internal sealed record ExtractedTelemetry(
     decimal? CachedPromptTokens,
     decimal? ReasoningTokens,
     bool HasObservedOutputContent,
-    IReadOnlyDictionary<string, decimal> BackendMetrics);
+    IReadOnlyDictionary<string, decimal> BackendMetrics,
+    string? LmStudioEventType,
+    decimal? LmStudioInputTokens,
+    decimal? LmStudioOutputTokens,
+    decimal? LmStudioReasoningTokens,
+    decimal? LmStudioTokensPerSecond,
+    decimal? LmStudioModelLoadSeconds,
+    bool HasLmStudioStats,
+    bool HasRootContent);

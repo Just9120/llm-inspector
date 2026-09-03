@@ -92,6 +92,35 @@ public sealed class RequestDetailTextPresenterTests
         Assert.DoesNotContain("Input: 0 tokens", text, StringComparison.Ordinal);
     }
 
+    [TestMethod]
+    [DataRow(ModelLoadDisposition.Cold, "cold / model load [exact]")]
+    [DataRow(ModelLoadDisposition.Warm, "warm [exact]")]
+    public void ExactNativeModelLoadDispositionIsVisible(
+        ModelLoadDisposition disposition,
+        string expected)
+    {
+        BackendResponseTelemetry telemetry = BackendResponseTelemetry.Unavailable(
+            BackendKind.LmStudio,
+            "lm-studio-native-chat-v1") with
+        {
+            ModelLoadDisposition = disposition,
+            ModelLoadTime = Exact(
+                disposition == ModelLoadDisposition.Cold ? 200 : 0,
+                MetricUnit.Milliseconds,
+                MetricSource.BackendExtension),
+        };
+        ProxyObservation observation = new(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromMilliseconds(1),
+            200,
+            ProxyOutcome.Completed,
+            ClientKind.GenericUnknown,
+            telemetry);
+
+        StringAssert.Contains(App.RequestDetailTextPresenter.Format(observation), expected);
+    }
+
     private static MetricValue Exact(decimal value, MetricUnit unit, MetricSource source) =>
         MetricValue.Exact(value, unit, source, "fixture-v1");
 }

@@ -70,8 +70,14 @@ public static class RequestDetailTextPresenter
         text.Append(FormatMetric(totalDuration));
 
         text.AppendLine();
-        text.Append("Cold/warm classification: unavailable [unavailable]. ");
-        text.Append("The current OpenAI-compatible flow has no trusted session or model-load evidence.");
+        text.Append("Cold/warm classification: ");
+        text.Append(telemetry.ModelLoadDisposition switch
+        {
+            ModelLoadDisposition.Cold => "cold / model load [exact]",
+            ModelLoadDisposition.Warm => "warm [exact]",
+            ModelLoadDisposition.Unavailable => "unavailable [unavailable]",
+            _ => throw new ArgumentOutOfRangeException(nameof(observation)),
+        });
         return text.ToString();
     }
 

@@ -1,0 +1,17 @@
+{
+  "model_instance_id": "lmstudio-community/qwen2.5",
+  "output": [
+    {
+      "type": "message",
+      "content": "synthetic warm response"
+    }
+  ],
+  "stats": {
+    "input_tokens": 700,
+    "total_output_tokens": 40,
+    "reasoning_output_tokens": 0,
+    "tokens_per_second": 31.5,
+    "time_to_first_token_seconds": 0.4
+  },
+  "response_id": "resp_synthetic_warm"
+}

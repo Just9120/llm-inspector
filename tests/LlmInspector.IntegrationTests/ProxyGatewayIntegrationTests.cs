@@ -616,6 +616,54 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public async Task LmStudioNativeChatIsRelayedVerbatimAndProjectsExactColdEvidence()
+    {
+        const string requestBody = "{\"model\":\"fixture\",\"input\":\"opaque\",\"stream\":false}";
+        const string responseBody =
+            "{\"model_instance_id\":\"lmstudio-community/qwen2.5\",\"output\":[{\"type\":\"message\",\"content\":\"opaque-response\"}]," +
+            "\"stats\":{\"input_tokens\":25,\"total_output_tokens\":7,\"reasoning_output_tokens\":2," +
+            "\"tokens_per_second\":35.5,\"time_to_first_token_seconds\":0.5,\"model_load_time_seconds\":1.25}}";
+        string? forwardedPath = null;
+        string? forwardedBody = null;
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(async context =>
+        {
+            forwardedPath = context.Request.Path;
+            using StreamReader reader = new(context.Request.Body, Encoding.UTF8);
+            forwardedBody = await reader.ReadToEndAsync(context.RequestAborted);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(responseBody, context.RequestAborted);
+        });
+        SequenceObservationSink sink = new();
+        ProxyGatewayOptions options = ProxyGatewayOptions.CreateForTesting(
+            0,
+            backend.Address,
+            BackendKind.LmStudio);
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            options,
+            sink,
+            BackendTelemetryAdapters.Create(BackendKind.LmStudio),
+            lmStudioNativeTelemetryAdapter: BackendTelemetryAdapters.CreateLmStudioNative());
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpResponseMessage response = await client.PostAsync(
+            ProxyGateway.LmStudioNativeChatPath,
+            new StringContent(requestBody, Encoding.UTF8, "application/json"));
+        string actualBody = await response.Content.ReadAsStringAsync();
+        ProxyObservation observation = await sink.ReadAsync();
+
+        response.EnsureSuccessStatusCode();
+        Assert.AreEqual(ProxyGateway.LmStudioNativeChatPath, forwardedPath);
+        Assert.AreEqual(requestBody, forwardedBody);
+        Assert.AreEqual(responseBody, actualBody);
+        Assert.AreEqual(ModelLoadDisposition.Cold, observation.BackendTelemetry.ModelLoadDisposition);
+        Assert.AreEqual(1250, observation.BackendTelemetry.ModelLoadTime.Value);
+        Assert.AreEqual(25, observation.BackendTelemetry.PromptTokens.Value);
+        Assert.AreEqual(7, observation.BackendTelemetry.CompletionTokens.Value);
+        Assert.AreEqual(32, observation.BackendTelemetry.TotalTokens.Value);
+    }
+
+    [TestMethod]
     public async Task TelemetryParserFailureCannotBreakRelay()
     {
         const string backendBody = "{\"choices\":[{\"message\":{\"content\":\"synthetic\"}}]}";
