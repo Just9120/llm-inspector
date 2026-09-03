@@ -102,6 +102,7 @@ public sealed class SqliteHistoryPrivacyTests
 
             IReadOnlyDictionary<string, string[]> expectedColumns = new Dictionary<string, string[]>
             {
+                ["history_settings"] = ["id", "retention"],
                 ["sessions"] = ["session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model"],
                 ["operations"] = ["operation_id", "session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model", "status", "error_type"],
                 ["requests"] = ["request_id", "session_id", "operation_id", "started_at_utc", "http_status_code", "outcome", "error_type", "client", "backend", "model"],

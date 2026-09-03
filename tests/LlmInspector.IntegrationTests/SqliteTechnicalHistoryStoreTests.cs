@@ -272,6 +272,40 @@ public sealed class SqliteTechnicalHistoryStoreTests
     }
 
     [TestMethod]
+    public async Task RetentionSettingDefaultsToThirtyDaysAndPersistsSelection()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+
+        Assert.AreEqual(HistoryRetention.ThirtyDays, await fixture.Store.GetRetentionAsync());
+        await fixture.Store.SetRetentionAsync(HistoryRetention.NinetyDays);
+        Assert.AreEqual(HistoryRetention.NinetyDays, await fixture.Store.GetRetentionAsync());
+    }
+
+    [TestMethod]
+    public async Task BufferedSinkNeverWaitsForStorageAndReportsDroppedRecords()
+    {
+        BlockingHistoryStore store = new();
+        await using BufferedTechnicalHistorySink sink = new(store, capacity: 1);
+        ProxyObservation first = CreateObservation(
+            Guid.NewGuid(), DateTimeOffset.UtcNow, ClientKind.Cline, BackendKind.Ollama,
+            "buffer-model", ProxyOutcome.Completed, 10);
+        ProxyObservation second = first with { RequestId = Guid.NewGuid() };
+        ProxyObservation third = first with { RequestId = Guid.NewGuid() };
+
+        await sink.RecordAsync(first, CancellationToken.None);
+        await store.FirstWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await sink.RecordAsync(second, CancellationToken.None);
+        await sink.RecordAsync(third, CancellationToken.None);
+
+        Assert.AreEqual(1, sink.DroppedCount);
+        store.ReleaseWrites.TrySetResult();
+
+        await sink.DisposeAsync();
+        Assert.AreEqual(2, store.RecordedCount);
+        Assert.AreEqual(0, sink.FailedCount);
+    }
+
+    [TestMethod]
     public async Task ManualClearRequiresExplicitScopeFreshPreviewAndConfirmation()
     {
         _ = Assert.ThrowsExactly<ArgumentException>(() => new HistoryClearScope(allHistory: false));
@@ -385,5 +419,64 @@ public sealed class SqliteTechnicalHistoryStoreTests
                 System.IO.Directory.Delete(Directory, recursive: true);
             }
         }
+    }
+
+    private sealed class BlockingHistoryStore : ITechnicalHistoryStore
+    {
+        private int _recordedCount;
+
+        public TaskCompletionSource FirstWriteStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseWrites { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int RecordedCount => Volatile.Read(ref _recordedCount);
+
+        public async ValueTask RecordAsync(ProxyObservation observation, CancellationToken cancellationToken)
+        {
+            FirstWriteStarted.TrySetResult();
+            await ReleaseWrites.Task.WaitAsync(cancellationToken);
+            Interlocked.Increment(ref _recordedCount);
+        }
+
+        public Task<IReadOnlyList<RequestHistoryItem>> QueryRequestsAsync(
+            HistoryFilter filter,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<TechnicalOperationDetail?> GetOperationDetailAsync(
+            Guid operationId,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<PeriodAnalytics> AnalyzePeriodAsync(
+            HistoryFilter filter,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<AnalyticsComparison> CompareAsync(
+            HistoryFilter baseline,
+            HistoryFilter candidate,
+            HistoryMetric metric,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<HistoryRetention> GetRetentionAsync(
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task SetRetentionAsync(
+            HistoryRetention retention,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<int> ApplyRetentionAsync(
+            HistoryRetention retention,
+            DateTimeOffset now,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<HistoryClearPreview> PreviewClearAsync(
+            HistoryClearScope scope,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<HistoryClearPreview> ClearAsync(
+            HistoryClearPreview preview,
+            bool confirmed,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

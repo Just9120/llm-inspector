@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace LlmInspector.Storage.Sqlite;
 
-public sealed class SqliteTechnicalHistoryStore : IProxyObservationSink, IAsyncDisposable
+public sealed class SqliteTechnicalHistoryStore : ITechnicalHistoryStore, IAsyncDisposable
 {
     private const int SchemaVersion = 1;
     private const int MaximumQueryLimit = 1_000;
@@ -269,6 +269,43 @@ public sealed class SqliteTechnicalHistoryStore : IProxyObservationSink, IAsyncD
         IReadOnlyList<decimal> candidateSamples = await ReadMetricSamplesAsync(candidate, metric, cancellationToken)
             .ConfigureAwait(false);
         return HistoryStatistics.Compare(metric, baselineSamples, candidateSamples);
+    }
+
+    public async Task<HistoryRetention> GetRetentionAsync(CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT retention FROM history_settings WHERE id = 1;";
+        object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return result is long value && Enum.IsDefined((HistoryRetention)value)
+            ? (HistoryRetention)value
+            : throw new InvalidDataException("Persisted history retention is invalid.");
+    }
+
+    public async Task SetRetentionAsync(
+        HistoryRetention retention,
+        CancellationToken cancellationToken = default)
+    {
+        _ = HistoryPolicies.GetRetentionDuration(retention);
+        await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+        await _writerLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using SqliteConnection connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            await using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "UPDATE history_settings SET retention = $retention WHERE id = 1;";
+            command.Parameters.AddWithValue("$retention", (int)retention);
+            int affected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            if (affected != 1)
+            {
+                throw new InvalidDataException("History retention settings row is missing.");
+            }
+        }
+        finally
+        {
+            _writerLock.Release();
+        }
     }
 
     public async Task<int> ApplyRetentionAsync(
@@ -1345,6 +1382,14 @@ public sealed class SqliteTechnicalHistoryStore : IProxyObservationSink, IAsyncD
             version INTEGER PRIMARY KEY,
             applied_at_utc TEXT NOT NULL
         ) STRICT;
+
+        CREATE TABLE IF NOT EXISTS history_settings(
+            id INTEGER PRIMARY KEY CHECK(id = 1),
+            retention INTEGER NOT NULL CHECK(retention BETWEEN 0 AND 3)
+        ) STRICT;
+
+        INSERT INTO history_settings(id, retention) VALUES(1, 1)
+        ON CONFLICT(id) DO NOTHING;
 
         CREATE TABLE IF NOT EXISTS sessions(
             session_id TEXT PRIMARY KEY CHECK(length(session_id) = 32),
