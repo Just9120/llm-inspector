@@ -45,6 +45,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
     private readonly ILiveRequestStateSink _liveRequestStateSink;
     private readonly IBackendTelemetryAdapter _telemetryAdapter;
     private readonly IBackendTelemetryAdapter? _lmStudioNativeTelemetryAdapter;
+    private readonly IRemoteAccessAuthorizer _remoteAccessAuthorizer;
     private readonly TechnicalRuntimeFacts _runtimeFacts;
     private readonly RequestCorrelationTracker _correlationTracker = new();
     private readonly AgentOperationTracker _operationTracker = new();
@@ -62,6 +63,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ILiveRequestStateSink liveRequestStateSink,
         IBackendTelemetryAdapter telemetryAdapter,
         IBackendTelemetryAdapter? lmStudioNativeTelemetryAdapter,
+        IRemoteAccessAuthorizer remoteAccessAuthorizer,
         TechnicalRuntimeFacts runtimeFacts,
         HttpClient httpClient,
         WebApplication application)
@@ -74,6 +76,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         _liveRequestStateSink = liveRequestStateSink;
         _telemetryAdapter = telemetryAdapter;
         _lmStudioNativeTelemetryAdapter = lmStudioNativeTelemetryAdapter;
+        _remoteAccessAuthorizer = remoteAccessAuthorizer;
         _runtimeFacts = runtimeFacts;
         _httpClient = httpClient;
         _application = application;
@@ -90,7 +93,8 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         ITechnicalOperationSink? operationSink = null,
         ITechnicalResourceSampleSink? resourceSink = null,
         IRequestResourceMonitor? resourceMonitor = null,
-        TechnicalRuntimeFacts? runtimeFacts = null)
+        TechnicalRuntimeFacts? runtimeFacts = null,
+        IRemoteAccessAuthorizer? remoteAccessAuthorizer = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -153,9 +157,13 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             liveRequestStateSink ?? NullLiveRequestStateSink.Instance,
             telemetryAdapter,
             lmStudioNativeTelemetryAdapter,
+            remoteAccessAuthorizer ?? DisabledRemoteAccessAuthorizer.Instance,
             runtimeFacts ?? CreateDefaultRuntimeFacts(options, telemetryAdapter),
             httpClient,
             application);
+
+        application.Use((context, next) =>
+            RemoteIngressGuard.AuthorizeAsync(context, gateway._remoteAccessAuthorizer, next));
 
         application.MapMethods(
             ChatCompletionsPath,
@@ -615,7 +623,9 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             outbound.Content = new StreamContent(body ?? context.Request.Body);
         }
 
-        HashSet<string> excludedHeaders = CreateExcludedHeaders(context.Request.Headers);
+        HashSet<string> excludedHeaders = CreateExcludedHeaders(
+            context.Request.Headers,
+            RemoteIngressGuard.IsAuthorizedRemoteRequest(context));
         foreach ((string name, StringValues values) in context.Request.Headers)
         {
             if (name.Equals("Host", StringComparison.OrdinalIgnoreCase) || excludedHeaders.Contains(name))
@@ -655,10 +665,16 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
         }
     }
 
-    private static HashSet<string> CreateExcludedHeaders(IHeaderDictionary headers)
+    private static HashSet<string> CreateExcludedHeaders(IHeaderDictionary headers, bool remoteRequest)
     {
         HashSet<string> excludedHeaders = new(HopByHopHeaders, StringComparer.OrdinalIgnoreCase);
         excludedHeaders.UnionWith(InspectorCorrelationHeaders.Names);
+        excludedHeaders.UnionWith(RemoteIngressGuard.HeadersToStrip);
+        if (remoteRequest)
+        {
+            excludedHeaders.Add("Authorization");
+        }
+
         if (headers.TryGetValue("Connection", out StringValues connectionValues))
         {
             AddConnectionTokens(connectionValues, excludedHeaders);
@@ -833,6 +849,7 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
             options.ListenerPort,
             options.Backend,
             options.BackendBaseAddress.AbsoluteUri,
+            options.BackendConnectionScope,
             telemetryAdapter.FixtureVersion);
         string configurationHash = Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(configurationMaterial))).ToLowerInvariant();
@@ -865,6 +882,15 @@ public sealed class ProxyGateway : IDisposable, IAsyncDisposable
 
         public BackendResponseTelemetry CreateUnavailable() =>
             BackendResponseTelemetry.Unavailable(Backend, SourceVersion);
+    }
+
+    private sealed class DisabledRemoteAccessAuthorizer : IRemoteAccessAuthorizer
+    {
+        public static DisabledRemoteAccessAuthorizer Instance { get; } = new();
+
+        public RemoteAccessSnapshot Snapshot => RemoteAccessSnapshot.Unavailable;
+
+        public bool IsBearerTokenValid(string candidate) => false;
     }
 
     private sealed class UnavailableBackendTelemetrySession(BackendResponseTelemetry telemetry) : IBackendTelemetrySession

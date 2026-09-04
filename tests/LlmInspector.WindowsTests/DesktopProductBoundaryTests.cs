@@ -30,6 +30,8 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(headings, "Background and notifications");
         CollectionAssert.Contains(headings, "Производительность мониторинга");
         CollectionAssert.Contains(headings, "Управление локальным backend");
+        CollectionAssert.Contains(headings, "Защищённый remote access");
+        CollectionAssert.Contains(headings, "Remote backend");
 
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         string[] namedControls = xaml
@@ -75,6 +77,13 @@ public sealed class DesktopProductBoundaryTests
         CollectionAssert.Contains(namedControls, "ResetLifecycleParametersButton");
         CollectionAssert.Contains(namedControls, "LifecycleModelText");
         CollectionAssert.Contains(namedControls, "LoadLifecycleModelButton");
+        CollectionAssert.Contains(namedControls, "RemoteBoundaryConfirmationCheckBox");
+        CollectionAssert.Contains(namedControls, "EnableRemoteAccessButton");
+        CollectionAssert.Contains(namedControls, "RotateRemoteTokenButton");
+        CollectionAssert.Contains(namedControls, "DisableRemoteAccessButton");
+        CollectionAssert.Contains(namedControls, "RemoteOneTimeTokenText");
+        CollectionAssert.Contains(namedControls, "ProbeRemoteBackendButton");
+        CollectionAssert.Contains(namedControls, "RemoteBackendStateText");
 
         XElement saveSnapshot = xaml.Descendants()
             .Single(element => element.Attribute(x + "Name")?.Value == "SaveSnapshotButton");

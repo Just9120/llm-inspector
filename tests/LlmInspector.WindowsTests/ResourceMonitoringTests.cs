@@ -120,6 +120,37 @@ public sealed class ResourceMonitoringTests
     }
 
     [TestMethod]
+    public async Task RemoteBackendNeverReceivesFabricatedLocalResourceAttribution()
+    {
+        CountingProbe probe = new();
+        CountingProcessResolver resolver = new();
+        WindowsRequestResourceMonitor monitor = new(probe, resolver, TimeSpan.FromMinutes(1));
+        await using IRequestResourceSession session = monitor.Start(new RequestResourceContext(
+            Guid.NewGuid(),
+            null,
+            BackendKind.Ollama,
+            new Uri("https://backend.example-tailnet.ts.net/"),
+            DateTimeOffset.UtcNow));
+        session.AddClientToBackendBytes(100);
+        session.AddBackendToClientBytes(200);
+
+        IReadOnlyList<TechnicalResourceSampleRecord> samples = await session.CompleteAsync();
+        TechnicalResourceSampleRecord sample = samples[^1];
+
+        Assert.AreEqual(0, probe.CaptureCount);
+        Assert.AreEqual(0, resolver.ResolveCount);
+        Assert.IsNull(sample.RelatedProcess);
+        Assert.IsNull(sample.GpuDeviceId);
+        Assert.AreEqual(MetricQuality.Unavailable, sample.CpuPercent.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, sample.MemoryPercent.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, sample.ProcessCpuPercent.Quality);
+        Assert.AreEqual(MetricQuality.Unavailable, sample.GpuUtilizationPercent.Quality);
+        Assert.AreEqual(MetricSource.Inspector, sample.CpuPercent.Source);
+        Assert.AreEqual(100m, sample.ClientToBackendBytes.Value);
+        Assert.AreEqual(200m, sample.BackendToClientBytes.Value);
+    }
+
+    [TestMethod]
     public void NvidiaCsvReturnsEveryDistinctDeviceAndTreatsUnsupportedFieldsAsUnavailable()
     {
         IReadOnlyList<GpuResourceSnapshot> gpus = NvidiaSmiGpuProbe.ParseCsv(
@@ -289,5 +320,29 @@ public sealed class ResourceMonitoringTests
     private sealed class FixedProcessResolver(TechnicalProcessAssociation? association) : IBackendProcessResolver
     {
         public TechnicalProcessAssociation? Resolve(Uri backendBaseAddress) => association;
+    }
+
+    private sealed class CountingProbe : IWindowsResourceProbe
+    {
+        public int CaptureCount { get; private set; }
+
+        public ValueTask<WindowsResourceSnapshot> CaptureAsync(
+            TechnicalProcessAssociation? process,
+            CancellationToken cancellationToken)
+        {
+            CaptureCount++;
+            return ValueTask.FromException<WindowsResourceSnapshot>(new InvalidOperationException());
+        }
+    }
+
+    private sealed class CountingProcessResolver : IBackendProcessResolver
+    {
+        public int ResolveCount { get; private set; }
+
+        public TechnicalProcessAssociation? Resolve(Uri backendBaseAddress)
+        {
+            ResolveCount++;
+            return null;
+        }
     }
 }

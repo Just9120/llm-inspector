@@ -57,6 +57,52 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
+    public void RemoteBackendConfigurationRequiresExplicitTailscaleHttpsDestination()
+    {
+        ProxyGatewayOptions remote = ProxyGatewayOptions.CreateTailscaleRemote(
+            ProxyGatewayOptions.DefaultListenerPort,
+            new Uri("https://backend.example-tailnet.ts.net/"),
+            BackendKind.Ollama);
+
+        Assert.AreEqual(BackendConnectionScope.TailscaleHttps, remote.BackendConnectionScope);
+        Assert.AreEqual("backend.example-tailnet.ts.net", remote.BackendBaseAddress.Host);
+
+        string[] rejected =
+        [
+            "http://backend.example-tailnet.ts.net/",
+            "https://example.com/",
+            "https://100.64.0.1/",
+            "https://backend.example-tailnet.ts.net/v1",
+            "https://user:secret@backend.example-tailnet.ts.net/",
+        ];
+        foreach (string destination in rejected)
+        {
+            _ = Assert.ThrowsExactly<ArgumentException>(() => ProxyGatewayOptions.CreateTailscaleRemote(
+                ProxyGatewayOptions.DefaultListenerPort,
+                new Uri(destination),
+                BackendKind.Ollama));
+        }
+    }
+
+    [TestMethod]
+    public async Task RemoteBackendProbeMeasuresDnsTcpConnectWithoutClaimingInferenceLatency()
+    {
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        Task<TcpClient> accepted = listener.AcceptTcpClientAsync();
+
+        RemoteBackendProbeResult result = await new TcpRemoteBackendProbe(TimeSpan.FromSeconds(2))
+            .ProbeAsync(new Uri($"https://localhost:{port}/"));
+        using TcpClient connection = await accepted.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.IsTrue(result.Available);
+        Assert.IsNotNull(result.ConnectDuration);
+        Assert.IsGreaterThanOrEqualTo(TimeSpan.Zero, result.ConnectDuration.Value);
+        Assert.AreEqual("tcp-connect-succeeded", result.ResultCode);
+    }
+
+    [TestMethod]
     public async Task ListenerIgnoresGenericHostingUrlAndBindsExactlyOneLoopbackEndpoint()
     {
         await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(
@@ -79,6 +125,90 @@ public sealed class ProxyGatewayIntegrationTests
         {
             Environment.SetEnvironmentVariable("ASPNETCORE_URLS", previousUrls);
         }
+    }
+
+    [TestMethod]
+    public async Task PrivateServeIngressRequiresEnabledBearerAndStripsAllIngressCredentials()
+    {
+        string? forwardedAuthorization = null;
+        string? forwardedIdentity = null;
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(context =>
+        {
+            forwardedAuthorization = context.Request.Headers.Authorization.SingleOrDefault();
+            forwardedIdentity = context.Request.Headers["Tailscale-User-Login"].SingleOrDefault();
+            return context.Response.WriteAsync("{}");
+        });
+        FixtureRemoteAuthorizer authorizer = new(enabled: true, "fixture-remote-token");
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            remoteAccessAuthorizer: authorizer);
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpRequestMessage missingToken = CreateRemoteModelsRequest();
+        using HttpResponseMessage missingResponse = await client.SendAsync(missingToken);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, missingResponse.StatusCode);
+
+        using HttpRequestMessage wrongToken = CreateRemoteModelsRequest();
+        wrongToken.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "wrong");
+        using HttpResponseMessage wrongResponse = await client.SendAsync(wrongToken);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, wrongResponse.StatusCode);
+
+        using HttpRequestMessage accepted = CreateRemoteModelsRequest();
+        accepted.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            "fixture-remote-token");
+        accepted.Headers.TryAddWithoutValidation("X-Forwarded-For", "100.64.0.10");
+        using HttpResponseMessage acceptedResponse = await client.SendAsync(accepted);
+
+        Assert.AreEqual(HttpStatusCode.OK, acceptedResponse.StatusCode);
+        Assert.IsNull(forwardedAuthorization);
+        Assert.IsNull(forwardedIdentity);
+
+        HttpRequestMessage CreateRemoteModelsRequest()
+        {
+            HttpRequestMessage request = new(HttpMethod.Get, ProxyGateway.ModelsPath);
+            request.Headers.Host = "inspector.example-tailnet.ts.net";
+            request.Headers.TryAddWithoutValidation("Tailscale-User-Login", "user@example.com");
+            return request;
+        }
+    }
+
+    [TestMethod]
+    public async Task DisabledServeAndFunnelLikeIngressFailClosedWhileLocalTrafficStillWorks()
+    {
+        int backendRequests = 0;
+        await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(context =>
+        {
+            Interlocked.Increment(ref backendRequests);
+            return context.Response.WriteAsync("{}");
+        });
+        await using ProxyGateway gateway = ProxyGateway.Create(
+            ProxyGatewayOptions.CreateForTesting(0, backend.Address),
+            remoteAccessAuthorizer: new FixtureRemoteAuthorizer(enabled: false, "fixture-remote-token"));
+        await gateway.StartAsync();
+        using HttpClient client = CreateProxyClient(gateway.ListeningAddress!);
+
+        using HttpRequestMessage disabledServe = new(HttpMethod.Get, ProxyGateway.ModelsPath);
+        disabledServe.Headers.Host = "inspector.example-tailnet.ts.net";
+        disabledServe.Headers.TryAddWithoutValidation("Tailscale-User-Login", "user@example.com");
+        disabledServe.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            "fixture-remote-token");
+        using HttpResponseMessage disabledResponse = await client.SendAsync(disabledServe);
+        Assert.AreEqual(HttpStatusCode.Forbidden, disabledResponse.StatusCode);
+
+        using HttpRequestMessage funnelLike = new(HttpMethod.Get, ProxyGateway.ModelsPath);
+        funnelLike.Headers.Host = "inspector.example-tailnet.ts.net";
+        funnelLike.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            "fixture-remote-token");
+        using HttpResponseMessage funnelResponse = await client.SendAsync(funnelLike);
+        Assert.AreEqual(HttpStatusCode.Forbidden, funnelResponse.StatusCode);
+
+        using HttpResponseMessage localResponse = await client.GetAsync(ProxyGateway.ModelsPath);
+        Assert.AreEqual(HttpStatusCode.OK, localResponse.StatusCode);
+        Assert.AreEqual(1, backendRequests);
     }
 
     [TestMethod]
@@ -1387,6 +1517,19 @@ public sealed class ProxyGatewayIntegrationTests
 
             public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         }
+    }
+
+    private sealed class FixtureRemoteAuthorizer(bool enabled, string acceptedToken) : IRemoteAccessAuthorizer
+    {
+        public RemoteAccessSnapshot Snapshot { get; } = new(
+            true,
+            enabled,
+            enabled,
+            DateTimeOffset.UtcNow,
+            enabled ? "Fixture enabled." : "Fixture disabled.");
+
+        public bool IsBearerTokenValid(string candidate) =>
+            enabled && string.Equals(candidate, acceptedToken, StringComparison.Ordinal);
     }
 
     private sealed class ThrowingStartResourceMonitor : IRequestResourceMonitor

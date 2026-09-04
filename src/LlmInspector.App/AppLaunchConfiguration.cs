@@ -9,14 +9,17 @@ public sealed record AppLaunchConfiguration(
     Uri BackendBaseAddress,
     int ListenerPort)
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private const string BackendPrefix = "--backend=";
     private const string BackendUrlPrefix = "--backend-url=";
+    private const string RemoteBackendUrlPrefix = "--remote-backend-url=";
     private const string ListenerPortPrefix = "--listener-port=";
     private const string BackgroundOption = "--background";
 
     public bool StartInBackground { get; init; }
+
+    public BackendConnectionScope BackendConnectionScope { get; init; } = BackendConnectionScope.LocalLoopback;
 
     public static AppLaunchConfiguration Parse(IEnumerable<string> arguments)
     {
@@ -26,6 +29,7 @@ public sealed record AppLaunchConfiguration(
         Uri? backendAddress = null;
         int listenerPort = ProxyGatewayOptions.DefaultListenerPort;
         bool startInBackground = false;
+        BackendConnectionScope backendConnectionScope = BackendConnectionScope.LocalLoopback;
         HashSet<string> seenOptions = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (string argument in arguments)
@@ -42,6 +46,21 @@ public sealed record AppLaunchConfiguration(
                 {
                     throw new ArgumentException("Backend URL must be an absolute URI.", nameof(arguments));
                 }
+            }
+            else if (argument.StartsWith(RemoteBackendUrlPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                EnsureSingle(seenOptions, RemoteBackendUrlPrefix);
+                if (seenOptions.Contains(BackendUrlPrefix))
+                {
+                    throw new ArgumentException("Local and remote backend URL options are mutually exclusive.", nameof(arguments));
+                }
+
+                if (!Uri.TryCreate(argument[RemoteBackendUrlPrefix.Length..], UriKind.Absolute, out backendAddress))
+                {
+                    throw new ArgumentException("Remote backend URL must be an absolute URI.", nameof(arguments));
+                }
+
+                backendConnectionScope = BackendConnectionScope.TailscaleHttps;
             }
             else if (argument.StartsWith(ListenerPortPrefix, StringComparison.OrdinalIgnoreCase))
             {
@@ -66,16 +85,26 @@ public sealed record AppLaunchConfiguration(
             }
         }
 
+        if (seenOptions.Contains(BackendUrlPrefix) && seenOptions.Contains(RemoteBackendUrlPrefix))
+        {
+            throw new ArgumentException("Local and remote backend URL options are mutually exclusive.", nameof(arguments));
+        }
+
         backendAddress ??= ProxyGatewayOptions.GetDefaultBackendBaseAddress(backend);
-        _ = ProxyGatewayOptions.Create(listenerPort, backendAddress, backend);
+        _ = backendConnectionScope == BackendConnectionScope.TailscaleHttps
+            ? ProxyGatewayOptions.CreateTailscaleRemote(listenerPort, backendAddress, backend)
+            : ProxyGatewayOptions.Create(listenerPort, backendAddress, backend);
         return new AppLaunchConfiguration(backend, backendAddress, listenerPort)
         {
             StartInBackground = startInBackground,
+            BackendConnectionScope = backendConnectionScope,
         };
     }
 
     public ProxyGatewayOptions CreateProxyOptions() =>
-        ProxyGatewayOptions.Create(ListenerPort, BackendBaseAddress, Backend);
+        BackendConnectionScope == BackendConnectionScope.TailscaleHttps
+            ? ProxyGatewayOptions.CreateTailscaleRemote(ListenerPort, BackendBaseAddress, Backend)
+            : ProxyGatewayOptions.Create(ListenerPort, BackendBaseAddress, Backend);
 
     private static BackendKind ParseBackend(string value) => value.ToLowerInvariant() switch
     {
