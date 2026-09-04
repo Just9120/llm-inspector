@@ -1,7 +1,7 @@
 # Secure remote access runbook
 
-> Scope: `BACKLOG-02`, Tailscale Serve first profile  
-> Runtime deployment: `N/A`  
+> Scope: `BACKLOG-02`, Tailscale Serve first profile
+> Runtime deployment: `N/A`
 > Required terminal gate: actual encrypted two-host `LIVE` Evidence
 
 ## 1. Что реализовано
