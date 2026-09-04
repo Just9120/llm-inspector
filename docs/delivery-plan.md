@@ -1,25 +1,25 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-03T22:46:11Z`
+> Updated: `2026-09-04T05:48:12Z`
 
 ## Current Goal
 
 ### `GOAL-005 — Завершить согласованный Windows delivery scope`
 
-- **State:** `IN_PROGRESS` (EPIC-01 release forward-fix increment).
+- **State:** `IN_PROGRESS` (EPIC-01 observation-only `v1.0.0-rc.3` forward-fix increment).
 - **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
-- **Verified base:** `origin/main` / local `main` = `ff62f54df4fbd4de443144259ac3d89bddff0044`; EPIC-01 automation PR [#21](https://github.com/Just9120/llm-inspector/pull/21) and exact-main CI [33813413498](https://github.com/Just9120/llm-inspector/actions/runs/33813413498) succeeded.
+- **Verified base:** `origin/release/v1.0` / local `release/v1.0` = `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, exact source of immutable public `v1.0.0-rc.2`; release run [33815294790](https://github.com/Just9120/llm-inspector/actions/runs/33815294790) succeeded. Lifecycle/remote commits from current `main` are intentionally outside this maintenance line.
 - **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `138/164`.
-- **Active implementation denominator:** `21` ещё не выполненный и авторизованный AC: `E01-AC01` (`1`) + `E12-AC01..06` (`6`) + `B01-AC01..05` (`5`) + `B02-AC01..09` (`9`).
+- **Active implementation denominator:** branch-local increment не добавляет новых product AC и обслуживает только pending `E01-AC01`; исходная GOAL-005 denominator остаётся `21`, а выполненные позднее B01/B02 increments существуют только в `main` и не backport-ятся.
 
 **Scope**
 
 - Ратифицировать уже согласованные durable decisions без readiness credit за documentation-only work.
 - Реализовать каждый из четырёх затронутых эпиков отдельным reviewable PR: E12, E01/release, B01, B02.
-- До появления lifecycle controls зафиксировать immutable observation-only `v1.0.0-rc.1` candidate exact SHA/artifact; B01 входит только в линию `v1.1`.
+- Immutable observation-only `v1.0.0-rc.2` остаётся неизменным. Explicit decision от `2026-09-04` разрешает создать от его exact source maintenance line `release/v1.0`, перенести только release infrastructure, tray forward fix и необходимую CI test stabilization, затем выпустить `v1.0.0-rc.3`; B01 остаётся только в линии `v1.1` из `main`.
 - После code increments выполнить общую manual-validation phase по exact artifacts/configuration; каждый недоступный внешний target оставить `PENDING_EXTERNAL_GATE`, не подменяя Evidence.
-- После каждого merge подтвердить exact-main CI, синхронизировать local `main`, безопасно удалить merged branch и только затем начать следующий increment.
+- После maintenance merge подтвердить exact-`release/v1.0` CI, выпустить/проверить exact `rc.3`, затем синхронизировать local branches и безопасно удалить merged feature branch.
 
 **Non-goals**
 
@@ -33,7 +33,7 @@
 
 1. Все `21/21` active AC выполнены либо Goal остановлена в `PENDING_EXTERNAL_GATE` с exact отсутствующим Evidence; частичный AC не получает credit.
 2. Каждый epic increment проходит focused tests, полный local CI-equivalent, PR exact-head CI, merge и exact-main CI.
-3. `v1.0.0-rc.1` observation-only candidate фиксируется до merge B01; `v1.1` lifecycle code не попадает в candidate artifact.
+3. Observation-only lineage сохраняется: `release/v1.0` начинается от exact `v1.0.0-rc.2` source, принимает только reviewed release infrastructure/forward fixes, а новый candidate получает version `v1.0.0-rc.3`; `v1.1` lifecycle code не попадает в artifact.
 4. Manual phase проверяет exact frozen artifacts/configuration и не смешивает v1.0/v1.1 Evidence.
 5. Readiness пересчитывается только как completed canonical AC / `139` и / `164`; завершение active scope даёт максимум `139/139` initial и `159/164` full, потому что B03/B04 явно остаются backlog.
 6. Terminal documentation содержит exact commits, PR/CI, artifact hashes, manual results и unresolved gates без metadata-only PR loop.
@@ -47,7 +47,7 @@
 
 **Known external gates**
 
-- Windows Home `25H2` exact-artifact run (ожидается nested VM); Windows Pro доступен локально.
+- Windows Home `25H2` exact-artifact run ожидает nested VM. Exact public `rc.2` на Windows Pro `25H2` build `26200.9168` упал в critical proxy flow; merged-main hotfix reproduction прошёл, но новый `rc.3` artifact ещё не опубликован.
 - llama.cpp `b10516` и LM Studio/lms target runtime ещё не установлены/проверены.
 - Tailscale second PC/VPS encrypted E2E пока недоступен.
 - OpenCode, Hermes и Open WebUI manual E2E могут завершаться по одному; непроверенный client остаётся `PENDING_EXTERNAL_GATE`.
@@ -61,7 +61,7 @@
 | 0 | Decision ratification | Documentation PR merged; exact-main CI success; denominator unchanged |
 | 1 | EPIC-12 performance profiles/harness | Built-in profiles и immutable fixture implemented/tested; controlled measurements deferred only as explicit external gate |
 | 2 | EPIC-01 portable release | Reproducible single-file artifact, SHA-256, SBOM/provenance and release validation automation |
-| 3 | Freeze v1.0 candidate | Immutable observation-only `v1.0.0-rc.1` exact SHA/artifact before B01 merge |
+| 3 | Freeze v1.0 candidate | Immutable public `rc.2` сохранён; forward fix через isolated `release/v1.0` / `rc.3` |
 | 4 | BACKLOG-01 lifecycle | Inspector-owned process controls, allowlisted parameters, compatibility matrix; no v1.0 contamination |
 | 5 | BACKLOG-02 secure remote | Loopback Inspector + Tailscale Serve guidance/token boundary, remote backend semantics and tests |
 | 6 | Manual validation | E12 controlled profiles; Windows Home/Pro; Ollama/llama.cpp/LM Studio; Tailscale; OpenCode/Hermes/Open WebUI |
@@ -71,28 +71,28 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-03T22:46:11Z` |
-| Expected base branch | `main` |
-| Base SHA | `ff62f54df4fbd4de443144259ac3d89bddff0044` — verified local/`origin/main`; exact-main CI `33813413498` success |
-| Working branch | `codex/goal-005-epic-01-release-fix` |
-| Last verified revision | `2044bc09a7dd221c2ac9d69bee76e217b08df672` — full local CI-equivalent succeeded; this checkpoint commit will not self-reference its own containing revision |
-| Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
-| Completed work | EPIC-01 PR #21 head `a81d97eb17cd6ce541f1a7d2eeff5508c77a12a8`, PR CI `33812383296`, merge `ff62f54df4fbd4de443144259ac3d89bddff0044`, exact-main CI `33813413498`. Immutable tag `v1.0.0-rc.1` points to that merge. Release run `33813681861`: build/payload/both attestations success; final publication failed because checkout-free `gh` lacked repository identity; no GitHub Release exists. Downloaded exact artifact SHA-256 `3ea61cd4796fe35de16805605f213b2d10ba3e64067f42d3d3351915c2f4bd02` passes payload and GitHub attestation verification. Forward-fix commit `60d15b8` adds final-step `GH_REPO` and policy coverage |
-| Current step | Create final checkpoint commit, revalidate exact local head, then one grouped initial push and forward-fix PR |
-| Next exact action | Re-run full CI-equivalent on final local head, fetch-check unchanged `origin/main`, push once and open release forward-fix PR |
-| PR / CI | Forward-fix PR not yet created; initial push and exact-head CI pending |
+| Updated UTC | `2026-09-04T05:48:12Z` |
+| Expected base branch | `release/v1.0` |
+| Base SHA | `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479` — verified local/`origin/release/v1.0` and `v1.0.0-rc.2^{commit}` identity |
+| Working branch | `codex/goal-005-v1.0.0-rc.3` |
+| Last verified revision | `48ee5252cc7d94491058b7f1924c9fa4e8d60d9f` — three isolated reviewed changes plus branch-local release documentation; full local CI-equivalent pass |
+| Initial worktree state | Clean feature branch created from verified `origin/release/v1.0`; unrelated changes absent |
+| Completed work | Public `rc.2` run `33815294790` published six exact assets and executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`; payload/SBOM/provenance/smoke pass, but Pro critical proxy flow exposed nonexistent `ShellNotifyIconW`. Maintenance branch now contains deterministic tag-to-line mapping commit `3269292`, exact exported `Shell_NotifyIconW` fix `47d37ec` with native-symbol regression test, and resource-monitor fixture stabilization `e7a685d` required after confirmed main CI race. No lifecycle/remote implementation is present |
+| Current step | Fetch-check unchanged `origin/release/v1.0`, inspect the exact four-commit diff, then perform the one initial push and open PR targeting `release/v1.0` |
+| Next exact action | Fetch `origin`, verify base `8aae2fb` and clean worktree, push once, then create the maintenance PR |
+| PR / CI | Maintenance PR not created; initial push and exact-head CI pending. Main infrastructure/fix PRs #26/#27 and exact-main run `33840821568` are terminal success but are supporting Evidence, not ancestry of this branch |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | PR #21 local/PR/main full `224/224` validation succeeded. Release run `33813681861` independently passed trusted-tag ancestry, locked CI-equivalent, single publish/smoke, exact payload verification/upload, build provenance and SBOM attestation; only `gh release create` failed with `fatal: not a git repository`. Downloaded `rc.1` payload verifier and `gh attestation verify` both pass for SHA-256 `3ea61cd4…f4bd02`. Forward-fix at `2044bc0…`: exact SDK `10.0.400`, locked restores, format, build `0` warnings/errors, `224/224` tests with zero skips, exact one-file publish and smoke success |
-| Blockers | None for safe forward-fix PR. Successful `v1.0.0-rc.2` release/attestation verification and Windows Home/Pro exact-artifact tests remain delivery/manual gates. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until an explicit CI/CD policy-document request; safety contract itself is unchanged |
-| Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
+| Validation | Exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full branch-local `225/225` (`74` Unit + `53` Integration + `65` Windows + `20` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish SHA-256 `e8a508f74b5e683a54dbd090c301f9e3a8c22ad62b2903494b6dbe39eb51f73d`, smoke `exit 0`. Focused policy `5/5`, tray symbol `1/1`, repeated resource monitor `20/20` also pass |
+| Blockers | None for safe maintenance PR. Corrected `rc.3` release/attestation and Windows Home/Pro exact-artifact tests remain delivery/manual gates |
+| Unverified assumptions | New exact release artifact does not yet exist; Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI remain unverified external targets. OpenCode/Hermes results from merged main hotfix must be rerun against exact `rc.3` before release Evidence |
 | Preserved pre-existing changes | None; branch began clean from verified base |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-03T22:39:21Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation after PR #21 and failed `rc.1` publication; CODE/TEST/CI advanced, but `E01-AC01` remains failed without a published exact artifact and Windows Home/Pro Evidence |
-| Previous | `2026-09-03T22:15:12Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Local EPIC-01 candidate passed full validation before PR #21; trusted release and Windows Home/Pro Evidence were absent |
+| Current | `2026-09-04T05:42:42Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Independent AC-by-AC calculation for exact observation-only maintenance lineage: `rc.2` publication passed but exact Pro artifact failed; local forward fix adds no AC credit until a new exact-artifact Windows matrix passes |
+| Previous | `2026-09-04T00:57:51Z` | `132/139 = 95.0%` | `138/164 = 84.1%` | Same branch-local denominator at immutable `rc.2` source `8aae2fb`; public artifact failure kept `E01-AC01` uncredited |
 
 Delta: `0.0 п.п.` initial и full. Denominators unchanged; release automation is supporting CODE/TEST evidence, while `E01-AC01` remains binary-fail until the exact-artifact Windows matrix passes.
 
@@ -100,7 +100,7 @@ Delta: `0.0 п.п.` initial и full. Denominators unchanged; release automation 
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ◐ | ❌ | ◐ | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -112,20 +112,20 @@ Delta: `0.0 п.п.` initial и full. Denominators unchanged; release automation 
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | ⬜ BACKLOG | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | ⬜ BACKLOG | 0/9 | 0% | ✅ | — | — | — | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **—** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **138/164** | **84.1%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **—** |
 
 ## Active AC and gate map
 
 | AC | Current fact / completion gate |
 |---|---|
-| `E01-AC01` | Not complete: automation merged and `rc.1` build/payload/attestations passed, but publication failed; forward-fix `rc.2` and Windows Home/Pro Evidence absent |
+| `E01-AC01` | Not complete: `rc.2` publication/payload/SBOM/provenance pass, but exact Pro artifact fails critical proxy flow; current `release/v1.0` branch contains local forward fix, while reviewed merge, `rc.3` publication and Home/Pro exact-artifact Evidence are absent |
 | `E12-AC01..06` | Not complete: profiles, fail-closed evaluator and frozen fixture merged through PR #20; controlled results for every built-in profile absent |
 | `B01-AC01..05` | Not complete: lifecycle/version contract approved; implementation and runtime Evidence absent |
 | `B02-AC01..09` | Not complete: remote security contract approved; implementation and required LIVE Evidence absent |

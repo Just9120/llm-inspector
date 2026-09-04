@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using LlmInspector.Domain;
 
@@ -6,6 +8,34 @@ namespace LlmInspector.WindowsTests;
 [TestClass]
 public sealed class DesktopProductBoundaryTests
 {
+    [TestMethod]
+    public void WindowsTrayUsesTheExportedUnicodeShellNotifyIconEntryPoint()
+    {
+        const string EntryPointName = "Shell_NotifyIconW";
+        MethodInfo? method = typeof(App.WindowsTrayHost).GetMethod(
+            "ShellNotifyIcon",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.IsNotNull(method);
+
+        DllImportAttribute? import = method.GetCustomAttribute<DllImportAttribute>();
+        Assert.IsNotNull(import);
+        Assert.AreEqual("shell32.dll", import.Value, ignoreCase: true);
+        Assert.AreEqual(EntryPointName, import.EntryPoint);
+        Assert.AreEqual(CharSet.Unicode, import.CharSet);
+        Assert.IsTrue(import.ExactSpelling);
+
+        IntPtr shell32 = NativeLibrary.Load("shell32.dll");
+        try
+        {
+            Assert.IsTrue(NativeLibrary.TryGetExport(shell32, EntryPointName, out IntPtr entryPoint));
+            Assert.AreNotEqual(IntPtr.Zero, entryPoint);
+        }
+        finally
+        {
+            NativeLibrary.Free(shell32);
+        }
+    }
+
     [TestMethod]
     public void MainWindowContainsMonitoringAnalyticsAndDiagnosticsSurfaces()
     {

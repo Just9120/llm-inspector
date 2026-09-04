@@ -28,7 +28,9 @@ public sealed partial class ReleaseWorkflowPolicyTests
         StringAssert.Contains(workflow, "\n    name: build-portable-win-x64\n");
         StringAssert.Contains(workflow, "\n    name: attest-and-publish-github-release\n");
         StringAssert.Contains(workflow, "\n      contents: write\n      id-token: write\n      attestations: write\n");
-        StringAssert.Contains(workflow, "git merge-base --is-ancestor");
+        StringAssert.Contains(workflow, "$sourceBranch = if ($major -eq 1 -and $minor -eq 0) { 'release/v1.0' } else { 'main' }");
+        StringAssert.Contains(workflow, "git fetch --no-tags origin \"${sourceBranch}:${remoteRef}\"");
+        StringAssert.Contains(workflow, "git merge-base --is-ancestor $env:SOURCE_SHA $remoteRef");
         StringAssert.Contains(workflow, "subject-checksums: release-payload/assets/SHA256SUMS.txt");
         StringAssert.Contains(workflow, "--verify-tag");
         StringAssert.Contains(publishJob, "GH_REPO: ${{ github.repository }}");
