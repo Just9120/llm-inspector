@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — E01 MANUAL FAILURE/PARTIAL; B01 READY; B02 CODE+CI COMPLETE/LIVE PENDING`
+> Status: `DECIDED — GOAL-005 PENDING_EXTERNAL_GATE; E01/E12 MANUAL GATES; B02 LIVE PENDING`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-04`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `e8fb053f9c3731e816c51f53371cc37eff65bd51` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix и release-line policy через PR #26. PR #26 exact-head CI `33839994417` succeeded; exact-main CI `33840160541` выявил timing race только в resource-monitor test fixture, который исправляется текущим increment. B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но immutable artifact провалил manual Pro critical flow. Merged hotfix исправляет exact `Shell_NotifyIconW` entry point и проходит reproduced Ollama/OpenCode/Hermes flows; corrected observation-only candidate ещё не опубликован.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `d2c3df58fb111ce62968b6144cf58720ab036053` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix, release-line policy и deterministic resource-monitor fixture fix. PR #27 exact-head CI `33840633983` и exact-main CI `33840821568` успешны; exact-main suite содержит `260/260` tests. Observation-only [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) опубликован из `release/v1.0` exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release run `33842346524`, payload checksums, SPDX/provenance, public smoke и доступные Windows Pro Ollama/OpenCode/Hermes flows успешны. Windows Home/full release matrix, controlled E12 measurements и B02 two-host LIVE Evidence ещё отсутствуют.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -22,7 +22,7 @@ Server/runtime deployment target отсутствует. LLM Inspector уста�
 | `ADR-006` | NuGet `PackageReference` + Central Package Management + committed lock files | Версии централизуются в `Directory.Packages.props`; floating versions запрещены; CI использует locked restore. SDK фиксируется exact `global.json` с `rollForward: disable`, а upgrade выполняется отдельным reviewed change. |
 | `ADR-007` | Portable unsigned self-contained single-file `win-x64` executable как первый release unit | Не требует установленного .NET, installer или admin rights. GitHub Release публикует exact executable, SHA-256, SBOM/provenance и SmartScreen disclosure. Store/MSIX/trusted signing/automatic Store updates отложены в release backlog. |
 | `ADR-008` | CI и Windows release разделены; server/runtime CD остаётся disabled | Untrusted PR проверяет code без release credentials. Trusted tag job в будущем публикует exact locally/CI-validated artifact; это artifact distribution, не deployment на runtime host. |
-| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable public `v1.0.0-rc.2` exact candidate зафиксирован до merge lifecycle code; дальнейшие `v1.0.x` forward fixes идут только через maintenance line `release/v1.0`, созданную от exact `rc.2` source. Failed tags не переиспользуются, lifecycle code из `main` не переносится, Evidence двух lines не смешивается. |
+| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Maintenance line `release/v1.0` создана от immutable `v1.0.0-rc.2` source до merge lifecycle code; reviewed forward fix опубликован как immutable `v1.0.0-rc.3`. Следующие `v1.0.x` fixes остаются только в этой line. Failed/rejected/published tags не переиспользуются, lifecycle code из `main` не переносится, Evidence двух lines не смешивается. |
 | `ADR-010` | Three built-in performance profiles plus bounded custom profile | `Бережный`, `Сбалансированный` и `Детальный` имеют отдельные sampling intervals/budgets и обязаны проходить independently; custom profile не является release Evidence. |
 | `ADR-011` | Lifecycle только для Inspector-owned backend processes через typed capability adapters | Exact process identity, official interface и parameter allowlist ограничивают destructive surface; externally owned process остаётся observation-only, crash recovery — manual. |
 | `ADR-012` | Remote через loopback Inspector + private Tailscale Serve | Inspector не становится LAN/public server. Tailscale обеспечивает encrypted tailnet transport, а отдельный application bearer token защищает Inspector endpoint; Funnel и direct backend exposure запрещены. |
@@ -376,7 +376,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 .\artifacts\win-x64\LlmInspector.App.exe --smoke-test
 ```
 
-Последняя terminal merged-main validation для EPIC-01 release fix подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `224/224` tests без skips, single-file self-contained `win-x64` publish и smoke. PR #22 CI `33814760385` и exact-main CI `33814980537` завершились успешно на merge `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`; trusted-tag run `33815294790` затем опубликовал exact release.
+Последняя terminal merged-main validation подтвердила exact SDK `10.0.400`, locked normal/RID restores, `dotnet format`, Release build без warnings/errors, `260/260` tests без skips, single-file self-contained `win-x64` publish и smoke. PR #27 CI `33840633983` и exact-main CI `33840821568` завершились успешно на merge `d2c3df58fb111ce62968b6144cf58720ab036053`.
 
 Configured CI foundation:
 
@@ -389,14 +389,14 @@ Configured CI foundation:
 - artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
-EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer и ancestry из deterministic trusted line (`v1.0.x` — `release/v1.0`, остальные lines — `main`), выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` полностью успешен и опубликовал exact executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. Explicit CI/CD policy decision от `2026-09-04` разрешил maintenance line и синхронизацию Project CI/CD profile; server/runtime CD остаётся disabled.
+EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer и ancestry из deterministic trusted line (`v1.0.x` — `release/v1.0`, остальные lines — `main`), выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` технически завершил pipeline, но его immutable artifact был rejected после manual Pro failure. PR #28 доставил исправление в `release/v1.0`; exact-branch CI `33842121186` успешен (`225/225`), а trusted `v1.0.0-rc.3` run `33842346524` опубликовал exact executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`. Checksums, SPDX 2.3, build provenance и SBOM attestation проверены для exact source `821b17abf68bb63dd09f83a834d2d3bdec2e899c`. Explicit CI/CD policy decision от `2026-09-04` разрешил maintenance line и синхронизацию Project CI/CD profile; server/runtime CD остаётся disabled.
 
-PR #26 реализовал mapping и прошёл exact-head CI `33839994417`. Его exact-main run `33840160541` упал в `MonitorCorrelatesTimestampedHostProcessGpuDiskAndTrafficMetrics`: synthetic probe переиспользовал последний timestamped snapshot, поэтому fast runner мог записать дополнительную zero-delta projection как unavailable. Это test-fixture race, а не observed runtime regression; current fix блокирует лишний capture до cancellation и обязан пройти repeated focused test плюс полный CI-equivalent.
+PR #26 реализовал release-line mapping и прошёл exact-head CI `33839994417`. Его exact-main run `33840160541` обнаружил timing race в synthetic resource-monitor fixture, а не observed runtime regression. PR #27 детерминировал fixture; repeated focused validation, полный local CI-equivalent, exact-head CI `33840633983` и exact-main CI `33840821568` успешны.
 
 Release design:
 
 1. Trusted tag/release flow performs locked restore, build, tests и один self-contained single-file `win-x64` publish; downstream manifest/checksum/SBOM/provenance consume that exact hashed output without rebuild.
-2. Observation-only exact revision получает immutable SemVer prerelease tag до B01 lifecycle code. Failed `v1.0.0-rc.1` и published-but-rejected `v1.0.0-rc.2` не переиспользуются; reviewed forward-fix публикуется с `release/v1.0` как `v1.0.0-rc.3`.
+2. Observation-only exact revision получает immutable SemVer prerelease tag до B01 lifecycle code. Failed `v1.0.0-rc.1`, published-but-rejected `v1.0.0-rc.2` и published `v1.0.0-rc.3` не переиспользуются; следующий reviewed forward fix получает новый SemVer tag из `release/v1.0`.
 3. Publish unsigned portable executable, SHA-256, SBOM, provenance and user-facing SmartScreen warning to GitHub Releases. No installer/admin requirement and no automatic update behavior.
 4. Verify artifact identity, launch, tray/background, proxy, SQLite recovery and critical end-to-end behavior on Windows 11 `25H2` Home and Pro. Manual results always reference exact artifact hash.
 5. Lifecycle release line starts at `v1.1` from `main`; `release/v1.0` остаётся observation-only и принимает только reviewed release infrastructure/forward fixes. Evidence двух lines не переиспользуется без explicit applicability.
@@ -411,12 +411,13 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `FORWARD FIX MERGED / NEW CANDIDATE PENDING` | `v1.0.0-rc.2` publication/SBOM/provenance pass, but Pro `25H2` critical proxy flow crashes in tray cleanup; PR #25 / merge `8481b49` fixes it and Ollama/OpenCode/Hermes reproduction passes, while `release/v1.0`, a new exact candidate and Home/Pro matrix remain E01 gate |
+| Portable distribution | `RC.3 PUBLISHED / MATRIX PENDING` | Exact `v1.0.0-rc.3` release pipeline, payload identity, attestations, public smoke and available Pro Ollama/OpenCode/Hermes flows pass; Windows Home and remaining full exact-artifact matrix remain the E01 gate |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Secure remote | `CODE+CI COMPLETE / LIVE PENDING` | PR #24 / merge `538d1f0` / exact-main CI `33822719346` pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
 | Lifecycle implementation | `READY` | PR #23, merge `7c71fbc`, exact-main CI `33819193701`; `5/5`, SPEC/CODE/TEST/CI `✅` |
 | Lifecycle compatibility versions | `PENDING_EXTERNAL_GATE` for two adapters | Ollama `0.33.2` verified locally; llama.cpp `b10516` and LM Studio/lms target versions require actual-runtime Evidence |
+| Release attestation action maintenance | `DEFERRED` | `actions/attest-sbom` emitted a deprecation annotation in run `33842346524`; migrate to supported `actions/attest` in a separate authorized CI/CD Goal without weakening the trust boundary |
 
 ## 18. Primary evidence sources
 
