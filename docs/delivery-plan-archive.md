@@ -2,6 +2,14 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## Release strategy correction — single `main`, final-only publication
+
+- **Authorization:** explicit user decision от `2026-09-04`: версия остаётся `1.0` до полного тестирования и финальной публикации; отдельная `release/v1.0` line не нужна.
+- **Policy outcome:** `main` — единственная persistent development/release branch. Release workflow принимает только final `vMAJOR.MINOR.PATCH` tag, проверяет ancestry из `origin/main` и не создаёт новые prerelease. Первый следующий public stable tag — `v1.0.0`; после публикации development version переходит к `1.1`.
+- **Historical Evidence:** `v1.0.0-rc.1`, rejected `v1.0.0-rc.2` и published `v1.0.0-rc.3` остаются immutable audit records; user не авторизовал удаление tags/releases. Их прежняя isolated branch не является current source.
+- **Cleanup contract:** после policy PR и exact-main CI удалить temporary PR branch и obsolete `release/v1.0` локально/remote; terminal PR comment фиксирует exact merge/run и финальный branch inventory.
+- **Readiness effect:** product scope, AC denominator и completion не изменились: initial `132/139 = 95.0%`, full `152/164 = 92.7%`.
+
 ## GOAL-005 — Завершить согласованный Windows delivery scope
 
 - **Terminal state:** `PENDING_EXTERNAL_GATE` с `2026-09-04T06:59:16Z`; explicit closeout и cleanup подтверждены пользователем. `DONE` не заявляется, потому что required Windows Home, controlled performance и B02 LIVE Evidence отсутствуют.

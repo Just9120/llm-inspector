@@ -2,64 +2,74 @@
 
 ## Назначение
 
-Runbook описывает выпуск unsigned portable self-contained single-file `win-x64` application через
-GitHub Releases. Это distribution flow, а не server/runtime deployment: `DEPLOY` и `LIVE` для него
-`N/A`. Microsoft Store, MSIX, trusted signing и automatic update сюда не входят.
+Runbook описывает выпуск финальной unsigned portable self-contained single-file `win-x64` application
+через GitHub Releases. Это distribution flow, а не server/runtime deployment: `DEPLOY` и `LIVE` для
+него `N/A`. Microsoft Store, MSIX, trusted signing и automatic update сюда не входят.
 
 Canonical product/release constraints находятся в [`../project-spec.md`](../project-spec.md), safety
 rules — в [`../ci-cd-rules.md`](../ci-cd-rules.md). Workflow: `.github/workflows/release.yml`.
 
+## Version и branch policy
+
+- `main` — единственная development и release source branch.
+- До первой финальной публикации product version остаётся `1.0`.
+- Новые prerelease versions и отдельные version/release branches не создаются.
+- Первый следующий public stable tag — `v1.0.0`; после его публикации development version становится
+  `1.1` в том же `main`.
+- Historical `v1.0.0-rc.1`, `v1.0.0-rc.2` и `v1.0.0-rc.3` immutable и не переиспользуются.
+
 ## Preconditions
 
-1. Release source уже merged в trusted line: `release/v1.0` для `v1.0.x`, `main` для остальных
-   lines; local branch, соответствующая `origin/*` branch и intended SHA совпадают.
-2. Exact-branch `CI / windows-dotnet` на intended SHA завершён success без required skips.
-3. Intended tag имеет exact SemVer form `vMAJOR.MINOR.PATCH[-prerelease]` и ещё не существует local,
-   remote или в GitHub Releases.
-4. Для `v1.0.0-rc.*` source остаётся observation-only: maintenance line создана от exact
-   `v1.0.0-rc.2` source и принимает только reviewed release-infrastructure или forward-fix changes;
-   BACKLOG-01 lifecycle code из `main` в неё не переносится.
+1. Release source merged в `main`; local `main`, `origin/main` и intended SHA совпадают.
+2. Exact-main `CI / windows-dotnet` на intended SHA завершён success без required skips.
+3. Все согласованные обязательные automated, manual Windows и integration gates для публикации
+   зафиксированы с exact source/artifact identity; unresolved required gate блокирует tag.
+4. Intended tag имеет exact final SemVer form `vMAJOR.MINOR.PATCH`, без prerelease suffix, и ещё не
+   существует local, remote или в GitHub Releases.
 5. GitHub Actions включены, repository public, а actor имеет право создать tag/release.
+
+## Historical prerelease Evidence
+
+`v1.0.0-rc.1` — immutable failed-delivery tag: build и attestations прошли, Release не был создан.
+`v1.0.0-rc.2` опубликован, но провалил Pro manual gate. `v1.0.0-rc.3` опубликован из exact source
+`821b17abf68bb63dd09f83a834d2d3bdec2e899c`; release pipeline и доступные Windows Pro flows прошли,
+но Windows Home/full matrix не завершена. Эти tags/releases остаются audit Evidence, а не текущим
+versioning template или финальным `v1.0.0`.
 
 ## Запуск trusted flow
 
-`v1.0.0-rc.1` является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. `v1.0.0-rc.2` опубликован, но провалил Pro manual gate. `v1.0.0-rc.3` опубликован из exact source `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; release pipeline и доступные Windows Pro flows прошли, но Windows Home/full matrix ещё pending. Ни одну из этих versions не переиспользовать.
-
-Ниже — историческая one-time bootstrap procedure. Maintenance line `release/v1.0` уже создана от exact annotated-tag target `v1.0.0-rc.2`; повторно выполнять этот блок нельзя. Он сохранён только для audit/recovery context:
+Создание final tag является authorization на немедленную публикацию workflow. Выполнять блок можно
+только после Preconditions. `<FINAL_SEMVER_TAG>` и `<EXACT_VALIDATED_MAIN_SHA>` заменяются фактически
+проверенными значениями; для первой stable публикации tag должен быть `v1.0.0`.
 
 ```powershell
 git fetch origin main --tags
-git ls-remote --exit-code --heads origin refs/heads/release/v1.0
-if ($LASTEXITCODE -eq 0) { throw 'origin/release/v1.0 already exists; reconcile instead of recreating it.' }
-if ($LASTEXITCODE -ne 2) { throw "Unexpected ls-remote exit code: $LASTEXITCODE" }
-$sourceSha = git rev-parse 'v1.0.0-rc.2^{commit}'
-git branch release/v1.0 $sourceSha
-git push origin refs/heads/release/v1.0
+git switch main
+git merge --ff-only origin/main
+$releaseTag = '<FINAL_SEMVER_TAG>'
+$sourceSha = '<EXACT_VALIDATED_MAIN_SHA>'
+if ($releaseTag -notmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+    throw 'Only a final SemVer release tag is allowed.'
+}
+if ((git rev-parse HEAD) -ne $sourceSha) { throw 'Local main does not match the validated source SHA.' }
+git tag -a $releaseTag $sourceSha -m "LLM Inspector $releaseTag"
+git push origin "refs/tags/$releaseTag"
 ```
 
-Каждый forward fix проходит PR с base `release/v1.0` и exact-branch CI. Для будущего candidate `<NEXT_SEMVER_TAG>` и `<EXACT_RELEASE_SHA>` заменяются только новым, ещё не существующим SemVer tag и фактически проверенным SHA:
-
-```powershell
-git fetch origin release/v1.0 --tags
-git switch release/v1.0
-git merge --ff-only origin/release/v1.0
-git tag -a <NEXT_SEMVER_TAG> <EXACT_RELEASE_SHA> -m "LLM Inspector <NEXT_SEMVER_TAG>"
-git push origin refs/tags/<NEXT_SEMVER_TAG>
-```
-
-Tag считается immutable. Не перемещать и не переиспользовать опубликованный version. При defect
-исправление проходит новым PR и получает новый prerelease version после `v1.0.0-rc.3`.
+Tag считается immutable. Не перемещать и не переиспользовать опубликованный version. Если defect
+обнаружен после финальной публикации, исправление проходит новым PR в `main` и получает новый final
+patch/minor version только после повторной required validation.
 
 ## Что обязан сделать workflow
 
-1. Fail closed проверить SemVer, вывести trusted line без пользовательского ввода и проверить
-   достижимость tagged SHA из `origin/release/v1.0` для `v1.0.x` либо `origin/main` для остальных lines.
+1. Fail closed проверить exact final SemVer без prerelease suffix и достижимость tagged SHA из
+   `origin/main`.
 2. На ephemeral `windows-2025` выполнить locked restore, format, Release build и полный test suite.
 3. Один раз собрать single-file `LlmInspector-<version>-win-x64.exe` и smoke-test именно его.
 4. Сформировать SHA-256, `portable-release-v1` manifest, SPDX 2.3 SBOM и русскоязычное предупреждение
    об unsigned/SmartScreen/manual-update boundary.
 5. Передать exact payload в отдельный publish job, перепроверить checksums/source identity, создать
-   Sigstore build-provenance и SBOM attestations и только затем создать GitHub prerelease/release.
+   Sigstore build-provenance и SBOM attestations и только затем создать финальный GitHub Release.
 
 Build job имеет только `contents: read`. Publish job не checkout-ит repository и получает только
 `contents: write`, `id-token: write`, `attestations: write`; `GH_TOKEN` передаётся только в final
@@ -67,29 +77,36 @@ Build job имеет только `contents: read`. Publish job не checkout-и
 
 ## Проверка результата
 
-Текущий trusted candidate проверяется следующими exact командами. Для будущего release используется его новый tag и соответствующее имя asset:
+После публикации exact tag и asset проверяются следующей template-процедурой:
 
 ```powershell
-gh release view v1.0.0-rc.3 --json url,isPrerelease,targetCommitish,assets
-gh release download v1.0.0-rc.3 --dir artifacts/release-verification
-Get-FileHash .\artifacts\release-verification\LlmInspector-1.0.0-rc.3-win-x64.exe -Algorithm SHA256
-gh attestation verify .\artifacts\release-verification\LlmInspector-1.0.0-rc.3-win-x64.exe --repo Just9120/llm-inspector
+$releaseTag = '<FINAL_SEMVER_TAG>'
+$releaseVersion = $releaseTag.Substring(1)
+$verificationDirectory = '.\artifacts\release-verification'
+gh release view $releaseTag --json url,isPrerelease,targetCommitish,assets
+gh release download $releaseTag --dir $verificationDirectory
+$executable = Join-Path $verificationDirectory "LlmInspector-$releaseVersion-win-x64.exe"
+Get-FileHash $executable -Algorithm SHA256
+gh attestation verify $executable --repo Just9120/llm-inspector
 ```
 
-Observed hash обязан совпасть с `SHA256SUMS.txt` и manifest. Зафиксировать tag, source SHA, workflow
-run ID, release URL, artifact SHA-256, attestation URLs/verification и terminal statuses.
+Observed hash обязан совпасть с `SHA256SUMS.txt`, manifest и exact pre-publication candidate Evidence.
+Если public artifact identity отличается, manual gate не переносится автоматически и release не
+получает READY. Зафиксировать tag, source SHA, workflow run ID, release URL, artifact SHA-256,
+attestation URLs/verification и terminal statuses.
 
 ## Manual Windows gate
 
-Один exact artifact hash отдельно проверяется на Windows 11 `25H2` Home x64 и Pro x64: запуск без
-установленного .NET/runtime и admin rights, SmartScreen guidance, tray/background, local proxy,
-SQLite restart/recovery и critical supported backend/client flow. До обеих записей `E01-AC01` не
-получает credit.
+До final tag один exact candidate hash из intended `main` SHA отдельно проверяется на Windows 11
+`25H2` Home x64 и Pro x64: запуск без установленного .NET/runtime и admin rights, SmartScreen
+guidance, tray/background, local proxy, SQLite restart/recovery и critical supported backend/client
+flow. После публикации identity public artifact сверяется с pre-publication candidate. До полного
+Evidence `E01-AC01` не получает credit, а final release tag не создаётся.
 
 ## Failure policy
 
 - Failed/skipped/cancelled build, tests, payload verification, attestation или publish — не success.
 - Не выполнять speculative rerun. Сначала установить причину и сохранить run/SHA Evidence.
 - Не удалять и не перемещать tag/release автоматически. Destructive correction требует отдельного
-  explicit owner decision; обычный путь — reviewed forward-fix и новый SemVer prerelease.
+  explicit owner decision; обычный путь — reviewed fix в `main` и новый final SemVer после validation.
 - Не публиковать вручную локально пересобранный replacement под тем же tag.

@@ -1,6 +1,6 @@
 # Управление локальным backend
 
-> Scope: B01 development line (`v1.1+`). Observation-only `v1.0` line, включая `v1.0.0-rc.3`, этих controls не содержит.
+> Scope: B01 в single-main product line. Historical `v1.0.0-rc.3` этих controls не содержит; следующий final `v1.0.0` из `main` содержит их после required validation.
 
 ## Safety boundary
 

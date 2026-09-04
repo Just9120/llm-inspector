@@ -16,7 +16,7 @@ public sealed partial class ReleaseWorkflowPolicyTests
     ];
 
     [TestMethod]
-    public void ReleaseWorkflowUsesOnlyTrustedTagsAndSplitLeastPrivilegeJobs()
+    public void ReleaseWorkflowUsesOnlyFinalMainTagsAndSplitLeastPrivilegeJobs()
     {
         string workflow = ReadRepositoryFile(".github", "workflows", "release.yml");
         int publishStart = workflow.IndexOf("\n  publish:\n", StringComparison.Ordinal);
@@ -28,8 +28,9 @@ public sealed partial class ReleaseWorkflowPolicyTests
         StringAssert.Contains(workflow, "\n    name: build-portable-win-x64\n");
         StringAssert.Contains(workflow, "\n    name: attest-and-publish-github-release\n");
         StringAssert.Contains(workflow, "\n      contents: write\n      id-token: write\n      attestations: write\n");
-        StringAssert.Contains(workflow, "$sourceBranch = if ($major -eq 1 -and $minor -eq 0) { 'release/v1.0' } else { 'main' }");
-        StringAssert.Contains(workflow, "git fetch --no-tags origin \"${sourceBranch}:${remoteRef}\"");
+        StringAssert.Contains(workflow, "'^v(?<major>0|[1-9][0-9]*)\\.(?<minor>0|[1-9][0-9]*)\\.(?<patch>0|[1-9][0-9]*)$'");
+        StringAssert.Contains(workflow, "$remoteRef = 'refs/remotes/origin/main'");
+        StringAssert.Contains(workflow, "git fetch --no-tags origin \"main:${remoteRef}\"");
         StringAssert.Contains(workflow, "git merge-base --is-ancestor $env:SOURCE_SHA $remoteRef");
         StringAssert.Contains(workflow, "subject-checksums: release-payload/assets/SHA256SUMS.txt");
         StringAssert.Contains(workflow, "--verify-tag");
@@ -40,6 +41,11 @@ public sealed partial class ReleaseWorkflowPolicyTests
         Assert.DoesNotContain("workflow_run", workflow, StringComparison.Ordinal);
         Assert.DoesNotContain("secrets:", workflow, StringComparison.Ordinal);
         Assert.DoesNotContain("environment:", workflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("release/v1.0", workflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("outputs.prerelease", workflow, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IS_PRERELEASE", workflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("--prerelease", workflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("-[0-9A-Za-z-]", workflow, StringComparison.Ordinal);
         Assert.DoesNotContain("actions/checkout@", publishJob, StringComparison.Ordinal);
         Assert.DoesNotContain("dotnet ", publishJob, StringComparison.Ordinal);
     }
@@ -60,10 +66,12 @@ public sealed partial class ReleaseWorkflowPolicyTests
     [TestMethod]
     public void PortablePublishAndPayloadContractsAreExplicit()
     {
+        string buildProperties = ReadRepositoryFile("Directory.Build.props");
         string project = ReadRepositoryFile("src", "LlmInspector.App", "LlmInspector.App.csproj");
         string generator = ReadRepositoryFile("eng", "release", "New-ReleasePayload.ps1");
         string verifier = ReadRepositoryFile("eng", "release", "Test-ReleasePayload.ps1");
 
+        StringAssert.Contains(buildProperties, "<VersionPrefix>1.0.0</VersionPrefix>");
         StringAssert.Contains(project, "<PublishSingleFile>true</PublishSingleFile>");
         StringAssert.Contains(project, "<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>");
         StringAssert.Contains(generator, "SPDX-2.3");
