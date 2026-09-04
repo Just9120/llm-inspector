@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `8481b49b88f926eee5f969667a8a254efb9b0b92` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary и tray P/Invoke hotfix через PR #25 / exact-main CI `33824822771`; B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но immutable artifact провалил manual Pro critical flow. Merged hotfix исправляет exact `Shell_NotifyIconW` entry point и проходит reproduced Ollama/OpenCode/Hermes flows; corrected observation-only candidate ещё не опубликован.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `e8fb053f9c3731e816c51f53371cc37eff65bd51` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix и release-line policy через PR #26. PR #26 exact-head CI `33839994417` succeeded; exact-main CI `33840160541` выявил timing race только в resource-monitor test fixture, который исправляется текущим increment. B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но immutable artifact провалил manual Pro critical flow. Merged hotfix исправляет exact `Shell_NotifyIconW` entry point и проходит reproduced Ollama/OpenCode/Hermes flows; corrected observation-only candidate ещё не опубликован.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -390,6 +390,8 @@ Configured CI foundation:
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
 EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer и ancestry из deterministic trusted line (`v1.0.x` — `release/v1.0`, остальные lines — `main`), выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` полностью успешен и опубликовал exact executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. Explicit CI/CD policy decision от `2026-09-04` разрешил maintenance line и синхронизацию Project CI/CD profile; server/runtime CD остаётся disabled.
+
+PR #26 реализовал mapping и прошёл exact-head CI `33839994417`. Его exact-main run `33840160541` упал в `MonitorCorrelatesTimestampedHostProcessGpuDiskAndTrafficMetrics`: synthetic probe переиспользовал последний timestamped snapshot, поэтому fast runner мог записать дополнительную zero-delta projection как unavailable. Это test-fixture race, а не observed runtime regression; current fix блокирует лишний capture до cancellation и обязан пройти repeated focused test плюс полный CI-equivalent.
 
 Release design:
 

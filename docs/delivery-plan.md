@@ -1,15 +1,15 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T05:12:11Z`
+> Updated: `2026-09-04T05:26:01Z`
 
 ## Current Goal
 
 ### `GOAL-005 — Завершить согласованный Windows delivery scope`
 
-- **State:** `IN_PROGRESS` (manual validation; observation-only `v1.0` forward-fix release).
+- **State:** `IN_PROGRESS` (release-line exact-main CI failure repair before observation-only `v1.0` forward-fix release).
 - **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
-- **Verified base:** `origin/main` / local `main` = `8481b49b88f926eee5f969667a8a254efb9b0b92`; tray hotfix PR [#25](https://github.com/Just9120/llm-inspector/pull/25), head CI [33824414484](https://github.com/Just9120/llm-inspector/actions/runs/33824414484) и exact-main CI [33824822771](https://github.com/Just9120/llm-inspector/actions/runs/33824822771) succeeded.
+- **Verified base:** `origin/main` / local `main` = `e8fb053f9c3731e816c51f53371cc37eff65bd51`; release-line PR [#26](https://github.com/Just9120/llm-inspector/pull/26) head CI [33839994417](https://github.com/Just9120/llm-inspector/actions/runs/33839994417) succeeded, but exact-main CI [33840160541](https://github.com/Just9120/llm-inspector/actions/runs/33840160541) failed one resource-monitor test because of a reproduced fixture timing race.
 - **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `152/164`.
 - **Active implementation denominator:** из исходных `21` AC реализованы `B01-AC01..05` и `B02-AC01..09` (`14/21`); остаются семь manual criteria: `E01-AC01` (`1`) + `E12-AC01..06` (`6`). B02 имеет SPEC/CODE/TEST/CI `✅`, но ещё не READY без обязательного encrypted two-host LIVE gate.
 
@@ -71,28 +71,28 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T05:12:11Z` |
+| Updated UTC | `2026-09-04T05:26:01Z` |
 | Expected base branch | `main` |
-| Base SHA | `8481b49b88f926eee5f969667a8a254efb9b0b92` — verified local/`origin/main`; tray hotfix exact-main CI `33824822771` success |
-| Working branch | `codex/goal-005-release-line-v1.0` |
-| Last verified revision | `6159172928dbccd4cf7e9c228a4835c7469a0ddd` — release-line workflow/policy commit; full local CI-equivalent pass |
+| Base SHA | `e8fb053f9c3731e816c51f53371cc37eff65bd51` — verified local/`origin/main`; PR #26 head CI passed and exact-main CI `33840160541` failed on identified test-fixture race |
+| Working branch | `codex/goal-005-resource-monitor-test-race` |
+| Last verified revision | `c2b3ea96265e70fb3645731f30b9d9c265c3d9b7` — deterministic fixture fix; repeated focused test and full local CI-equivalent pass |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
-| Completed work | B02 delivered through PR #24 / merge `538d1f0`. Tray hotfix delivered through PR #25 / merge `8481b49`, exact-head/main CI succeeded. On merged hotfix, direct proxy and installed OpenCode `1.18.25` / Hermes `0.20.0` E2E through Ollama `0.33.2` and installed Qwen return HTTP `200` / texts `OPENCODE` and `HERMES`; Inspector remains alive with empty stderr. Commit `6159172` adds deterministic SemVer-to-trusted-line mapping (`v1.0.x` → `release/v1.0`, otherwise `main`), CI coverage for both long-lived branches and policy tests |
-| Current step | Complete policy/runbook/checkpoint update, commit documentation, fetch-check unchanged base, then perform the single initial push and open the release-line infrastructure PR |
-| Next exact action | Commit current documentation reconciliation, fetch `origin`, verify base `8481b49` is unchanged and branch contains only intended commits, then push once and create the PR |
-| PR / CI | Release-line infrastructure PR not created. Predecessor tray hotfix PR [#25](https://github.com/Just9120/llm-inspector/pull/25): final head `708198741d50c92a50a8d7046ee5be521b849a4c`, CI `33824414484` success; merged as `8481b49`, exact-main CI `33824822771` success |
+| Completed work | B02 delivered through PR #24. Tray hotfix delivered through PR #25 / merge `8481b49`; Ollama/OpenCode/Hermes reproduction passes. Release-line infrastructure delivered through PR #26 / merge `e8fb053`; head CI passed. Its exact-main run failed because `FakeProbe` kept returning the final timestamped snapshot, allowing a fast runner to append a zero-delta unavailable sample. Commit `c2b3ea9` makes the two-snapshot fixture block any third capture until session cancellation, preserving production fail-closed semantics and removing scheduler dependence |
+| Current step | Commit failure/checkpoint reconciliation, fetch-check unchanged base, then perform the one grouped fix push and open a focused PR |
+| Next exact action | Commit current documentation reconciliation, fetch `origin`, verify base `e8fb053` is unchanged and branch contains only the intended fixture fix/docs, then push once and create the fix PR |
+| PR / CI | Fix PR not created. Release-line PR [#26](https://github.com/Just9120/llm-inspector/pull/26): head `7ee32d77fe77f9e9a9d53f51107cd14f3b5d5c22`, CI `33839994417` success; merged as `e8fb053`, exact-main CI `33840160541` failed at `ResourceMonitoringTests.MonitorCorrelatesTimestampedHostProcessGpuDiskAndTrafficMetrics` |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | On `6159172`: exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish and smoke `exit 0`. Focused release/CI policy tests `5/5` pass. Runtime Evidence remains from exact merged hotfix as described above |
-| Blockers | None for safe release-line infrastructure PR. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected `rc.3` candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms and Open WebUI remain external gates |
-| Unverified assumptions | Actual Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI results remain unverified; release-line workflow awaits PR exact-head CI before branch creation |
+| Validation | On `c2b3ea9`: exact failing test passes `20/20`; exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish and smoke `exit 0`. Runtime Evidence remains from exact merged tray hotfix |
+| Blockers | Exact-main CI failure must be repaired by reviewed fix before creating `release/v1.0`. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected `rc.3` candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms and Open WebUI remain external gates |
+| Unverified assumptions | Actual Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI results remain unverified; fixture fix awaits PR exact-head/main CI |
 | Preserved pre-existing changes | None; branch began clean from verified base |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-04T05:12:11Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact hotfix merged main `8481b49`: B02 remains `9/9` with LIVE absent; hotfix and manual OpenCode/Hermes compatibility Evidence repair/confirm already credited behavior but add no AC. E01 remains `3/4` because exact public `rc.2` failed Pro manual validation; E12 remains `7/13` |
-| Previous | `2026-09-04T00:57:51Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact B02 merged main `538d1f0`; tray defect was identified and development hotfix had not yet completed PR/main Evidence |
+| Current | `2026-09-04T05:26:01Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged main `e8fb053`: release-line policy adds no product AC; exact-main CI test-fixture failure suspends terminal CI confidence for this increment but does not falsify previously completed product AC. E01 remains `3/4`; E12 remains `7/13` |
+| Previous | `2026-09-04T05:12:11Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact tray-hotfix main `8481b49`; B02 remains `9/9` with LIVE absent and E01 exact public `rc.2` remains failed |
 
 Delta: `0.0 п.п.` initial, `0.0 п.п.` full. Denominators и completed AC unchanged; tray fix, release-line infrastructure и client compatibility checks не являются новыми product AC. `E01-AC01` остаётся binary-fail до нового exact-artifact Windows matrix, а B02 не READY без LIVE.
 

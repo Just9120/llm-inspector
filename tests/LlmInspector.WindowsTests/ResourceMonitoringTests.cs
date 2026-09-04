@@ -295,17 +295,27 @@ public sealed class ResourceMonitoringTests
         public TaskCompletionSource SecondCapture { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public ValueTask<WindowsResourceSnapshot> CaptureAsync(
+        public async ValueTask<WindowsResourceSnapshot> CaptureAsync(
             TechnicalProcessAssociation? process,
             CancellationToken cancellationToken)
         {
             int index = Interlocked.Increment(ref _index) - 1;
-            FirstCapture.TrySetResult();
-            if (index >= 1)
+            if (index >= snapshots.Length)
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return snapshots[^1];
+            }
+
+            if (index == 0)
+            {
+                FirstCapture.TrySetResult();
+            }
+            else if (index == 1)
             {
                 SecondCapture.TrySetResult();
             }
-            return ValueTask.FromResult(snapshots[Math.Min(index, snapshots.Length - 1)]);
+
+            return snapshots[index];
         }
     }
 
