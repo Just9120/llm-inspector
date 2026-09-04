@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T05:42:42Z`
+> Updated: `2026-09-04T05:48:12Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T05:42:42Z` |
+| Updated UTC | `2026-09-04T05:48:12Z` |
 | Expected base branch | `release/v1.0` |
 | Base SHA | `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479` — verified local/`origin/release/v1.0` and `v1.0.0-rc.2^{commit}` identity |
 | Working branch | `codex/goal-005-v1.0.0-rc.3` |
-| Last verified revision | `e7a685d0d041a0f42eee22a7a56b98d461b0e8ee` — three isolated reviewed changes applied; focused checks pass |
+| Last verified revision | `48ee5252cc7d94491058b7f1924c9fa4e8d60d9f` — three isolated reviewed changes plus branch-local release documentation; full local CI-equivalent pass |
 | Initial worktree state | Clean feature branch created from verified `origin/release/v1.0`; unrelated changes absent |
 | Completed work | Public `rc.2` run `33815294790` published six exact assets and executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`; payload/SBOM/provenance/smoke pass, but Pro critical proxy flow exposed nonexistent `ShellNotifyIconW`. Maintenance branch now contains deterministic tag-to-line mapping commit `3269292`, exact exported `Shell_NotifyIconW` fix `47d37ec` with native-symbol regression test, and resource-monitor fixture stabilization `e7a685d` required after confirmed main CI race. No lifecycle/remote implementation is present |
-| Current step | Complete branch-local release documentation and run full local CI-equivalent before the one initial push/PR to `release/v1.0` |
-| Next exact action | Run full CI-equivalent on final local head, fetch-check unchanged `origin/release/v1.0`, then push once and open PR targeting `release/v1.0` |
+| Current step | Fetch-check unchanged `origin/release/v1.0`, inspect the exact four-commit diff, then perform the one initial push and open PR targeting `release/v1.0` |
+| Next exact action | Fetch `origin`, verify base `8aae2fb` and clean worktree, push once, then create the maintenance PR |
 | PR / CI | Maintenance PR not created; initial push and exact-head CI pending. Main infrastructure/fix PRs #26/#27 and exact-main run `33840821568` are terminal success but are supporting Evidence, not ancestry of this branch |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Focused release/CI policy tests `5/5`; exported tray symbol test `1/1`; exact formerly flaky resource-monitor test `20/20`; builds have `0` warnings/errors. Full final CI-equivalent and exact branch artifact hash are pending after documentation commit |
+| Validation | Exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full branch-local `225/225` (`74` Unit + `53` Integration + `65` Windows + `20` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish SHA-256 `e8a508f74b5e683a54dbd090c301f9e3a8c22ad62b2903494b6dbe39eb51f73d`, smoke `exit 0`. Focused policy `5/5`, tray symbol `1/1`, repeated resource monitor `20/20` also pass |
 | Blockers | None for safe maintenance PR. Corrected `rc.3` release/attestation and Windows Home/Pro exact-artifact tests remain delivery/manual gates |
 | Unverified assumptions | New exact release artifact does not yet exist; Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI remain unverified external targets. OpenCode/Hermes results from merged main hotfix must be rerun against exact `rc.3` before release Evidence |
 | Preserved pre-existing changes | None; branch began clean from verified base |

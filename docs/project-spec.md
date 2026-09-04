@@ -485,14 +485,14 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-04T05:42:42Z`.
+- Last recalculation: `2026-09-04T05:48:12Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
 - GitHub Actions: prior terminal core runs remain recorded in delivery history. EPIC-01 release-fix PR/main runs `33814760385`/`33814980537` and trusted-tag release run `33815294790` completed successfully at exact source `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`. Main-only release-line policy/fix PRs #26/#27 and exact-main run `33840821568` are supporting Evidence; this branch still requires its own PR/exact-branch CI.
-- Code/tests/runtime: public `v1.0.0-rc.2` contains 6 assets; executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`, manifest exact source SHA `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, SPDX 2.3 (`32` packages/`1` file), both Sigstore bundles and GitHub attestation verification pass. Exact Pro artifact smoke and `/models` pass, but proxied POST terminates the app with `EntryPointNotFoundException` for tray `ShellNotifyIconW`. Current local commits `3269292`/`47d37ec`/`e7a685d` add trusted release-line mapping, bind exported `Shell_NotifyIconW`, verify the native symbol and remove a synthetic resource-test race. Focused policy tests `5/5`, tray test `1/1` and formerly flaky test `20/20` pass; full final CI-equivalent is pending after documentation commit.
+- Code/tests/runtime: public `v1.0.0-rc.2` contains 6 assets; executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`, manifest exact source SHA `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, SPDX 2.3 (`32` packages/`1` file), both Sigstore bundles and GitHub attestation verification pass. Exact Pro artifact smoke and `/models` pass, but proxied POST terminates the app with `EntryPointNotFoundException` for tray `ShellNotifyIconW`. Current local commits `3269292`/`47d37ec`/`e7a685d` add trusted release-line mapping, bind exported `Shell_NotifyIconW`, verify the native symbol and remove a synthetic resource-test race. At documentation revision `48ee525`, focused policy tests `5/5`, tray test `1/1`, formerly flaky test `20/20` and full CI-equivalent `225/225` with zero skips pass; one-file publish SHA-256 is `e8a508f74b5e683a54dbd090c301f9e3a8c22ad62b2903494b6dbe39eb51f73d`, smoke succeeds.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
 - Full agreed roadmap readiness: `138/164 = 84.1%`.
