@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — E01 RELEASED/PARTIAL; B01 IMPLEMENTED LOCALLY; B02 TARGET RATIFIED`
+> Status: `DECIDED — E01 RELEASED/PARTIAL; B01 READY; B02 IMPLEMENTED LOCALLY/LIVE PENDING`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-04`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479` включает core epics, EPIC-12 profiles/harness и успешный trusted `v1.0.0-rc.2` release flow. B01 lifecycle implementation находится на локальном code commit `327bdd3a2011eb7c6f84299dc3945e2d4b4e95b5`; focused Unit/Contract/Windows suites прошли `84/84`, `27/27` и `67/67`, exact-head PR/main CI ещё отсутствует.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` включает core epics, EPIC-12 profiles/harness, успешный trusted `v1.0.0-rc.2` release flow и B01 lifecycle через PR #23 / exact-main CI `33819193701`. Локальный B02 code commit `e9ab6084a16b7b1f1c04c6b69415eecf9c61c0a8` реализует secure remote boundary и проходит focused Unit/Integration/Windows suites; exact-head PR/main CI и обязательный two-host LIVE test ещё отсутствуют.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -22,7 +22,7 @@ Server/runtime deployment target отсутствует. LLM Inspector уста�
 | `ADR-006` | NuGet `PackageReference` + Central Package Management + committed lock files | Версии централизуются в `Directory.Packages.props`; floating versions запрещены; CI использует locked restore. SDK фиксируется exact `global.json` с `rollForward: disable`, а upgrade выполняется отдельным reviewed change. |
 | `ADR-007` | Portable unsigned self-contained single-file `win-x64` executable как первый release unit | Не требует установленного .NET, installer или admin rights. GitHub Release публикует exact executable, SHA-256, SBOM/provenance и SmartScreen disclosure. Store/MSIX/trusted signing/automatic Store updates отложены в release backlog. |
 | `ADR-008` | CI и Windows release разделены; server/runtime CD остаётся disabled | Untrusted PR проверяет code без release credentials. Trusted tag job в будущем публикует exact locally/CI-validated artifact; это artifact distribution, не deployment на runtime host. |
-| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable `v1.0.0-rc.1` exact candidate фиксируется до merge lifecycle code; manual Evidence для двух lines не смешивается. |
+| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable public `v1.0.0-rc.2` exact candidate зафиксирован до merge lifecycle code; failed-publication tag `v1.0.0-rc.1` не переиспользуется, manual Evidence для двух lines не смешивается. |
 | `ADR-010` | Three built-in performance profiles plus bounded custom profile | `Бережный`, `Сбалансированный` и `Детальный` имеют отдельные sampling intervals/budgets и обязаны проходить independently; custom profile не является release Evidence. |
 | `ADR-011` | Lifecycle только для Inspector-owned backend processes через typed capability adapters | Exact process identity, official interface и parameter allowlist ограничивают destructive surface; externally owned process остаётся observation-only, crash recovery — manual. |
 | `ADR-012` | Remote через loopback Inspector + private Tailscale Serve | Inspector не становится LAN/public server. Tailscale обеспечивает encrypted tailnet transport, а отдельный application bearer token защищает Inspector endpoint; Funnel и direct backend exposure запрещены. |
@@ -138,21 +138,23 @@ Kestrel loopback gateway
   sample queue ─────> SQLite writer
 ```
 
-### Approved remote target (не реализован на текущем revision)
+### Secure remote target (реализован локально, LIVE pending)
 
-Inspector остаётся literal-loopback listener на `127.0.0.1`; private remote ingress предоставляет Tailscale Serve по HTTPS только внутри tailnet. Funnel, wildcard bind, public Internet и direct backend port exposure запрещены. Remote mode выключен по умолчанию и требует explicit user action плюс отдельный random `256-bit` application bearer token. Token создаётся/ротируется локально, показывается только в этот момент и хранится через Windows current-user protected storage. Inspector показывает setup/status, но не устанавливает Tailscale, не выполняет login и не изменяет ACL.
+Inspector остаётся literal-loopback listener на `127.0.0.1`; private remote ingress предоставляет Tailscale Serve по HTTPS только внутри tailnet. Funnel, wildcard bind, public Internet и direct backend port exposure запрещены. Remote mode выключен по умолчанию и требует explicit UI confirmation плюс отдельный random `256-bit` application bearer token. Token создаётся/ротируется локально, показывается только в этот момент и хранится как DPAPI CurrentUser ciphertext в `%LOCALAPPDATA%\LLM Inspector\remote-access.json`; disable удаляет persisted credential. Inspector показывает setup/status, но не устанавливает Tailscale, не выполняет login и не изменяет ACL/Serve state.
 
-Explicit remote backend configuration допускает private encrypted overlay target и отделяет measured network/transport latency от inference latency. Недоступная remote telemetry не получает fabricated local attribution. First verified topology — Tailscale; другие WireGuard/private overlays могут называться `Compatible`, но не `Проверено` без отдельного reproduction. `BACKLOG-02` требует actual encrypted Windows↔VPS/second-PC LIVE Evidence; server deployment по-прежнему отсутствует.
+Ingress guard доверяет remote request только при сочетании `*.ts.net` Host, единственного non-empty `Tailscale-User-Login` и валидного application bearer token. Funnel и tagged-device traffic без user identity fail closed; remote Authorization, Tailscale identity/capability и forwarding headers не передаются backend. Local literal-loopback requests без proxy headers сохраняют прежний local flow.
+
+Explicit remote backend option `--remote-backend-url=https://<node>.<tailnet>.ts.net[:port]/` допускает только first-profile Tailscale HTTPS target с normal certificate validation и выключенными redirects. Отдельный bounded DNS+TCP connect probe даёт availability и calculated connect latency; эта метрика не включает TLS/inference и не вычитается из request duration. Windows local host/process/GPU probe для remote target не запускается, gateway byte counters остаются допустимыми, остальные resource fields получают typed `unavailable` с remote source version. Другие WireGuard/private overlays могут называться `Compatible`, но не `Проверено` и пока не проходят validator без отдельного profile/reproduction. `BACKLOG-02` требует actual encrypted Windows↔VPS/second-PC LIVE Evidence; server deployment по-прежнему отсутствует.
 
 ### Forwarding invariants
 
-1. Backend target принимается только из versioned settings и в observation-only `v1.0` должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote target станет доступен только после B02 implementation через explicit private-overlay configuration.
+1. Local backend target должен быть `localhost`, `127.0.0.1` или `::1`; normalized destination и redirects не могут выйти из loopback. Remote target принимается только отдельной explicit launch option и только как root `https://*.ts.net[:port]/`; credentials/path/query/fragment запрещены.
 2. Generic `ASPNETCORE_URLS`, wildcard hostname, `0.0.0.0`, `[::]` и `ListenAnyIP` не могут расширить listener. Port conflict останавливает listener с явной UI error, а не выбирает скрытый alternate endpoint.
-3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Четыре Inspector-reserved correlation headers (`operation`, `session`, `turn`, `turn sequence`) являются единственным исключением: они читаются локально и удаляются до backend. Inspector не добавляет generation parameters и не заменяет model/tool payload.
+3. Hop-by-hop HTTP headers обрабатываются по proxy rules; остальные method/path/query/headers/body и response status/headers/body сохраняются семантически. Локально потребляемые security/metadata exceptions: четыре Inspector correlation headers всегда удаляются; Tailscale/proxy identity headers всегда удаляются; remote application `Authorization` удаляется только после успешной ingress authentication. Local backend `Authorization` сохраняет прежний configured pass-through. Inspector не добавляет generation parameters и не заменяет model/tool payload.
 4. Request и response bodies relay-ятся streaming; full-body buffering запрещено. Parser хранит не более `256` bytes текущего lexical token и не влияет на flow control клиента; container depth больше `64`, malformed JSON или parser exception переводят telemetry в `unavailable`, не прерывая relay.
 5. SSE event order и bytes внутри relayed data не переупорядочиваются. Fragmented tool-call name может быть assembled только в bounded volatile state; arguments/results проходят к client/backend, но отбрасываются telemetry projection.
 6. Client cancellation немедленно propagates к backend. Inspector не replay-ит и не retry-ит generation request после начала forwarding: duplicate inference опаснее явного failure.
-7. Backend TLS certificate validation не отключается. Authorization/cookie/proxy-auth headers могут проходить к backend по configured policy, но исключены из logging, metrics, snapshots и exception text.
+7. Backend TLS certificate validation не отключается. Local Authorization/cookie/proxy-auth headers могут проходить к backend по configured policy, но исключены из logging, metrics, snapshots и exception text; remote Inspector bearer token является ingress credential и никогда не forwarding credential.
 
 ## 7. Privacy enforcement и threat boundary
 
@@ -164,7 +166,7 @@ Enforcement выполняется в трёх независимых слоях
 2. `Telemetry`: schema-first allowlist projection создаёт новый metadata record. Запрещённые значения не маскируются post hoc — они отсутствуют в output type.
 3. `Storage/Diagnostics`: database schema и snapshot DTO содержат только allowlisted fields; serialization неизвестного поля fail-closed.
 
-Persistent allowlist: timestamps/durations, token counts, normalized model/backend/client identities, generated or pseudonymized correlation IDs, tool names/count/status/duration, HTTP/error categories без raw body, quality/provenance, resource samples, OS/backend/client/driver version identifiers и versioned configuration fingerprints. Backend URL хранится как user label и normalized loopback identity без credentials/query. Dedicated Inspector correlation GUIDs считаются уже псевдонимными и могут сохраняться; backend/account IDs и paths не сохраняются raw, а будущая correlation по внешнему stable ID потребует per-install keyed pseudonymization.
+Persistent allowlist: timestamps/durations, token counts, normalized model/backend/client identities, generated or pseudonymized correlation IDs, tool names/count/status/duration, HTTP/error categories без raw body, quality/provenance, resource samples, OS/backend/client/driver version identifiers и versioned configuration fingerprints. Backend URL не сохраняется raw в history; runtime configuration identity использует SHA-256 fingerprint, а UI может показать текущий validated target только in-memory. Dedicated Inspector correlation GUIDs считаются уже псевдонимными и могут сохраняться; backend/account/Tailscale identities, tokens и paths не сохраняются raw, а будущая correlation по внешнему stable ID потребует per-install keyed pseudonymization.
 
 Всегда запрещены: prompt/response/reasoning text, images/audio, embeddings, tool arguments/results, user code, authorization/cookie values, full request/response/error bodies, raw query strings, arbitrary headers, stack traces с local paths и unsanitized exception messages.
 
@@ -301,6 +303,7 @@ Lifecycle events use a higher-priority bounded queue than resource samples. If e
 | SQLite integration/fault injection | migration, WAL checkpoint, concurrent readers, cutoff boundaries, manual clear, disk-full/locked/corrupt/restart | `E08-AC16..18`, `E12-AC10..12` |
 | Windows integration | actual OS collectors, unavailable semantics, install/upgrade/uninstall, tray/background/autostart/notifications | `E01-AC01`, `E06-*`, `E10-*` |
 | Lifecycle unit/contract/Windows tests | serialization, active-request gates, exact process identity, official CLI/API plans, compatibility matrix, crash/manual recovery | `B01-AC01..05` |
+| Secure remote unit/integration/Windows tests | default-off/rotation/revocation, Serve identity+bearer gate, header stripping, `*.ts.net` validation, DNS+TCP probe, DPAPI CurrentUser round-trip, remote resource `unavailable` | `B02-AC01..09` code/test Evidence |
 | Paired performance benchmark | baseline vs Inspector, idle and active workloads, throughput/latency/resource deltas | `E12-AC01..06` |
 | End-to-end client/backend matrix | at least one supported client fixture against each pinned backend version | `E01-AC02..04`, `E02-*`, `E03-*`, `E04-*`, `E05-*` |
 
@@ -312,6 +315,7 @@ Privacy tests сканируют structured stores и raw files byte-for-byte af
 - Release build не принимает generic ASP.NET hosting configuration, способную изменить bind address. Listener и backend destination проходят отдельные validators.
 - Release environment variables не являются primary settings/secret store. Test/dev overrides получают префикс `LLMINSPECTOR_`, allowlist и documentation в Goal, где они появятся.
 - Backend credentials и per-install keys защищаются Windows current-user mechanism через abstraction; plaintext не хранится в repository, JSON, SQLite, logs или artifacts.
+- Remote access default — disabled. `remote-access.json` schema v1 сохраняется атомарно и содержит только enabled state, timestamp и DPAPI CurrentUser ciphertext; schema/unknown-field/DPAPI mismatch fail closed. Token не принимается через CLI/environment variable и не выводится после creation/rotation.
 - Local log level default не включает payloads. Trace mode не может отключить content exclusion.
 - No external telemetry/crash endpoint, update channel или remote listener включается неявно.
 
@@ -407,9 +411,9 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
 | Portable distribution | `RELEASED / MANUAL MATRIX PENDING` | `v1.0.0-rc.2` publication/SBOM/provenance pass; Windows Home/Pro exact-artifact runs remain E01 gate |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
-| Secure remote | `APPROVED, NOT IMPLEMENTED` | Tailscale Serve + application token; actual Windows↔VPS/second-PC LIVE Evidence required |
+| Secure remote | `IMPLEMENTED LOCALLY / LIVE PENDING` | Commit `e9ab608`; local security tests pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
-| Lifecycle implementation | `IMPLEMENTED_LOCALLY / CI_PENDING` | Code commit `327bdd3`; all five B01 AC covered by unit/contract/Windows tests; exact-head PR/main CI pending |
+| Lifecycle implementation | `READY` | PR #23, merge `7c71fbc`, exact-main CI `33819193701`; `5/5`, SPEC/CODE/TEST/CI `✅` |
 | Lifecycle compatibility versions | `PENDING_EXTERNAL_GATE` for two adapters | Ollama `0.33.2` verified locally; llama.cpp `b10516` and LM Studio/lms target versions require actual-runtime Evidence |
 
 ## 18. Primary evidence sources
@@ -429,4 +433,5 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 - [LM Studio CLI](https://lmstudio.ai/docs/cli), [server start](https://lmstudio.ai/docs/cli/serve/server-start) and [model load](https://lmstudio.ai/docs/cli/load) — official local server/model lifecycle commands and typed parameters.
 - [LM Studio tool streaming](https://lmstudio.ai/docs/developer/openai-compat/tools), [native chat](https://lmstudio.ai/docs/developer/rest/chat) and [native streaming events](https://lmstudio.ai/docs/developer/rest/streaming-events) — fragmented tool calls, terminal stats and exact model-load lifecycle signals.
 - [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve) and [Funnel](https://tailscale.com/docs/features/tailscale-funnel) — private tailnet HTTPS exposure versus explicitly forbidden public exposure.
+- [LibreChat custom endpoints](https://www.librechat.ai/docs/quick_start/custom_endpoints) and [`baseURL` contract](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/custom_endpoint) — OpenAI-compatible VPS client configuration with environment-owned API key.
 - [OpenCode custom provider](https://opencode.ai/docs/providers/#custom-provider), [Hermes providers](https://github.com/hermes-agent-org/hermes/blob/main/website/docs/integrations/providers.md) and [Open WebUI OpenAI-compatible connections](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/) — configuration surfaces for the existing `/v1/models` and `/v1/chat/completions` contract; actual client compatibility remains a manual gate.
