@@ -908,6 +908,49 @@ public sealed class SqliteTechnicalHistoryStoreTests
         }
 
         Assert.AreNotEqual(0, process.ExitCode, "Crash fixture must be terminated without normal disposal.");
+        await WaitForSqliteFilesReleasedAsync(databasePath, TimeSpan.FromSeconds(10));
+    }
+
+    private static async Task WaitForSqliteFilesReleasedAsync(string databasePath, TimeSpan timeout)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow + timeout;
+        string[] paths = [databasePath, $"{databasePath}-wal", $"{databasePath}-shm"];
+        while (true)
+        {
+            List<FileStream> exclusiveHandles = [];
+            try
+            {
+                foreach (string path in paths)
+                {
+                    if (File.Exists(path))
+                    {
+                        exclusiveHandles.Add(new FileStream(
+                            path,
+                            FileMode.Open,
+                            FileAccess.ReadWrite,
+                            FileShare.None));
+                    }
+                }
+
+                return;
+            }
+            catch (IOException) when (DateTimeOffset.UtcNow < deadline)
+            {
+                await Task.Delay(25);
+            }
+            finally
+            {
+                foreach (FileStream handle in exclusiveHandles)
+                {
+                    await handle.DisposeAsync();
+                }
+            }
+
+            if (DateTimeOffset.UtcNow >= deadline)
+            {
+                throw new TimeoutException("The crash-writer SQLite files remained locked after process-tree termination.");
+            }
+        }
     }
 
     private static string FindRepositoryRoot()

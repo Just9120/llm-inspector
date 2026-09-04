@@ -85,7 +85,7 @@ public sealed class ProxyGatewayIntegrationTests
     }
 
     [TestMethod]
-    public async Task RemoteBackendProbeMeasuresDnsTcpConnectWithoutClaimingInferenceLatency()
+    public async Task RemoteBackendProbeMeasuresTcpConnectWithoutClaimingInferenceLatency()
     {
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
@@ -93,7 +93,7 @@ public sealed class ProxyGatewayIntegrationTests
         Task<TcpClient> accepted = listener.AcceptTcpClientAsync();
 
         RemoteBackendProbeResult result = await new TcpRemoteBackendProbe(TimeSpan.FromSeconds(2))
-            .ProbeAsync(new Uri($"https://localhost:{port}/"));
+            .ProbeAsync(new Uri($"https://127.0.0.1:{port}/"));
         using TcpClient connection = await accepted.WaitAsync(TimeSpan.FromSeconds(2));
 
         Assert.IsTrue(result.Available);
