@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T00:20:10Z`
+> Updated: `2026-09-04T00:25:01Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T00:20:10Z` |
+| Updated UTC | `2026-09-04T00:25:01Z` |
 | Expected base branch | `main` |
 | Base SHA | `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` — verified local/`origin/main`; BACKLOG-01 exact-main CI `33819193701` success |
 | Working branch | `codex/goal-005-backlog-02-secure-remote` |
-| Last verified revision | `e9ab6084a16b7b1f1c04c6b69415eecf9c61c0a8` — focused Unit/Integration/Windows tests succeeded; documentation and full CI-equivalent pending |
+| Last verified revision | `0b9cc5d8a478ece7a09cd9e017d6d3c0c2c5299c` — full local CI-equivalent succeeded; this checkpoint commit intentionally does not self-reference its own containing revision |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | EPIC-01 `v1.0.0-rc.2` terminal release Evidence preserved; B01 terminal through PR #23 / merge `7c71fbc` / exact-main CI `33819193701`. B02 code commit `e9ab608` implements default-off identity+bearer ingress, DPAPI CurrentUser credential lifecycle, explicit Tailscale HTTPS remote backend, separate availability/connect latency and fail-closed remote resource semantics; secure-remote runbook and operational documentation prepared in the worktree |
-| Current step | Complete security review, commit B02 documentation, run full CI-equivalent on exact branch head and update the final pre-push checkpoint |
-| Next exact action | Resolve security-review findings, commit documentation, then run restore → format → build → full tests → RID restore → publish → smoke |
+| Current step | Create final checkpoint commit, revalidate exact local head, fetch-check unchanged base, then perform the one initial push and create the B02 PR |
+| Next exact action | Re-run full CI-equivalent on final checkpoint head, verify `origin/main` remains `7c71fbc…`, push once and open B02 PR |
 | PR / CI | B02 PR not created; exact-head CI pending |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | B02 focused exact-SDK checks: Release build `0` warnings/errors; Unit `91/91`, Integration `57/57`, Windows `71/71`, zero skips. Automated evidence confirms token/config/network-boundary semantics but does not substitute for encrypted two-host LIVE Evidence |
+| Validation | At exact `0b9cc5d`: SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, full `259/259` tests with zero skips, clean one-file self-contained publish (`62,826,143` bytes, SHA-256 `6e41ad82e9516e4caf41c57345f13682d55f5a525e259ce3624d5ef465cf44aa`) and smoke pass. Automated evidence does not substitute for encrypted two-host LIVE Evidence |
 | Blockers | None for safe B02 PR. Tailscale VPS/second-PC LIVE environment is unavailable. Windows Home/Pro exact release checks and E12 controlled measurements remain manual gates. llama.cpp `b10516`, LM Studio/lms and named clients remain unverified manual compatibility targets. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until explicit CI/CD policy-document request |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
