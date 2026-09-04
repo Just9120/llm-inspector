@@ -16,6 +16,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
     private const string NvidiaSourceVersion = "nvidia-smi-query-v1";
     private const string MebibytesDerivationVersion = "mebibytes-to-bytes-v1";
     private const string TrafficSourceVersion = "gateway-relayed-byte-counter-v1";
+    private const string RemoteUnavailableSourceVersion = "remote-backend-resource-unavailable-v1";
 
     private readonly IWindowsResourceProbe _probe;
     private readonly IBackendProcessResolver _processResolver;
@@ -68,17 +69,21 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             throw new ArgumentException("A generated request identifier is required.", nameof(context));
         }
 
-        TechnicalProcessAssociation? association;
-        try
+        bool collectLocalResources = IsLoopbackDestination(context.BackendBaseAddress);
+        TechnicalProcessAssociation? association = null;
+        if (collectLocalResources)
         {
-            association = _processResolver.Resolve(context.BackendBaseAddress);
-        }
-        catch (Exception)
-        {
-            association = null;
+            try
+            {
+                association = _processResolver.Resolve(context.BackendBaseAddress);
+            }
+            catch (Exception)
+            {
+                association = null;
+            }
         }
 
-        return new Session(this, context, association);
+        return new Session(this, context, association, collectLocalResources);
     }
 
     private void PublishLatest(TechnicalResourceSampleRecord[] samples)
@@ -92,6 +97,7 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         private readonly WindowsRequestResourceMonitor _owner;
         private readonly RequestResourceContext _context;
         private readonly TechnicalProcessAssociation? _process;
+        private readonly bool _collectLocalResources;
         private readonly TimeSpan _samplingInterval;
         private readonly CancellationTokenSource _stop = new();
         private readonly SemaphoreSlim _captureLock = new(1, 1);
@@ -113,11 +119,13 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
         public Session(
             WindowsRequestResourceMonitor owner,
             RequestResourceContext context,
-            TechnicalProcessAssociation? process)
+            TechnicalProcessAssociation? process,
+            bool collectLocalResources)
         {
             _owner = owner;
             _context = context;
             _process = process;
+            _collectLocalResources = collectLocalResources;
             _samplingInterval = owner.SamplingInterval;
             _samplingTask = Task.Run(SampleLoopAsync);
         }
@@ -238,12 +246,15 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             try
             {
                 WindowsResourceSnapshot? current = null;
-                try
+                if (_collectLocalResources)
                 {
-                    current = await _owner._probe.CaptureAsync(_process, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is not OperationCanceledException)
-                {
+                    try
+                    {
+                        current = await _owner._probe.CaptureAsync(_process, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is not OperationCanceledException)
+                    {
+                    }
                 }
 
                 TechnicalResourceSampleRecord[] samples = CreateSamples(current);
@@ -295,8 +306,20 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             GpuResourceSnapshot? gpu,
             bool includeHostMetrics)
         {
-            MetricValue unavailablePercent = Unavailable(MetricUnit.Percent, WindowsSourceVersion);
-            MetricValue unavailableBytes = Unavailable(MetricUnit.Bytes, WindowsSourceVersion);
+            string unavailableSource = _collectLocalResources
+                ? WindowsSourceVersion
+                : RemoteUnavailableSourceVersion;
+            MetricSource unavailableMetricSource = _collectLocalResources
+                ? MetricSource.WindowsApi
+                : MetricSource.Inspector;
+            MetricValue unavailablePercent = Unavailable(
+                MetricUnit.Percent,
+                unavailableSource,
+                unavailableMetricSource);
+            MetricValue unavailableBytes = Unavailable(
+                MetricUnit.Bytes,
+                unavailableSource,
+                unavailableMetricSource);
             MetricValue cpu = unavailablePercent;
             MetricValue memory = unavailablePercent;
             MetricValue memoryUsed = unavailableBytes;
@@ -490,5 +513,13 @@ public sealed class WindowsRequestResourceMonitor : IRequestResourceMonitor, IRe
             string sourceVersion,
             MetricSource source = MetricSource.WindowsApi) =>
             MetricValue.Unavailable(unit, source, sourceVersion);
+    }
+
+    private static bool IsLoopbackDestination(Uri address)
+    {
+        string host = address.Host.Trim('[', ']');
+        return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            (System.Net.IPAddress.TryParse(host, out System.Net.IPAddress? ipAddress) &&
+             System.Net.IPAddress.IsLoopback(ipAddress));
     }
 }

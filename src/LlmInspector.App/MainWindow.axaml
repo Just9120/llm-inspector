@@ -12,7 +12,7 @@
         MinHeight="480"
         Title="LLM Inspector">
   <ScrollViewer>
-    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+    <Grid Margin="32" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
       <StackPanel Spacing="6">
         <TextBlock FontSize="28" FontWeight="SemiBold" Text="LLM Inspector" />
         <TextBlock Text="Local OpenAI-compatible observation proxy" />
@@ -304,6 +304,39 @@
             <Button x:Name="LoadLifecycleModelButton" Margin="0,0,8,8" Content="Загрузить модель" />
           </WrapPanel>
           <TextBlock x:Name="LifecycleStateText" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="14"
+              Padding="20"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+              CornerRadius="8">
+        <StackPanel Spacing="9">
+          <TextBlock FontSize="18" FontWeight="SemiBold" Text="Защищённый remote access" />
+          <TextBlock Text="Inspector всегда слушает только 127.0.0.1. Private HTTPS ingress настраивается вами через Tailscale Serve; Funnel, wildcard bind и публикация backend-порта запрещены."
+                     TextWrapping="Wrap" />
+          <TextBlock x:Name="TailscaleServeCommandText" TextWrapping="Wrap" FontFamily="Consolas" />
+          <TextBlock Text="Tailscale install/login/ACL и Serve остаются явными внешними действиями: Inspector их не выполняет и не меняет. Запросы Serve требуют user identity header и отдельный bearer token."
+                     TextWrapping="Wrap" />
+          <CheckBox x:Name="RemoteBoundaryConfirmationCheckBox"
+                    Content="Я проверил: private HTTPS Serve, user identity, корректный ACL и Funnel выключен" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="EnableRemoteAccessButton" Margin="0,0,8,8" Content="Создать token и включить" />
+            <Button x:Name="RotateRemoteTokenButton" Margin="0,0,8,8" Content="Ротировать token" />
+            <Button x:Name="DisableRemoteAccessButton" Margin="0,0,8,8" Content="Выключить и отозвать token" />
+          </WrapPanel>
+          <TextBlock x:Name="RemoteAccessStateText" TextWrapping="Wrap" />
+          <TextBlock Text="Новый token показывается только при создании/ротации. Скопируйте его в secret storage клиента; Inspector не сможет показать его повторно."
+                     TextWrapping="Wrap" />
+          <WrapPanel Orientation="Horizontal">
+            <TextBox x:Name="RemoteOneTimeTokenText" Width="650" Margin="0,0,8,8" IsReadOnly="True" FontFamily="Consolas" />
+            <Button x:Name="HideRemoteTokenButton" Margin="0,0,8,8" Content="Скрыть token" />
+          </WrapPanel>
+          <TextBlock FontWeight="SemiBold" Text="Remote backend" />
+          <TextBlock Text="Availability и DNS+TCP connect latency показываются отдельно. Connect probe не является inference latency; local CPU/RAM/GPU не приписываются remote backend."
+                     TextWrapping="Wrap" />
+          <Button x:Name="ProbeRemoteBackendButton" HorizontalAlignment="Left" Content="Проверить remote target" />
+          <TextBlock x:Name="RemoteBackendStateText" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
     </Grid>

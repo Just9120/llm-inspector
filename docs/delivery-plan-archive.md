@@ -2,6 +2,14 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-005 / BACKLOG-01 — Backend/model lifecycle management
+
+- **Product outcome:** `B01-AC01..05` выполнены (`5/5`); BACKLOG-01 — READY, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- **Pull Request:** [#23](https://github.com/Just9120/llm-inspector/pull/23), head `70a1eb80c8ce8713fcb42ad283421a63bb8d5f77`, PR CI `33818573495` success.
+- **Merge/exact-main Evidence:** merge `7c71fbcb05744e18d95fcb91f6fb90296e0e4030`; exact-main CI `33819193701` success; terminal record [comment](https://github.com/Just9120/llm-inspector/pull/23#issuecomment-5533635587).
+- **Delivered:** confirmation-first lifecycle UX, serialized Inspector-owned process manager, exact Windows process ownership, allowlisted typed adapters and embedded compatibility matrix. Ollama `0.33.2` имеет actual-runtime Evidence; llama.cpp `b10516` и LM Studio/lms остаются non-verified manual targets.
+- **Cleanup:** local `main` fast-forwarded to exact merge; created local/remote feature branches safely removed after unique-commit check.
+
 ## Replaced readiness snapshots
 
 - `2026-09-03T21:44:21Z`: initial release `132/139 = 95.0%`, full roadmap `138/164 = 84.1%`; EPIC-12 implementation was local and controlled measurements absent. Archived after PR #21 delivery/release attempt produced a newer current/previous pair.

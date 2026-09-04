@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using LlmInspector.Domain;
+using LlmInspector.Gateway;
 
 namespace LlmInspector.WindowsTests;
 
@@ -69,5 +70,27 @@ public sealed class ScaffoldBoundaryTests
             ["--backend=ollama", "--backend=llama-cpp"]));
         _ = Assert.ThrowsExactly<ArgumentException>(() => App.AppLaunchConfiguration.Parse(
             ["--unknown=unsafe"]));
+    }
+
+    [TestMethod]
+    public void LaunchConfigurationRequiresExplicitRemoteOptionAndTailscaleHttpsName()
+    {
+        App.AppLaunchConfiguration remote = App.AppLaunchConfiguration.Parse(
+        [
+            "--backend=ollama",
+            "--remote-backend-url=https://backend.example-tailnet.ts.net/",
+        ]);
+
+        Assert.AreEqual(BackendConnectionScope.TailscaleHttps, remote.BackendConnectionScope);
+        Assert.AreEqual(
+            BackendConnectionScope.TailscaleHttps,
+            remote.CreateProxyOptions().BackendConnectionScope);
+        _ = Assert.ThrowsExactly<ArgumentException>(() => App.AppLaunchConfiguration.Parse(
+            ["--remote-backend-url=http://backend.example-tailnet.ts.net/"]));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => App.AppLaunchConfiguration.Parse(
+            [
+                "--backend-url=http://127.0.0.1:11434/",
+                "--remote-backend-url=https://backend.example-tailnet.ts.net/",
+            ]));
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using LlmInspector.Application;
@@ -19,10 +20,14 @@ public partial class MainWindow : Window
     private readonly BackgroundLifetimeController? _backgroundLifetime;
     private readonly Action<MonitoringPerformanceProfile>? _applyMonitoringProfile;
     private readonly IReadOnlyDictionary<BackendKind, BackendLifecycleManager> _lifecycleManagers;
+    private readonly RemoteAccessManager? _remoteAccess;
+    private readonly RemoteBackendMonitor? _remoteBackend;
     private readonly DiagnosticSnapshotService? _snapshotService;
     private readonly AnalyticsExportService? _analyticsExportService;
     private readonly DispatcherTimer? _liveRefreshTimer;
     private readonly DispatcherTimer? _lifecycleRefreshTimer;
+    private readonly DispatcherTimer? _remoteBackendRefreshTimer;
+    private bool _remoteProbeRunning;
     private HistoryClearPreview? _clearPreview;
     private DiagnosticSnapshotArtifact? _snapshotPreview;
     private AnalyticsExportArtifact? _analyticsExportPreview;
@@ -42,7 +47,9 @@ public partial class MainWindow : Window
         BackgroundSettingsService? backgroundSettings = null,
         BackgroundLifetimeController? backgroundLifetime = null,
         Action<MonitoringPerformanceProfile>? applyMonitoringProfile = null,
-        IReadOnlyList<BackendLifecycleManager>? lifecycleManagers = null)
+        IReadOnlyList<BackendLifecycleManager>? lifecycleManagers = null,
+        RemoteAccessManager? remoteAccess = null,
+        RemoteBackendMonitor? remoteBackend = null)
     {
         InitializeComponent();
         _liveRequestState = liveRequestState;
@@ -56,6 +63,8 @@ public partial class MainWindow : Window
         _applyMonitoringProfile = applyMonitoringProfile;
         _lifecycleManagers = (lifecycleManagers ?? [])
             .ToDictionary(manager => manager.Profile.Backend);
+        _remoteAccess = remoteAccess;
+        _remoteBackend = remoteBackend;
         _snapshotService = history is null ? null : new DiagnosticSnapshotService(history);
         _analyticsExportService = history is null ? null : new AnalyticsExportService(history);
 
@@ -76,6 +85,7 @@ public partial class MainWindow : Window
         ConfigureAnalyticsExportControls();
         ConfigureBackgroundControls();
         ConfigureLifecycleControls();
+        ConfigureRemoteControls();
         RefreshLiveRequests();
         RefreshRequestDetail();
         RefreshResources();
@@ -106,8 +116,187 @@ public partial class MainWindow : Window
             Closed += (_, _) => _lifecycleRefreshTimer.Stop();
         }
 
+        if (_remoteBackend is not null)
+        {
+            _remoteBackendRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _remoteBackendRefreshTimer.Tick += async (_, _) => await ProbeRemoteBackendAsync();
+            _remoteBackendRefreshTimer.Start();
+            Closed += (_, _) => _remoteBackendRefreshTimer.Stop();
+        }
+
         Opened += OnOpened;
         Closing += OnWindowClosing;
+    }
+
+    private void ConfigureRemoteControls()
+    {
+        RemoteBoundaryConfirmationCheckBox.IsChecked = false;
+        RemoteOneTimeTokenText.Text = string.Empty;
+        RemoteBoundaryConfirmationCheckBox.Click += (_, _) => UpdateRemoteAccessSurface();
+        EnableRemoteAccessButton.Click += async (_, _) => await EnableRemoteAccessAsync();
+        RotateRemoteTokenButton.Click += async (_, _) => await RotateRemoteTokenAsync();
+        DisableRemoteAccessButton.Click += async (_, _) => await DisableRemoteAccessAsync();
+        HideRemoteTokenButton.Click += (_, _) =>
+        {
+            RemoteOneTimeTokenText.Text = string.Empty;
+            UpdateRemoteAccessSurface();
+        };
+        ProbeRemoteBackendButton.Click += async (_, _) => await ProbeRemoteBackendAsync();
+
+        if (_runtimeStatus.ProxyRunning && Uri.TryCreate(_runtimeStatus.Listener, UriKind.Absolute, out Uri? listener))
+        {
+            TailscaleServeCommandText.Text =
+                $"Команда после включения: tailscale serve --bg http://127.0.0.1:{listener.Port}";
+        }
+        else
+        {
+            TailscaleServeCommandText.Text = "Сначала запустите loopback gateway; Tailscale не настраивается автоматически.";
+        }
+
+        UpdateRemoteAccessSurface();
+        UpdateRemoteBackendSurface(_remoteBackend?.Snapshot ?? RemoteBackendStatus.NotConfigured);
+    }
+
+    private async Task EnableRemoteAccessAsync()
+    {
+        if (_remoteAccess is null)
+        {
+            return;
+        }
+
+        SetRemoteButtonsEnabled(false);
+        try
+        {
+            RemoteAccessChangeResult result = await _remoteAccess.EnableAsync(
+                RemoteBoundaryConfirmationCheckBox.IsChecked == true);
+            RemoteOneTimeTokenText.Text = result.OneTimeBearerToken ?? string.Empty;
+            UpdateRemoteAccessSurface();
+        }
+        catch (Exception exception) when (exception is
+            IOException or InvalidDataException or InvalidOperationException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            RemoteAccessStateText.Text = $"Настройка не изменена ({exception.GetType().Name}).";
+            UpdateRemoteAccessButtons();
+        }
+    }
+
+    private async Task RotateRemoteTokenAsync()
+    {
+        if (_remoteAccess is null)
+        {
+            return;
+        }
+
+        SetRemoteButtonsEnabled(false);
+        try
+        {
+            RemoteAccessChangeResult result = await _remoteAccess.RotateAsync(
+                RemoteBoundaryConfirmationCheckBox.IsChecked == true);
+            RemoteOneTimeTokenText.Text = result.OneTimeBearerToken ?? string.Empty;
+            UpdateRemoteAccessSurface();
+        }
+        catch (Exception exception) when (exception is
+            IOException or InvalidDataException or InvalidOperationException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            RemoteAccessStateText.Text = $"Token не изменён ({exception.GetType().Name}).";
+            UpdateRemoteAccessButtons();
+        }
+    }
+
+    private async Task DisableRemoteAccessAsync()
+    {
+        if (_remoteAccess is null)
+        {
+            return;
+        }
+
+        SetRemoteButtonsEnabled(false);
+        try
+        {
+            await _remoteAccess.DisableAsync();
+            RemoteOneTimeTokenText.Text = string.Empty;
+            UpdateRemoteAccessSurface();
+        }
+        catch (Exception exception) when (exception is
+            IOException or InvalidDataException or InvalidOperationException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            RemoteAccessStateText.Text = $"Remote access не изменён ({exception.GetType().Name}).";
+            UpdateRemoteAccessButtons();
+        }
+    }
+
+    private void UpdateRemoteAccessSurface()
+    {
+        RemoteAccessSnapshot snapshot = _remoteAccess?.Snapshot ?? RemoteAccessSnapshot.Unavailable;
+        string updated = snapshot.UpdatedAt is DateTimeOffset at
+            ? at.ToString("u", CultureInfo.InvariantCulture)
+            : "never";
+        RemoteAccessStateText.Text =
+            $"State: {(snapshot.Enabled ? "ENABLED" : "DISABLED")}. {snapshot.Message} Updated: {updated}.";
+        UpdateRemoteAccessButtons();
+    }
+
+    private void UpdateRemoteAccessButtons()
+    {
+        RemoteAccessSnapshot snapshot = _remoteAccess?.Snapshot ?? RemoteAccessSnapshot.Unavailable;
+        bool confirmed = RemoteBoundaryConfirmationCheckBox.IsChecked == true;
+        EnableRemoteAccessButton.IsEnabled = snapshot.IsAvailable && !snapshot.Enabled && confirmed;
+        RotateRemoteTokenButton.IsEnabled = snapshot.IsAvailable && snapshot.Enabled && confirmed;
+        DisableRemoteAccessButton.IsEnabled = snapshot.IsAvailable && snapshot.Enabled;
+        HideRemoteTokenButton.IsEnabled = !string.IsNullOrEmpty(RemoteOneTimeTokenText.Text);
+        RemoteBoundaryConfirmationCheckBox.IsEnabled = snapshot.IsAvailable;
+    }
+
+    private void SetRemoteButtonsEnabled(bool enabled)
+    {
+        EnableRemoteAccessButton.IsEnabled = enabled;
+        RotateRemoteTokenButton.IsEnabled = enabled;
+        DisableRemoteAccessButton.IsEnabled = enabled;
+    }
+
+    private async Task ProbeRemoteBackendAsync()
+    {
+        if (_remoteBackend is null || _remoteProbeRunning)
+        {
+            return;
+        }
+
+        _remoteProbeRunning = true;
+        ProbeRemoteBackendButton.IsEnabled = false;
+        try
+        {
+            UpdateRemoteBackendSurface(await _remoteBackend.ProbeAsync());
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateRemoteBackendSurface(_remoteBackend.Snapshot);
+        }
+        finally
+        {
+            _remoteProbeRunning = false;
+            ProbeRemoteBackendButton.IsEnabled = true;
+        }
+    }
+
+    private void UpdateRemoteBackendSurface(RemoteBackendStatus snapshot)
+    {
+        ProbeRemoteBackendButton.IsEnabled = _remoteBackend is not null && !_remoteProbeRunning;
+        if (snapshot.Availability == RemoteBackendAvailability.NotConfigured)
+        {
+            RemoteBackendStateText.Text =
+                "Remote backend не настроен. Для explicit Tailscale target используйте --remote-backend-url=https://<node>.<tailnet>.ts.net/.";
+            return;
+        }
+
+        string latency = snapshot.NetworkConnectLatency.Value is decimal value
+            ? $"{value.ToString("0.##", CultureInfo.InvariantCulture)} ms [{snapshot.NetworkConnectLatency.Quality}]"
+            : "unavailable";
+        RemoteBackendStateText.Text =
+            $"Availability: {snapshot.Availability}; target: {snapshot.Destination}; " +
+            $"DNS+TCP connect: {latency}. {snapshot.Message}";
     }
 
     public void ShowFromTray(bool openNotificationSettings)

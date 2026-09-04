@@ -79,7 +79,9 @@ public partial class App : Avalonia.Application, IDisposable
                 settings,
                 createdLifetime,
                 Program.ResourceMonitor.ApplyProfile,
-                _lifecycleManagers);
+                _lifecycleManagers,
+                Program.RemoteAccess,
+                Program.RemoteBackend);
             desktop.ShutdownMode = _tray.IsAvailable
                 ? ShutdownMode.OnExplicitShutdown
                 : ShutdownMode.OnLastWindowClose;

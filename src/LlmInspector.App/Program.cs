@@ -30,6 +30,10 @@ public static class Program
 
     public static NotificationObservationBuffer NotificationObservations { get; private set; } = new();
 
+    public static RemoteAccessManager? RemoteAccess { get; private set; }
+
+    public static RemoteBackendMonitor? RemoteBackend { get; private set; }
+
     public static string HistoryState { get; private set; } = "Technical history has not started.";
 
     [STAThread]
@@ -72,6 +76,10 @@ public static class Program
         ResourceMonitor = new WindowsRequestResourceMonitor();
         ApplyStoredMonitoringProfile();
         NotificationObservations = new NotificationObservationBuffer();
+        RemoteAccess = CreateRemoteAccessManager();
+        RemoteBackend = options.BackendConnectionScope == BackendConnectionScope.TailscaleHttps
+            ? new RemoteBackendMonitor(options.BackendBaseAddress, new TcpRemoteBackendProbe())
+            : null;
         HistoryStore = null;
         HistoryState = "Technical history is unavailable.";
 
@@ -107,7 +115,8 @@ public static class Program
                     : null,
                 operationSink: historySink,
                 resourceSink: historySink,
-                resourceMonitor: ResourceMonitor);
+                resourceMonitor: ResourceMonitor,
+                remoteAccessAuthorizer: RemoteAccess);
             gateway.Start();
             RuntimeStatus = AppRuntimeStatus.Running(
                 gateway.ListeningAddress!,
@@ -134,6 +143,10 @@ public static class Program
             gateway?.Dispose();
             historySink?.DisposeAsync().AsTask().GetAwaiter().GetResult();
             historyStore?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            RemoteBackend?.Dispose();
+            RemoteBackend = null;
+            RemoteAccess?.Dispose();
+            RemoteAccess = null;
         }
     }
 
@@ -172,6 +185,45 @@ public static class Program
         }
 
         return Path.Combine(localData, "LLM Inspector", "settings.json");
+    }
+
+    public static string GetDefaultRemoteAccessPath()
+    {
+        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(localData))
+        {
+            throw new IOException("Windows local application data directory is unavailable.");
+        }
+
+        return Path.Combine(localData, "LLM Inspector", "remote-access.json");
+    }
+
+    private static RemoteAccessManager? CreateRemoteAccessManager()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        RemoteAccessManager? manager = null;
+        try
+        {
+            manager = new RemoteAccessManager(
+                new WindowsRemoteAccessCredentialStore(GetDefaultRemoteAccessPath()));
+            manager.InitializeAsync().AsTask().GetAwaiter().GetResult();
+            return manager;
+        }
+        catch (Exception exception) when (exception is
+            IOException or
+            UnauthorizedAccessException or
+            System.Security.SecurityException or
+            System.Security.Cryptography.CryptographicException or
+            InvalidDataException or
+            InvalidOperationException)
+        {
+            manager?.Dispose();
+            return null;
+        }
     }
 
     private static void ApplyStoredMonitoringProfile()

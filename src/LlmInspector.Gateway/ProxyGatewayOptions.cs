@@ -14,11 +14,16 @@ public sealed class ProxyGatewayOptions
 
     public static Uri DefaultLmStudioBaseAddress { get; } = new("http://127.0.0.1:1234/");
 
-    private ProxyGatewayOptions(int listenerPort, Uri backendBaseAddress, BackendKind backend)
+    private ProxyGatewayOptions(
+        int listenerPort,
+        Uri backendBaseAddress,
+        BackendKind backend,
+        BackendConnectionScope backendConnectionScope)
     {
         ListenerPort = listenerPort;
         BackendBaseAddress = backendBaseAddress;
         Backend = backend;
+        BackendConnectionScope = backendConnectionScope;
     }
 
     public int ListenerPort { get; }
@@ -26,6 +31,8 @@ public sealed class ProxyGatewayOptions
     public Uri BackendBaseAddress { get; }
 
     public BackendKind Backend { get; }
+
+    public BackendConnectionScope BackendConnectionScope { get; }
 
     public static ProxyGatewayOptions CreateDefault() =>
         CreateDefault(BackendKind.Ollama);
@@ -48,7 +55,23 @@ public sealed class ProxyGatewayOptions
         int listenerPort,
         Uri backendBaseAddress,
         BackendKind backend) =>
-        CreateCore(listenerPort, backendBaseAddress, backend, allowDynamicPort: false);
+        CreateCore(
+            listenerPort,
+            backendBaseAddress,
+            backend,
+            BackendConnectionScope.LocalLoopback,
+            allowDynamicPort: false);
+
+    public static ProxyGatewayOptions CreateTailscaleRemote(
+        int listenerPort,
+        Uri backendBaseAddress,
+        BackendKind backend) =>
+        CreateCore(
+            listenerPort,
+            backendBaseAddress,
+            backend,
+            BackendConnectionScope.TailscaleHttps,
+            allowDynamicPort: false);
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static ProxyGatewayOptions CreateForTesting(int listenerPort, Uri backendBaseAddress) =>
@@ -59,12 +82,18 @@ public sealed class ProxyGatewayOptions
         int listenerPort,
         Uri backendBaseAddress,
         BackendKind backend) =>
-        CreateCore(listenerPort, backendBaseAddress, backend, allowDynamicPort: true);
+        CreateCore(
+            listenerPort,
+            backendBaseAddress,
+            backend,
+            BackendConnectionScope.LocalLoopback,
+            allowDynamicPort: true);
 
     private static ProxyGatewayOptions CreateCore(
         int listenerPort,
         Uri backendBaseAddress,
         BackendKind backend,
+        BackendConnectionScope backendConnectionScope,
         bool allowDynamicPort)
     {
         if (listenerPort is < 0 or > ushort.MaxValue || (!allowDynamicPort && listenerPort == 0))
@@ -97,18 +126,37 @@ public sealed class ProxyGatewayOptions
                 nameof(backendBaseAddress));
         }
 
-        if (!TryNormalizeLoopbackHost(backendBaseAddress.Host, out string? normalizedHost))
+        UriBuilder normalizedBackend = new(backendBaseAddress);
+        if (backendConnectionScope == BackendConnectionScope.LocalLoopback)
         {
-            throw new ArgumentException(
-                "Initial-release backend destination must use localhost, 127.0.0.1 or ::1.",
-                nameof(backendBaseAddress));
+            if (!TryNormalizeLoopbackHost(backendBaseAddress.Host, out string? normalizedHost))
+            {
+                throw new ArgumentException(
+                    "A local backend destination must use localhost, 127.0.0.1 or ::1.",
+                    nameof(backendBaseAddress));
+            }
+
+            normalizedBackend.Host = normalizedHost;
+        }
+        else if (backendConnectionScope == BackendConnectionScope.TailscaleHttps)
+        {
+            if (backendBaseAddress.Scheme != Uri.UriSchemeHttps ||
+                !IsTailscaleDnsName(backendBaseAddress.IdnHost))
+            {
+                throw new ArgumentException(
+                    "A Tailscale remote backend must use an HTTPS *.ts.net DNS name.",
+                    nameof(backendBaseAddress));
+            }
+        }
+        else
+        {
+            throw new InvalidEnumArgumentException(
+                nameof(backendConnectionScope),
+                (int)backendConnectionScope,
+                typeof(BackendConnectionScope));
         }
 
-        UriBuilder normalizedBackend = new(backendBaseAddress)
-        {
-            Host = normalizedHost,
-        };
-        return new ProxyGatewayOptions(listenerPort, normalizedBackend.Uri, backend);
+        return new ProxyGatewayOptions(listenerPort, normalizedBackend.Uri, backend, backendConnectionScope);
     }
 
     private static bool TryNormalizeLoopbackHost(string host, out string? normalizedHost)
@@ -129,4 +177,15 @@ public sealed class ProxyGatewayOptions
         normalizedHost = null;
         return false;
     }
+
+    internal static bool IsTailscaleDnsName(string host) =>
+        host.Length > ".ts.net".Length &&
+        host.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase) &&
+        !IPAddress.TryParse(host, out _);
+}
+
+public enum BackendConnectionScope
+{
+    LocalLoopback,
+    TailscaleHttps,
 }
