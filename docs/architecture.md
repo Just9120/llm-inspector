@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — GOAL-005 PENDING_EXTERNAL_GATE; E01/E12 MANUAL GATES; B02 LIVE PENDING`
+> Status: `DECIDED — GOAL-005 DONE; MANUAL VALIDATION SEPARATE; E01/E12/B02 EVIDENCE PENDING`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-04`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `1c865e0561c45955906c902c6d23a761ed8ad363` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix и deterministic resource-monitor fixture fix; exact-main CI `33848084925` успешен с `260/260` tests. Historical [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) опубликован из прежней isolated line exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release run `33842346524`, payload checksums, SPDX/provenance, public smoke и доступные Windows Pro Ollama/OpenCode/Hermes flows успешны. Он не является финальным `v1.0.0`. Windows Home/full release matrix, controlled E12 measurements и B02 two-host LIVE Evidence ещё отсутствуют.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `74f710ab1f7a9457377045191b0f62a472e8f40c` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix и deterministic resource-monitor fixture fix; exact-main CI `33850992022` успешен с `260/260` tests. Historical [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) опубликован из прежней isolated line exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release run `33842346524`, payload checksums, SPDX/provenance, public smoke и доступные Windows Pro Ollama/OpenCode/Hermes flows успешны. Он не является финальным `v1.0.0`. Windows Home/full release matrix, controlled E12 measurements и B02 two-host LIVE Evidence ещё отсутствуют и относятся к отдельной будущей manual-validation Goal.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
