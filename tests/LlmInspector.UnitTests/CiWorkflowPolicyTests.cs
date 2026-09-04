@@ -19,6 +19,7 @@ public sealed partial class CiWorkflowPolicyTests
         StringAssert.Contains(workflow, "\n  pull_request:\n");
         StringAssert.Contains(workflow, "\n  push:\n");
         StringAssert.Contains(workflow, "\n      - main\n");
+        StringAssert.Contains(workflow, "\n      - release/v1.0\n");
         StringAssert.Contains(workflow, "\npermissions:\n  contents: read\n");
         StringAssert.Contains(workflow, "\n    runs-on: windows-2025\n");
         Assert.DoesNotContain("pull_request_target", workflow, StringComparison.Ordinal);
