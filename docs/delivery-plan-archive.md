@@ -2,6 +2,15 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-005 / BACKLOG-02 — Secure remote connectivity
+
+- **Product outcome:** `B02-AC01..09` выполнены (`9/9`); SPEC/CODE/TEST/CI `✅`, DEPLOY `N/A`, LIVE отсутствует, поэтому BACKLOG-02 остаётся `IN PROGRESS / PENDING_EXTERNAL_GATE`, а не READY.
+- **Pull Request:** [#24](https://github.com/Just9120/llm-inspector/pull/24), final head `c8b0b9097909df33c1ac0f722450c80b9d56d3a0`, PR CI `33822508134` success.
+- **Merge/exact-main Evidence:** merge `538d1f028e9d73a43f7de734e5fbce387f8f73ad`; exact-main CI `33822719346` success; terminal record [comment](https://github.com/Just9120/llm-inspector/pull/24#issuecomment-5534026658).
+- **Delivered:** loopback-only default, private Tailscale Serve identity plus 256-bit application bearer, DPAPI CurrentUser token storage/rotation/revocation, explicit `HTTPS *.ts.net` remote backend, distinct availability/DNS+TCP latency and fail-closed unavailable local resource attribution.
+- **Recovered CI failure:** initial run `33822032660` found an IPv4/`localhost` fixture mismatch and transient SQLite post-kill handle race. One grouped fix used exact IPv4 and bounded DB/WAL/SHM release observation; both cases passed five consecutive local iterations before the single follow-up push.
+- **External gate:** actual encrypted Windows↔VPS/second-PC LIVE checklist remains unexecuted; server deployment remains N/A.
+
 ## GOAL-005 / BACKLOG-01 — Backend/model lifecycle management
 
 - **Product outcome:** `B01-AC01..05` выполнены (`5/5`); BACKLOG-01 — READY, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
