@@ -497,7 +497,12 @@ public sealed class WindowsTrayHost : ITrayHost
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool PostMessage(IntPtr window, uint message, UIntPtr wParam, IntPtr lParam);
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DllImport(
+        "shell32.dll",
+        EntryPoint = "Shell_NotifyIconW",
+        CharSet = CharSet.Unicode,
+        ExactSpelling = true,
+        SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ShellNotifyIcon(uint message, ref NotifyIconData data);
 
