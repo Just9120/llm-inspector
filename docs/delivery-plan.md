@@ -1,13 +1,13 @@
 # Delivery plan
 
 > Dashboard status: `NO ACTIVE GOAL`
-> Updated: `2026-09-04T06:59:16Z`
+> Updated: `2026-09-04T07:51:09Z`
 
 ## Current Goal
 
 Активная Goal отсутствует. `GOAL-005 — Завершить согласованный Windows delivery scope` остановлена в предусмотренном terminal state `PENDING_EXTERNAL_GATE`: весь безопасно выполнимый implementation scope доставлен, а отсутствующие обязательные проверки требуют внешней среды или длительного controlled run. Полный terminal record перенесён в [`delivery-plan-archive.md`](delivery-plan-archive.md#goal-005--завершить-согласованный-windows-delivery-scope).
 
-- **Последняя authorization:** explicit user instructions от `2026-09-03`–`2026-09-04`, включая terminal reconciliation и удаление всех branches кроме `main` и `release/v1.0`.
+- **Последняя authorization:** explicit user instruction от `2026-09-04`: отменить version branches, оставить единственную line `main`, не публиковать новые prerelease, сохранять product version `1.0` до final `v1.0.0` после required validation; historical `rc.3` не удалять.
 - **Stop condition:** выполнена ветка `PENDING_EXTERNAL_GATE`; `DONE` не заявляется без Windows Home, controlled E12 measurements и обязательного B02 LIVE Evidence.
 - **Implementation authorization:** отсутствует. Candidate Goals ниже являются только предложениями.
 
@@ -15,17 +15,17 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T06:59:16Z` |
+| Updated UTC | `2026-09-04T07:51:09Z` |
 | Expected base branch | `main` |
-| Base SHA | `d2c3df58fb111ce62968b6144cf58720ab036053` — verified local/`origin/main`, clean before reconciliation branch creation |
-| Release line | `origin/release/v1.0` = `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; annotated `v1.0.0-rc.3` peels to the same commit |
-| Last verified product revision | `d2c3df58fb111ce62968b6144cf58720ab036053`; this terminal metadata commit does not self-reference |
-| Worktree state | No unrelated or pre-existing changes; one reconciliation branch is used only for this closeout PR and must be deleted after merge |
-| Completed work | All GOAL-005 code increments merged. Observation-only `rc.3` published from isolated `release/v1.0`; B01 lifecycle and B02 secure remote remain on `main`/future `v1.1` and are absent from `v1.0` artifact |
-| Current step | Terminal reconciliation and branch cleanup requested explicitly by the user |
-| Next exact action | After terminal PR/CI/merge, verify only `main` and `release/v1.0` locally/remotely, then await explicit authorization for a new Goal |
-| Validation / Evidence | Exact-main CI `33840821568` success (`260/260`); release-line CI `33842121186` success (`225/225`); trusted release run `33842346524` success; exact public executable smoke and Windows Pro Ollama/OpenCode/Hermes E2E pass |
-| PR / CI | PR #27 merged as `d2c3df58fb111ce62968b6144cf58720ab036053`; PR #28 merged into `release/v1.0` as `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; terminal release Evidence: [PR #28 comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281) |
+| Base SHA | `1c865e0561c45955906c902c6d23a761ed8ad363` — verified local/`origin/main`, clean before single-main policy branch creation |
+| Branch policy | `main` is the only persistent branch after the owner-approved cleanup; historical tags/releases remain immutable |
+| Last verified product revision | `1c865e0561c45955906c902c6d23a761ed8ad363`; policy changes do not add product AC credit |
+| Worktree state | Terminal target is one clean synchronized `main`; the temporary policy branch is deleted after merge/exact-main CI and the exact cleanup record is kept in the merged PR comment |
+| Completed work | All GOAL-005 code increments and terminal reconciliation merged. Historical `rc.3` remains public Evidence; subsequent release source is single `main` and the next allowed public version is final `v1.0.0` after required validation |
+| Current step | No active execution after owner-authorized single-main/final-only policy reconciliation and obsolete branch cleanup |
+| Next exact action | Await explicit authorization for a new bounded Goal; do not create final `v1.0.0` tag before required validation |
+| Validation / Evidence | Single-main policy branch local full CI-equivalent success: exact SDK `10.0.400`, `260/260`, no skips, build 0 warnings/errors, RID publish/smoke pass, executable FileVersion `1.0.0.0`; GOAL-005 closeout PR/main CI `33847850161`/`33848084925` success |
+| PR / CI | PR #29 merged as `1c865e0561c45955906c902c6d23a761ed8ad363`; historical PR #28/release Evidence remains in [terminal comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281) |
 | Release artifact | [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3), executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`; exact 6-asset set, `3/3` checksums, SPDX 2.3 (`32` packages / `1` file), provenance and SBOM Sigstore verification pass |
 | Deployment | N/A; server/runtime CD remains disabled |
 | External gates | Windows Home `25H2` exact-artifact matrix; controlled E12 measurements for all three built-in profiles; Tailscale encrypted two-host LIVE; llama.cpp `b10516`; LM Studio/lms; Open WebUI E2E |
@@ -36,8 +36,8 @@
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-04T06:59:16Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged `main` `d2c3df5` plus exact `rc.3` release/runtime Evidence. E01 remains `3/4`; E12 remains `7/13`; no partial AC credit |
-| Previous | `2026-09-04T05:26:01Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent calculation before PR #27/#28 terminal delivery; denominators and completed AC were identical |
+| Current | `2026-09-04T07:51:09Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged `main` `1c865e0` plus historical exact `rc.3` release/runtime Evidence. Version/branch policy changes no denominator or AC; E01 remains `3/4`, E12 `7/13` |
+| Previous | `2026-09-04T06:59:16Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent calculation on exact merged `main` `d2c3df5` plus exact `rc.3` Evidence; denominators and completed AC were identical |
 
 Delta: `0.0 п.п.` initial и `0.0 п.п.` full. Новая Evidence устранила failed `rc.2` implementation path и подтвердила Pro exact-artifact flows, но `E01-AC01` остаётся binary-unfulfilled без полной Home/Pro matrix; controlled E12 results также отсутствуют.
 
@@ -78,7 +78,7 @@ Delta: `0.0 п.п.` initial и `0.0 п.п.` full. Новая Evidence устра
 
 ## Candidate next Goals
 
-- Manual validation `v1.0.0-rc.3`: full exact-artifact Windows Pro/Home walkthrough, controlled E12 profiles and available runtime/client integrations; defect fixes only when reproduced.
+- Pre-publication validation `v1.0`: build one exact candidate from intended `main`, complete Windows Pro/Home walkthrough, controlled E12 profiles, B02 LIVE and available runtime/client integrations; final `v1.0.0` tag remains blocked until required Evidence.
 - WinGet publication readiness: license decision, stable version, multi-file manifests and isolated install/uninstall validation after product validation.
 - Release workflow maintenance: replace deprecated `actions/attest-sbom` with the supported `actions/attest` path without changing release trust boundaries.
 

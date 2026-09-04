@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `d2c3df58fb111ce62968b6144cf58720ab036053` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix, release-line policy и deterministic resource-monitor fixture fix. PR #27 exact-head CI `33840633983` и exact-main CI `33840821568` успешны; exact-main suite содержит `260/260` tests. Observation-only [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) опубликован из `release/v1.0` exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release run `33842346524`, payload checksums, SPDX/provenance, public smoke и доступные Windows Pro Ollama/OpenCode/Hermes flows успешны. Windows Home/full release matrix, controlled E12 measurements и B02 two-host LIVE Evidence ещё отсутствуют.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `1c865e0561c45955906c902c6d23a761ed8ad363` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary, tray P/Invoke hotfix и deterministic resource-monitor fixture fix; exact-main CI `33848084925` успешен с `260/260` tests. Historical [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) опубликован из прежней isolated line exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release run `33842346524`, payload checksums, SPDX/provenance, public smoke и доступные Windows Pro Ollama/OpenCode/Hermes flows успешны. Он не является финальным `v1.0.0`. Windows Home/full release matrix, controlled E12 measurements и B02 two-host LIVE Evidence ещё отсутствуют.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -22,7 +22,7 @@ Server/runtime deployment target отсутствует. LLM Inspector уста�
 | `ADR-006` | NuGet `PackageReference` + Central Package Management + committed lock files | Версии централизуются в `Directory.Packages.props`; floating versions запрещены; CI использует locked restore. SDK фиксируется exact `global.json` с `rollForward: disable`, а upgrade выполняется отдельным reviewed change. |
 | `ADR-007` | Portable unsigned self-contained single-file `win-x64` executable как первый release unit | Не требует установленного .NET, installer или admin rights. GitHub Release публикует exact executable, SHA-256, SBOM/provenance и SmartScreen disclosure. Store/MSIX/trusted signing/automatic Store updates отложены в release backlog. |
 | `ADR-008` | CI и Windows release разделены; server/runtime CD остаётся disabled | Untrusted PR проверяет code без release credentials. Trusted tag job в будущем публикует exact locally/CI-validated artifact; это artifact distribution, не deployment на runtime host. |
-| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Maintenance line `release/v1.0` создана от immutable `v1.0.0-rc.2` source до merge lifecycle code; reviewed forward fix опубликован как immutable `v1.0.0-rc.3`. Следующие `v1.0.x` fixes остаются только в этой line. Failed/rejected/published tags не переиспользуются, lifecycle code из `main` не переносится, Evidence двух lines не смешивается. |
+| `ADR-009` | Single-main final-only versioning | `main` — единственная development/release line. До первой stable публикации продукт остаётся `1.0`; следующий public tag — final `v1.0.0` после required validation, затем development version становится `1.1`. Новые prerelease tags и version branches не используются. Historical `v1.0.0-rc.*` остаются immutable Evidence и не переиспользуются. |
 | `ADR-010` | Three built-in performance profiles plus bounded custom profile | `Бережный`, `Сбалансированный` и `Детальный` имеют отдельные sampling intervals/budgets и обязаны проходить independently; custom profile не является release Evidence. |
 | `ADR-011` | Lifecycle только для Inspector-owned backend processes через typed capability adapters | Exact process identity, official interface и parameter allowlist ограничивают destructive surface; externally owned process остаётся observation-only, crash recovery — manual. |
 | `ADR-012` | Remote через loopback Inspector + private Tailscale Serve | Inspector не становится LAN/public server. Tailscale обеспечивает encrypted tailnet transport, а отдельный application bearer token защищает Inspector endpoint; Funnel и direct backend exposure запрещены. |
@@ -358,7 +358,7 @@ User-facing profiles:
 Реализованный toolchain foundation:
 
 - `global.json`: exact `.NET SDK 10.0.400`, `rollForward: disable`, prerelease disabled;
-- `Directory.Build.props`: `net10.0`, C# 14, nullable, SDK analyzers, warnings-as-errors, deterministic/CI builds, NuGet audit и lock-file generation;
+- `Directory.Build.props`: `net10.0`, explicit development `VersionPrefix` `1.0.0`, C# 14, nullable, SDK analyzers, warnings-as-errors, deterministic/CI builds, NuGet audit и lock-file generation;
 - `Directory.Packages.props`: Central Package Management с Avalonia `12.1.2`, MSTest `4.3.3` и Microsoft.NET.Test.Sdk `18.9.0`;
 - 15 per-project `packages.lock.json` для normal solution graph и 9 `packages.win-x64.lock.json` для RID-specific application/project-reference graph; оба режима подтверждаются отдельными locked restore;
 - `LlmInspector.slnx`: 9 production и 6 test projects;
@@ -380,7 +380,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 
 Configured CI foundation:
 
-- events: `pull_request` и `push` в `main`/`release/v1.0`;
+- events: `pull_request` и `push` только в `main`;
 - ephemeral standard GitHub-hosted `windows-2025` x64 runner; explicit `contents: read`, no secrets for PR code;
 - restore locked → format → build → tests → self-contained publish smoke;
 - workflow/job names: `CI` / `windows-dotnet`; фактический run ID/SHA фиксируется только после PR execution;
@@ -389,17 +389,17 @@ Configured CI foundation:
 - artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
-EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer и ancestry из deterministic trusted line (`v1.0.x` — `release/v1.0`, остальные lines — `main`), выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` технически завершил pipeline, но его immutable artifact был rejected после manual Pro failure. PR #28 доставил исправление в `release/v1.0`; exact-branch CI `33842121186` успешен (`225/225`), а trusted `v1.0.0-rc.3` run `33842346524` опубликовал exact executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`. Checksums, SPDX 2.3, build provenance и SBOM attestation проверены для exact source `821b17abf68bb63dd09f83a834d2d3bdec2e899c`. Explicit CI/CD policy decision от `2026-09-04` разрешил maintenance line и синхронизацию Project CI/CD profile; server/runtime CD остаётся disabled.
+EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job принимает только final SemVer tag, проверяет ancestry из единственной trusted line `main`, выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Historical runs сохраняют Evidence: `v1.0.0-rc.2` run `33815294790` технически завершил pipeline, но artifact был rejected после manual Pro failure; прежняя isolated line получила fix через PR #28 и trusted `v1.0.0-rc.3` run `33842346524`, exact executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`. Checksums, SPDX 2.3, build provenance и SBOM attestation проверены для exact source `821b17abf68bb63dd09f83a834d2d3bdec2e899c`. Subsequent explicit owner decision от `2026-09-04` отменила version branches и prerelease publication; server/runtime CD остаётся disabled.
 
 PR #26 реализовал release-line mapping и прошёл exact-head CI `33839994417`. Его exact-main run `33840160541` обнаружил timing race в synthetic resource-monitor fixture, а не observed runtime regression. PR #27 детерминировал fixture; repeated focused validation, полный local CI-equivalent, exact-head CI `33840633983` и exact-main CI `33840821568` успешны.
 
 Release design:
 
 1. Trusted tag/release flow performs locked restore, build, tests и один self-contained single-file `win-x64` publish; downstream manifest/checksum/SBOM/provenance consume that exact hashed output without rebuild.
-2. Observation-only exact revision получает immutable SemVer prerelease tag до B01 lifecycle code. Failed `v1.0.0-rc.1`, published-but-rejected `v1.0.0-rc.2` и published `v1.0.0-rc.3` не переиспользуются; следующий reviewed forward fix получает новый SemVer tag из `release/v1.0`.
+2. Development и validation продолжаются на `main` под product version `1.0` без новых public prerelease. Первый следующий release tag — final `v1.0.0` после required validation; все tags immutable.
 3. Publish unsigned portable executable, SHA-256, SBOM, provenance and user-facing SmartScreen warning to GitHub Releases. No installer/admin requirement and no automatic update behavior.
 4. Verify artifact identity, launch, tray/background, proxy, SQLite recovery and critical end-to-end behavior on Windows 11 `25H2` Home and Pro. Manual results always reference exact artifact hash.
-5. Lifecycle release line starts at `v1.1` from `main`; `release/v1.0` остаётся observation-only и принимает только reviewed release infrastructure/forward fixes. Evidence двух lines не переиспользуется без explicit applicability.
+5. После публикации final `v1.0.0` development version переходит к `1.1` в том же `main`; отдельные version branches не создаются по умолчанию.
 
 Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate release backlog and do not block the approved portable channel. No release artifact is a server deployment; applicable Evidence is build/artifact/Windows runtime validation, while `DEPLOY`/`LIVE` remain `N/A` for E01.
 
@@ -411,7 +411,7 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `RC.3 PUBLISHED / MATRIX PENDING` | Exact `v1.0.0-rc.3` release pipeline, payload identity, attestations, public smoke and available Pro Ollama/OpenCode/Hermes flows pass; Windows Home and remaining full exact-artifact matrix remain the E01 gate |
+| Portable distribution | `FINAL V1.0.0 PENDING VALIDATION` | Historical exact `v1.0.0-rc.3` pipeline, payload identity, attestations, public smoke and available Pro flows pass; it is not final. Windows Home and remaining required validation gate final `v1.0.0` publication from `main` |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Secure remote | `CODE+CI COMPLETE / LIVE PENDING` | PR #24 / merge `538d1f0` / exact-main CI `33822719346` pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |

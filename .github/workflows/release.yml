@@ -21,7 +21,6 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.release.outputs.version }}
-      prerelease: ${{ steps.release.outputs.prerelease }}
       source-created-at: ${{ steps.release.outputs.source-created-at }}
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
@@ -34,7 +33,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate trusted tag and release-line ancestry
+      - name: Validate trusted final tag and main ancestry
         id: release
         shell: pwsh
         env:
@@ -44,19 +43,16 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $tagMatch = [regex]::Match(
             $env:RELEASE_TAG,
-            '^v(?<major>0|[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$')
+            '^v(?<major>0|[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)$')
           if (-not $tagMatch.Success) {
-            throw 'Release tag must be an exact SemVer value prefixed with v.'
+            throw 'Release tag must be an exact final SemVer value prefixed with v; prerelease tags are not published.'
           }
-          $major = [int]$tagMatch.Groups['major'].Value
-          $minor = [int]$tagMatch.Groups['minor'].Value
-          $sourceBranch = if ($major -eq 1 -and $minor -eq 0) { 'release/v1.0' } else { 'main' }
-          $remoteRef = "refs/remotes/origin/$sourceBranch"
-          git fetch --no-tags origin "${sourceBranch}:${remoteRef}"
+          $remoteRef = 'refs/remotes/origin/main'
+          git fetch --no-tags origin "main:${remoteRef}"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git merge-base --is-ancestor $env:SOURCE_SHA $remoteRef
           if ($LASTEXITCODE -ne 0) {
-            throw "Tagged revision is not reachable from origin/$sourceBranch."
+            throw 'Tagged revision is not reachable from origin/main.'
           }
           $version = $env:RELEASE_TAG.Substring(1)
           $created = git show -s --format=%cI $env:SOURCE_SHA
@@ -64,7 +60,6 @@ jobs:
             throw 'Cannot resolve the tagged source timestamp.'
           }
           "version=$version" >> $env:GITHUB_OUTPUT
-          "prerelease=$($version.Contains('-').ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           "source-created-at=$created" >> $env:GITHUB_OUTPUT
 
       - name: Install pinned .NET SDK
@@ -156,7 +151,7 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:RELEASE_VERSION -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$') {
+          if ($env:RELEASE_VERSION -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
             throw 'Build output version is invalid.'
           }
           $assets = Resolve-Path -LiteralPath .\release-payload\assets
@@ -200,14 +195,13 @@ jobs:
           Copy-Item -LiteralPath $env:PROVENANCE_BUNDLE -Destination ".\release-payload\assets\LlmInspector-$env:RELEASE_VERSION-win-x64.provenance.sigstore.json"
           Copy-Item -LiteralPath $env:SBOM_BUNDLE -Destination ".\release-payload\assets\LlmInspector-$env:RELEASE_VERSION-win-x64.sbom.sigstore.json"
 
-      - name: Publish immutable GitHub prerelease or release
+      - name: Publish immutable final GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
-          IS_PRERELEASE: ${{ needs.build.outputs.prerelease }}
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:RELEASE_TAG -ne "v$env:RELEASE_VERSION") { throw 'Release tag/version identity mismatch.' }
@@ -226,7 +220,6 @@ jobs:
             '--title', "LLM Inspector $env:RELEASE_TAG",
             '--notes-file', '.\release-payload\release-notes.md'
           )
-          if ($env:IS_PRERELEASE -eq 'true') { $arguments += '--prerelease' }
           $arguments += $assetPaths
           gh @arguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

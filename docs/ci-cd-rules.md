@@ -349,7 +349,7 @@ Validation and rollback/stop criteria
 
 ## 16. Project CI/CD profile
 
-Профиль ниже заполнен подтверждёнными repository facts и explicit user decisions от `2026-09-02`–`2026-09-04`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack, `GOAL-003` реализовала reproducible repository/CI foundation, а текущая `GOAL-005` реализовала portable GitHub Releases flow. После immutable observation-only `v1.0.0-rc.2` и последующего merge lifecycle-кода в `main` пользователь явно утвердил отдельную maintenance line `release/v1.0`: только она может быть source для новых `v1.0.x` tags, тогда как другие release lines по умолчанию остаются привязаны к `main`. Фактический PR/run/artifact Evidence фиксируется в `docs/delivery-plan.md`.
+Профиль ниже заполнен подтверждёнными repository facts и explicit user decisions от `2026-09-02`–`2026-09-04`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack, `GOAL-003` реализовала reproducible repository/CI foundation, а `GOAL-005` реализовала portable GitHub Releases flow. После исторических immutable `v1.0.0-rc.*` пользователь отменил отдельную maintenance line: development и release source имеют одну trusted line `main`, prerelease больше не публикуются, а первый следующий public version должен быть финальным `v1.0.0` только после обязательной validation. Фактический PR/run/artifact Evidence фиксируется в `docs/delivery-plan.md`.
 
 ```yaml
 profile_version: 1
@@ -367,12 +367,12 @@ architecture_design:
 repository:
   expected_repository: https://github.com/Just9120/llm-inspector
   production_branch: main
-  release_branches: [release/v1.0]
-  release_tag_policy: exact vMAJOR.MINOR.PATCH[-prerelease]; v1.0.x reachable from release/v1.0, other lines reachable from main
+  release_branches: []
+  release_tag_policy: exact final vMAJOR.MINOR.PATCH reachable from main; prerelease publication disabled
 
 ci:
   workflow: .github/workflows/ci.yml
-  events: [pull_request, push:main, push:release/v1.0]
+  events: [pull_request, push:main]
   runner: GitHub-hosted windows-2025 x64 ephemeral standard runner
   install_command: dotnet restore LlmInspector.slnx --locked-mode
   lint_command: dotnet format LlmInspector.slnx --verify-no-changes --no-restore
@@ -401,9 +401,9 @@ windows_release:
   workflow: .github/workflows/release.yml
   approved_target: portable unsigned self-contained single-file win-x64 executable
   validated_build_unit: exact hashed self-contained win-x64 publish output
-  version_boundary: observation-only v1.0; lifecycle starts v1.1
-  first_candidate: v1.0.0-rc.1 failed publication; v1.0.0-rc.2 published but failed Pro manual gate; forward-fix candidate is v1.0.0-rc.3
-  trusted_trigger: exact SemVer tag reachable from mapped trusted line (v1.0.x=release/v1.0; otherwise main)
+  version_boundary: one main line; product remains v1.0 before publication; first stable tag is v1.0.0, then development advances to v1.1
+  historical_candidates: v1.0.0-rc.1 failed publication; v1.0.0-rc.2 was rejected; v1.0.0-rc.3 remains immutable historical prerelease evidence
+  trusted_trigger: exact final SemVer tag reachable from main after required validation; prerelease tags fail closed
   signing_identity: N/A # unsigned portable channel; trusted signing belongs to separate Store/MSIX backlog
   distribution_channel: GitHub Releases
   update_channel: manual download # automatic Store updates are deferred
