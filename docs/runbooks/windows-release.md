@@ -11,31 +11,49 @@ rules — в [`../ci-cd-rules.md`](../ci-cd-rules.md). Workflow: `.github/workfl
 
 ## Preconditions
 
-1. Release source уже merged в `main`; local `main`, `origin/main` и intended SHA совпадают.
-2. Exact-main `CI / windows-dotnet` на intended SHA завершён success без required skips.
+1. Release source уже merged в trusted line: `release/v1.0` для `v1.0.x`, `main` для остальных
+   lines; local branch, соответствующая `origin/*` branch и intended SHA совпадают.
+2. Exact-branch `CI / windows-dotnet` на intended SHA завершён success без required skips.
 3. Intended tag имеет exact SemVer form `vMAJOR.MINOR.PATCH[-prerelease]` и ещё не существует local,
    remote или в GitHub Releases.
-4. Для `v1.0.0-rc.*` source остаётся observation-only: BACKLOG-01 lifecycle code ещё не merged.
+4. Для `v1.0.0-rc.*` source остаётся observation-only: maintenance line создана от exact
+   `v1.0.0-rc.2` source и принимает только reviewed release-infrastructure или forward-fix changes;
+   BACKLOG-01 lifecycle code из `main` в неё не переносится.
 5. GitHub Actions включены, repository public, а actor имеет право создать tag/release.
 
 ## Запуск trusted flow
 
-`v1.0.0-rc.1` уже является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. Не переиспользовать этот version. Пример для следующего forward-fix candidate; `<EXACT_MAIN_SHA>` заменяется только фактически проверенным SHA:
+`v1.0.0-rc.1` уже является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. `v1.0.0-rc.2` опубликован, но провалил Pro manual gate. Не переиспользовать эти versions.
+
+Maintenance line `release/v1.0` создаётся один раз от exact annotated-tag target `v1.0.0-rc.2`, после проверки отсутствия remote branch:
 
 ```powershell
 git fetch origin main --tags
-git switch main
-git merge --ff-only origin/main
-git tag -a v1.0.0-rc.2 <EXACT_MAIN_SHA> -m "LLM Inspector v1.0.0-rc.2"
-git push origin refs/tags/v1.0.0-rc.2
+git ls-remote --exit-code --heads origin refs/heads/release/v1.0
+if ($LASTEXITCODE -eq 0) { throw 'origin/release/v1.0 already exists; reconcile instead of recreating it.' }
+if ($LASTEXITCODE -ne 2) { throw "Unexpected ls-remote exit code: $LASTEXITCODE" }
+$sourceSha = git rev-parse 'v1.0.0-rc.2^{commit}'
+git branch release/v1.0 $sourceSha
+git push origin refs/heads/release/v1.0
+```
+
+Каждый forward fix проходит PR с base `release/v1.0` и exact-branch CI. Пример для следующего candidate; `<EXACT_RELEASE_SHA>` заменяется только фактически проверенным SHA:
+
+```powershell
+git fetch origin release/v1.0 --tags
+git switch release/v1.0
+git merge --ff-only origin/release/v1.0
+git tag -a v1.0.0-rc.3 <EXACT_RELEASE_SHA> -m "LLM Inspector v1.0.0-rc.3"
+git push origin refs/tags/v1.0.0-rc.3
 ```
 
 Tag считается immutable. Не перемещать и не переиспользовать опубликованный version. При defect
-исправление проходит новым PR и получает следующий prerelease version, например `v1.0.0-rc.2`.
+исправление проходит новым PR и получает следующий prerelease version, например `v1.0.0-rc.3`.
 
 ## Что обязан сделать workflow
 
-1. Fail closed проверить SemVer и достижимость tagged SHA из `origin/main`.
+1. Fail closed проверить SemVer, вывести trusted line без пользовательского ввода и проверить
+   достижимость tagged SHA из `origin/release/v1.0` для `v1.0.x` либо `origin/main` для остальных lines.
 2. На ephemeral `windows-2025` выполнить locked restore, format, Release build и полный test suite.
 3. Один раз собрать single-file `LlmInspector-<version>-win-x64.exe` и smoke-test именно его.
 4. Сформировать SHA-256, `portable-release-v1` manifest, SPDX 2.3 SBOM и русскоязычное предупреждение
@@ -50,10 +68,10 @@ Build job имеет только `contents: read`. Publish job не checkout-и
 ## Проверка результата
 
 ```powershell
-gh release view v1.0.0-rc.2 --json url,isPrerelease,targetCommitish,assets
-gh release download v1.0.0-rc.2 --dir artifacts/release-verification
-Get-FileHash .\artifacts\release-verification\LlmInspector-1.0.0-rc.2-win-x64.exe -Algorithm SHA256
-gh attestation verify .\artifacts\release-verification\LlmInspector-1.0.0-rc.2-win-x64.exe --repo Just9120/llm-inspector
+gh release view v1.0.0-rc.3 --json url,isPrerelease,targetCommitish,assets
+gh release download v1.0.0-rc.3 --dir artifacts/release-verification
+Get-FileHash .\artifacts\release-verification\LlmInspector-1.0.0-rc.3-win-x64.exe -Algorithm SHA256
+gh attestation verify .\artifacts\release-verification\LlmInspector-1.0.0-rc.3-win-x64.exe --repo Just9120/llm-inspector
 ```
 
 Observed hash обязан совпасть с `SHA256SUMS.txt` и manifest. Зафиксировать tag, source SHA, workflow

@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate trusted tag and main ancestry
+      - name: Validate trusted tag and release-line ancestry
         id: release
         shell: pwsh
         env:
@@ -42,13 +42,22 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:RELEASE_TAG -notmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$') {
+          $tagMatch = [regex]::Match(
+            $env:RELEASE_TAG,
+            '^v(?<major>0|[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$')
+          if (-not $tagMatch.Success) {
             throw 'Release tag must be an exact SemVer value prefixed with v.'
           }
-          git fetch --no-tags origin main:refs/remotes/origin/main
+          $major = [int]$tagMatch.Groups['major'].Value
+          $minor = [int]$tagMatch.Groups['minor'].Value
+          $sourceBranch = if ($major -eq 1 -and $minor -eq 0) { 'release/v1.0' } else { 'main' }
+          $remoteRef = "refs/remotes/origin/$sourceBranch"
+          git fetch --no-tags origin "${sourceBranch}:${remoteRef}"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git merge-base --is-ancestor $env:SOURCE_SHA refs/remotes/origin/main
-          if ($LASTEXITCODE -ne 0) { throw 'Tagged revision is not reachable from origin/main.' }
+          git merge-base --is-ancestor $env:SOURCE_SHA $remoteRef
+          if ($LASTEXITCODE -ne 0) {
+            throw "Tagged revision is not reachable from origin/$sourceBranch."
+          }
           $version = $env:RELEASE_TAG.Substring(1)
           $created = git show -s --format=%cI $env:SOURCE_SHA
           if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($created)) {

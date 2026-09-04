@@ -1,15 +1,15 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T01:04:01Z`
+> Updated: `2026-09-04T05:12:11Z`
 
 ## Current Goal
 
 ### `GOAL-005 — Завершить согласованный Windows delivery scope`
 
-- **State:** `IN_PROGRESS` (manual validation; Windows tray P/Invoke hotfix).
+- **State:** `IN_PROGRESS` (manual validation; observation-only `v1.0` forward-fix release).
 - **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
-- **Verified base:** `origin/main` / local `main` = `538d1f028e9d73a43f7de734e5fbce387f8f73ad`; BACKLOG-02 PR [#24](https://github.com/Just9120/llm-inspector/pull/24), head CI [33822508134](https://github.com/Just9120/llm-inspector/actions/runs/33822508134) и exact-main CI [33822719346](https://github.com/Just9120/llm-inspector/actions/runs/33822719346) succeeded.
+- **Verified base:** `origin/main` / local `main` = `8481b49b88f926eee5f969667a8a254efb9b0b92`; tray hotfix PR [#25](https://github.com/Just9120/llm-inspector/pull/25), head CI [33824414484](https://github.com/Just9120/llm-inspector/actions/runs/33824414484) и exact-main CI [33824822771](https://github.com/Just9120/llm-inspector/actions/runs/33824822771) succeeded.
 - **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `152/164`.
 - **Active implementation denominator:** из исходных `21` AC реализованы `B01-AC01..05` и `B02-AC01..09` (`14/21`); остаются семь manual criteria: `E01-AC01` (`1`) + `E12-AC01..06` (`6`). B02 имеет SPEC/CODE/TEST/CI `✅`, но ещё не READY без обязательного encrypted two-host LIVE gate.
 
@@ -17,7 +17,7 @@
 
 - Ратифицировать уже согласованные durable decisions без readiness credit за documentation-only work.
 - Реализовать каждый из четырёх затронутых эпиков отдельным reviewable PR: E12, E01/release, B01, B02.
-- До появления lifecycle controls зафиксировать immutable observation-only candidate exact SHA/artifact; failed-publication `v1.0.0-rc.1` не переиспользуется, public candidate — `v1.0.0-rc.2`; B01 входит только в линию `v1.1`.
+- До появления lifecycle controls зафиксирован immutable observation-only `v1.0.0-rc.2`; failed-publication `rc.1` и published-but-rejected `rc.2` не переиспользуются. Explicit decision от `2026-09-04` разрешает создать от exact `rc.2` source maintenance line `release/v1.0`, перенести только release infrastructure и tray forward fix, затем выпустить `v1.0.0-rc.3`; B01 остаётся только в линии `v1.1` из `main`.
 - После code increments выполнить общую manual-validation phase по exact artifacts/configuration; каждый недоступный внешний target оставить `PENDING_EXTERNAL_GATE`, не подменяя Evidence.
 - После каждого merge подтвердить exact-main CI, синхронизировать local `main`, безопасно удалить merged branch и только затем начать следующий increment.
 
@@ -33,7 +33,7 @@
 
 1. Все `21/21` active AC выполнены либо Goal остановлена в `PENDING_EXTERNAL_GATE` с exact отсутствующим Evidence; частичный AC не получает credit.
 2. Каждый epic increment проходит focused tests, полный local CI-equivalent, PR exact-head CI, merge и exact-main CI.
-3. Observation-only candidate (`v1.0.0-rc.2`, superseding failed-publication `rc.1`) фиксируется до merge B01; `v1.1` lifecycle code не попадает в candidate artifact.
+3. Observation-only lineage сохраняется: `release/v1.0` начинается от exact `v1.0.0-rc.2` source, принимает только reviewed release infrastructure/forward fixes, а новый candidate получает version `v1.0.0-rc.3`; `v1.1` lifecycle code не попадает в artifact.
 4. Manual phase проверяет exact frozen artifacts/configuration и не смешивает v1.0/v1.1 Evidence.
 5. Readiness пересчитывается только как completed canonical AC / `139` и / `164`; завершение active scope даёт максимум `139/139` initial и `159/164` full, потому что B03/B04 явно остаются backlog.
 6. Terminal documentation содержит exact commits, PR/CI, artifact hashes, manual results и unresolved gates без metadata-only PR loop.
@@ -47,10 +47,10 @@
 
 **Known external gates**
 
-- Windows Home `25H2` exact-artifact run (ожидается nested VM). Windows Pro `25H2` build `26200.9168` run выявил deterministic crash published `v1.0.0-rc.2`; необходим новый observation-only candidate после reviewed fix, а не переиспользование `rc.2`.
+- Windows Home `25H2` exact-artifact run (ожидается nested VM). Windows Pro `25H2` build `26200.9168` run выявил deterministic crash published `v1.0.0-rc.2`; hotfix merged, но необходим новый observation-only `rc.3` candidate, а не переиспользование `rc.2`.
 - llama.cpp `b10516` и LM Studio/lms target runtime ещё не установлены/проверены.
 - Tailscale second PC/VPS encrypted E2E пока недоступен.
-- OpenCode, Hermes и Open WebUI manual E2E могут завершаться по одному; непроверенный client остаётся `PENDING_EXTERNAL_GATE`.
+- OpenCode и Hermes manual E2E пройдены на merged hotfix; Open WebUI остаётся `PENDING_EXTERNAL_GATE` до появления runtime.
 
 **Stop condition:** `DONE` после `21/21` с required Evidence; `PENDING_EXTERNAL_GATE`, если safe implementation завершена, но обязательный manual/LIVE target недоступен; `BLOCKED` только при impasse, не сводящемся к ожидаемому внешнему gate. После terminal state не переходить к следующей Goal без explicit authorization.
 
@@ -61,7 +61,7 @@
 | 0 | Decision ratification | Documentation PR merged; exact-main CI success; denominator unchanged |
 | 1 | EPIC-12 performance profiles/harness | Built-in profiles и immutable fixture implemented/tested; controlled measurements deferred only as explicit external gate |
 | 2 | EPIC-01 portable release | Reproducible single-file artifact, SHA-256, SBOM/provenance and release validation automation |
-| 3 | Freeze v1.0 candidate | Immutable public observation-only `v1.0.0-rc.2` exact SHA/artifact before B01 merge |
+| 3 | Freeze v1.0 candidate | Immutable public observation-only `v1.0.0-rc.2` exact SHA/artifact before B01 merge; forward fix через isolated `release/v1.0` / `rc.3` |
 | 4 | BACKLOG-01 lifecycle | Inspector-owned process controls, allowlisted parameters, compatibility matrix; no v1.0 contamination |
 | 5 | BACKLOG-02 secure remote | Loopback Inspector + Tailscale Serve guidance/token boundary, remote backend semantics and tests |
 | 6 | Manual validation | E12 controlled profiles; Windows Home/Pro; Ollama/llama.cpp/LM Studio; Tailscale; OpenCode/Hermes/Open WebUI |
@@ -71,30 +71,30 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T01:04:01Z` |
+| Updated UTC | `2026-09-04T05:12:11Z` |
 | Expected base branch | `main` |
-| Base SHA | `538d1f028e9d73a43f7de734e5fbce387f8f73ad` — verified local/`origin/main`; BACKLOG-02 exact-main CI `33822719346` success |
-| Working branch | `codex/goal-005-tray-pinvoke-hotfix` |
-| Last verified revision | `06e5c13a09592a65469c9f7a949907dfd2452c3e` — full local CI-equivalent and prior runtime reproduction pass |
+| Base SHA | `8481b49b88f926eee5f969667a8a254efb9b0b92` — verified local/`origin/main`; tray hotfix exact-main CI `33824822771` success |
+| Working branch | `codex/goal-005-release-line-v1.0` |
+| Last verified revision | `6159172928dbccd4cf7e9c228a4835c7469a0ddd` — release-line workflow/policy commit; full local CI-equivalent pass |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
-| Completed work | B02 delivered through PR #24 / merge `538d1f0` / exact-main CI `33822719346`. Manual validation verified Ollama `0.33.2`, installed Qwen model and direct Ollama flow; exact public `rc.2` hash matched release metadata and smoke passed, but normal Pro flow crashed on first proxied POST because tray P/Invoke requested the nonexistent `ShellNotifyIconW` entry point. Commit `0095fcd` binds exact `Shell_NotifyIconW` and adds an exported-symbol regression test. Its isolated single-file publish SHA-256 is `c89d543527fd1c4692a3b8c51280e024b73c12fdbbbbf114687971ec850d589b`; direct proxy and OpenCode `1.18.25` E2E through installed Ollama/Qwen return HTTP `200`, OpenCode text `OPENCODE`, while Inspector remains alive with empty stderr |
-| Current step | Commit the completed local-validation checkpoint, fetch-check unchanged base, then perform the single initial push and open the hotfix PR |
-| Next exact action | Fetch `origin`, verify base `538d1f0` is unchanged and branch contains only intended commits, then push once and create the PR |
-| PR / CI | Hotfix PR not created. Predecessor B02 PR [#24](https://github.com/Just9120/llm-inspector/pull/24): final head `c8b0b9097909df33c1ac0f722450c80b9d56d3a0`, CI `33822508134` success; merged as `538d1f0`, exact-main CI `33822719346` success. Initial B02 CI `33822032660` failure and grouped deterministic fixture fix remain archived Evidence, not current failure |
+| Completed work | B02 delivered through PR #24 / merge `538d1f0`. Tray hotfix delivered through PR #25 / merge `8481b49`, exact-head/main CI succeeded. On merged hotfix, direct proxy and installed OpenCode `1.18.25` / Hermes `0.20.0` E2E through Ollama `0.33.2` and installed Qwen return HTTP `200` / texts `OPENCODE` and `HERMES`; Inspector remains alive with empty stderr. Commit `6159172` adds deterministic SemVer-to-trusted-line mapping (`v1.0.x` → `release/v1.0`, otherwise `main`), CI coverage for both long-lived branches and policy tests |
+| Current step | Complete policy/runbook/checkpoint update, commit documentation, fetch-check unchanged base, then perform the single initial push and open the release-line infrastructure PR |
+| Next exact action | Commit current documentation reconciliation, fetch `origin`, verify base `8481b49` is unchanged and branch contains only intended commits, then push once and create the PR |
+| PR / CI | Release-line infrastructure PR not created. Predecessor tray hotfix PR [#25](https://github.com/Just9120/llm-inspector/pull/25): final head `708198741d50c92a50a8d7046ee5be521b849a4c`, CI `33824414484` success; merged as `8481b49`, exact-main CI `33824822771` success |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; canonical publish contains one executable SHA-256 `0cf6441267d03617ad81e7cafceb8a569940a07ebde9c3d1faba41fe682038c7`, smoke `exit 0`. Separately runtime-tested isolated executable SHA-256 `c89d543527fd1c4692a3b8c51280e024b73c12fdbbbbf114687971ec850d589b`: `/models` and proxied `/chat/completions` HTTP `200`; installed OpenCode `1.18.25` returns `OPENCODE` with exit `0`; Inspector remains alive, stderr empty |
-| Blockers | None for safe hotfix PR. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected v1.0 candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms, Hermes and Open WebUI remain external gates. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until explicit CI/CD policy-document request |
-| Unverified assumptions | Hotfix runtime is verified only on local Windows Pro against Ollama/OpenCode; actual Windows Home, llama.cpp, LM Studio, Tailscale, Hermes and Open WebUI results remain unverified |
+| Validation | On `6159172`: exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish and smoke `exit 0`. Focused release/CI policy tests `5/5` pass. Runtime Evidence remains from exact merged hotfix as described above |
+| Blockers | None for safe release-line infrastructure PR. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected `rc.3` candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms and Open WebUI remain external gates |
+| Unverified assumptions | Actual Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI results remain unverified; release-line workflow awaits PR exact-head CI before branch creation |
 | Preserved pre-existing changes | None; branch began clean from verified base |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-04T00:57:51Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact B02 merged main `538d1f0`: `B02-AC01..09` remain completed with SPEC/CODE/TEST/CI `✅`, LIVE absent. Tray hotfix repairs a defect inside already credited behavior and adds no AC. E01 remains `3/4` because exact public `rc.2` failed Pro manual validation; E12 remains `7/13` |
-| Previous | `2026-09-03T23:34:29Z` | `132/139 = 95.0%` | `143/164 = 87.2%` | Independent calculation after B01 implementation; subsequent PR #23 and exact-main CI confirmed B01 without changing its five already credited AC |
+| Current | `2026-09-04T05:12:11Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact hotfix merged main `8481b49`: B02 remains `9/9` with LIVE absent; hotfix and manual OpenCode/Hermes compatibility Evidence repair/confirm already credited behavior but add no AC. E01 remains `3/4` because exact public `rc.2` failed Pro manual validation; E12 remains `7/13` |
+| Previous | `2026-09-04T00:57:51Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact B02 merged main `538d1f0`; tray defect was identified and development hotfix had not yet completed PR/main Evidence |
 
-Delta: `0.0 п.п.` initial, `+5.5 п.п.` full. Denominators unchanged; nine B02 AC now pass locally. Разница меньше 10 п.п.; `E01-AC01` остаётся binary-fail до exact-artifact Windows matrix, а B02 не READY без CI/LIVE.
+Delta: `0.0 п.п.` initial, `0.0 п.п.` full. Denominators и completed AC unchanged; tray fix, release-line infrastructure и client compatibility checks не являются новыми product AC. `E01-AC01` остаётся binary-fail до нового exact-artifact Windows matrix, а B02 не READY без LIVE.
 
 ## Epic readiness и Evidence
 
@@ -125,7 +125,7 @@ Delta: `0.0 п.п.` initial, `+5.5 п.п.` full. Denominators unchanged; nine B0
 
 | AC | Current fact / completion gate |
 |---|---|
-| `E01-AC01` | Not complete: `rc.2` publication/payload/SBOM/provenance pass, but exact artifact fails the Windows Pro critical proxy flow with a tray P/Invoke crash; Windows Home is absent. Development hotfix `0095fcd` passes the reproduced flow but does not alter immutable `rc.2` |
+| `E01-AC01` | Not complete: `rc.2` publication/payload/SBOM/provenance pass, but exact artifact fails the Windows Pro critical proxy flow with a tray P/Invoke crash; Windows Home is absent. PR #25 / merge `8481b49` passes reproduced Ollama/OpenCode/Hermes flows, but does not alter immutable `rc.2`; `release/v1.0` / `rc.3` exact artifact is pending |
 | `E12-AC01..06` | Not complete: profiles, fail-closed evaluator and frozen fixture merged through PR #20; controlled results for every built-in profile absent |
 | `B01-AC01..05` | Complete: PR #23, merge `7c71fbc` and exact-main CI `33819193701`; llama.cpp/LM Studio remain non-verified compatibility targets rather than false support claims |
 | `B02-AC01..09` | Complete in code through PR #24 / merge `538d1f0`; exact-head/main CI pass. Encrypted two-host LIVE Evidence remains absent, so status remains IN PROGRESS despite `9/9` |
