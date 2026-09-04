@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T00:57:51Z`
+> Updated: `2026-09-04T01:04:01Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T00:57:51Z` |
+| Updated UTC | `2026-09-04T01:04:01Z` |
 | Expected base branch | `main` |
 | Base SHA | `538d1f028e9d73a43f7de734e5fbce387f8f73ad` — verified local/`origin/main`; BACKLOG-02 exact-main CI `33822719346` success |
 | Working branch | `codex/goal-005-tray-pinvoke-hotfix` |
-| Last verified revision | `0095fcdff378a121c239d1bb66905bc6878ae480` — focused Windows suite and exact published executable runtime checks pass; full CI-equivalent pending |
+| Last verified revision | `06e5c13a09592a65469c9f7a949907dfd2452c3e` — full local CI-equivalent and prior runtime reproduction pass |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | B02 delivered through PR #24 / merge `538d1f0` / exact-main CI `33822719346`. Manual validation verified Ollama `0.33.2`, installed Qwen model and direct Ollama flow; exact public `rc.2` hash matched release metadata and smoke passed, but normal Pro flow crashed on first proxied POST because tray P/Invoke requested the nonexistent `ShellNotifyIconW` entry point. Commit `0095fcd` binds exact `Shell_NotifyIconW` and adds an exported-symbol regression test. Its isolated single-file publish SHA-256 is `c89d543527fd1c4692a3b8c51280e024b73c12fdbbbbf114687971ec850d589b`; direct proxy and OpenCode `1.18.25` E2E through installed Ollama/Qwen return HTTP `200`, OpenCode text `OPENCODE`, while Inspector remains alive with empty stderr |
-| Current step | Synchronize the recovered B02/manual Evidence in this substantive hotfix PR, then execute the complete local CI-equivalent |
-| Next exact action | Commit operational documentation, run full CI-equivalent, fetch-check unchanged base, then make the single initial push and open the hotfix PR |
+| Current step | Commit the completed local-validation checkpoint, fetch-check unchanged base, then perform the single initial push and open the hotfix PR |
+| Next exact action | Fetch `origin`, verify base `538d1f0` is unchanged and branch contains only intended commits, then push once and create the PR |
 | PR / CI | Hotfix PR not created. Predecessor B02 PR [#24](https://github.com/Just9120/llm-inspector/pull/24): final head `c8b0b9097909df33c1ac0f722450c80b9d56d3a0`, CI `33822508134` success; merged as `538d1f0`, exact-main CI `33822719346` success. Initial B02 CI `33822032660` failure and grouped deterministic fixture fix remain archived Evidence, not current failure |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | Commit `0095fcd`: Windows tests `72/72`, build `0` warnings/errors. Isolated win-x64 single-file smoke `exit 0`; `/models` and proxied `/chat/completions` both HTTP `200`; installed OpenCode `1.18.25` returns `OPENCODE` with exit `0`; process remains alive. Full solution CI-equivalent pending before push |
+| Validation | Exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; canonical publish contains one executable SHA-256 `0cf6441267d03617ad81e7cafceb8a569940a07ebde9c3d1faba41fe682038c7`, smoke `exit 0`. Separately runtime-tested isolated executable SHA-256 `c89d543527fd1c4692a3b8c51280e024b73c12fdbbbbf114687971ec850d589b`: `/models` and proxied `/chat/completions` HTTP `200`; installed OpenCode `1.18.25` returns `OPENCODE` with exit `0`; Inspector remains alive, stderr empty |
 | Blockers | None for safe hotfix PR. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected v1.0 candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms, Hermes and Open WebUI remain external gates. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until explicit CI/CD policy-document request |
 | Unverified assumptions | Hotfix runtime is verified only on local Windows Pro against Ollama/OpenCode; actual Windows Home, llama.cpp, LM Studio, Tailscale, Hermes and Open WebUI results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
