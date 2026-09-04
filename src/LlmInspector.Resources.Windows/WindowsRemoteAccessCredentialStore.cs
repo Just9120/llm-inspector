@@ -102,6 +102,12 @@ public sealed class WindowsDpapiCurrentUserProtector : ICurrentUserDataProtector
 
             if (outputBlob.Data != IntPtr.Zero)
             {
+                if (outputBlob.Length > 0)
+                {
+                    byte[] zero = new byte[outputBlob.Length];
+                    Marshal.Copy(zero, 0, outputBlob.Data, outputBlob.Length);
+                }
+
                 _ = LocalFree(outputBlob.Data);
             }
         }

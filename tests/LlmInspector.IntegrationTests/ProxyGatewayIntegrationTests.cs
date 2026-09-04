@@ -178,9 +178,11 @@ public sealed class ProxyGatewayIntegrationTests
     public async Task DisabledServeAndFunnelLikeIngressFailClosedWhileLocalTrafficStillWorks()
     {
         int backendRequests = 0;
+        string? localAuthorization = null;
         await using LoopbackStubServer backend = await LoopbackStubServer.StartAsync(context =>
         {
             Interlocked.Increment(ref backendRequests);
+            localAuthorization = context.Request.Headers.Authorization.SingleOrDefault();
             return context.Response.WriteAsync("{}");
         });
         await using ProxyGateway gateway = ProxyGateway.Create(
@@ -206,9 +208,14 @@ public sealed class ProxyGatewayIntegrationTests
         using HttpResponseMessage funnelResponse = await client.SendAsync(funnelLike);
         Assert.AreEqual(HttpStatusCode.Forbidden, funnelResponse.StatusCode);
 
-        using HttpResponseMessage localResponse = await client.GetAsync(ProxyGateway.ModelsPath);
+        using HttpRequestMessage local = new(HttpMethod.Get, ProxyGateway.ModelsPath);
+        local.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            "local-backend-credential");
+        using HttpResponseMessage localResponse = await client.SendAsync(local);
         Assert.AreEqual(HttpStatusCode.OK, localResponse.StatusCode);
         Assert.AreEqual(1, backendRequests);
+        Assert.AreEqual("Bearer local-backend-credential", localAuthorization);
     }
 
     [TestMethod]
