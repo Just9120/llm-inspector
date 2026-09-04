@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `538d1f028e9d73a43f7de734e5fbce387f8f73ad` включает core epics, EPIC-12 profiles/harness, B01 lifecycle и B02 secure remote boundary через PR #24 / exact-main CI `33822719346`; B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но manual Pro critical flow выявил runtime crash из-за tray P/Invoke; development hotfix `0095fcdff378a121c239d1bb66905bc6878ae480` исправляет exact entry point и проходит reproduced Ollama/OpenCode flow.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `8481b49b88f926eee5f969667a8a254efb9b0b92` включает core epics, EPIC-12 profiles/harness, B01 lifecycle, B02 secure remote boundary и tray P/Invoke hotfix через PR #25 / exact-main CI `33824822771`; B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но immutable artifact провалил manual Pro critical flow. Merged hotfix исправляет exact `Shell_NotifyIconW` entry point и проходит reproduced Ollama/OpenCode/Hermes flows; corrected observation-only candidate ещё не опубликован.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -22,7 +22,7 @@ Server/runtime deployment target отсутствует. LLM Inspector уста�
 | `ADR-006` | NuGet `PackageReference` + Central Package Management + committed lock files | Версии централизуются в `Directory.Packages.props`; floating versions запрещены; CI использует locked restore. SDK фиксируется exact `global.json` с `rollForward: disable`, а upgrade выполняется отдельным reviewed change. |
 | `ADR-007` | Portable unsigned self-contained single-file `win-x64` executable как первый release unit | Не требует установленного .NET, installer или admin rights. GitHub Release публикует exact executable, SHA-256, SBOM/provenance и SmartScreen disclosure. Store/MSIX/trusted signing/automatic Store updates отложены в release backlog. |
 | `ADR-008` | CI и Windows release разделены; server/runtime CD остаётся disabled | Untrusted PR проверяет code без release credentials. Trusted tag job в будущем публикует exact locally/CI-validated artifact; это artifact distribution, не deployment на runtime host. |
-| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable public `v1.0.0-rc.2` exact candidate зафиксирован до merge lifecycle code; failed-publication tag `v1.0.0-rc.1` не переиспользуется, manual Evidence для двух lines не смешивается. |
+| `ADR-009` | Version boundary: observation-only `v1.0`, lifecycle начиная с `v1.1` | Immutable public `v1.0.0-rc.2` exact candidate зафиксирован до merge lifecycle code; дальнейшие `v1.0.x` forward fixes идут только через maintenance line `release/v1.0`, созданную от exact `rc.2` source. Failed tags не переиспользуются, lifecycle code из `main` не переносится, Evidence двух lines не смешивается. |
 | `ADR-010` | Three built-in performance profiles plus bounded custom profile | `Бережный`, `Сбалансированный` и `Детальный` имеют отдельные sampling intervals/budgets и обязаны проходить independently; custom profile не является release Evidence. |
 | `ADR-011` | Lifecycle только для Inspector-owned backend processes через typed capability adapters | Exact process identity, official interface и parameter allowlist ограничивают destructive surface; externally owned process остаётся observation-only, crash recovery — manual. |
 | `ADR-012` | Remote через loopback Inspector + private Tailscale Serve | Inspector не становится LAN/public server. Tailscale обеспечивает encrypted tailnet transport, а отдельный application bearer token защищает Inspector endpoint; Funnel и direct backend exposure запрещены. |
@@ -380,7 +380,7 @@ dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x6
 
 Configured CI foundation:
 
-- events: `pull_request` и `push` в `main`;
+- events: `pull_request` и `push` в `main`/`release/v1.0`;
 - ephemeral standard GitHub-hosted `windows-2025` x64 runner; explicit `contents: read`, no secrets for PR code;
 - restore locked → format → build → tests → self-contained publish smoke;
 - workflow/job names: `CI` / `windows-dotnet`; фактический run ID/SHA фиксируется только после PR execution;
@@ -389,15 +389,15 @@ Configured CI foundation:
 - artifacts/caches не публикуются; self-contained output существует только в ephemeral job workspace;
 - standard hosted runner usage для public repository бесплатен; speculative reruns запрещены без подтверждённой transient причины.
 
-EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer/main ancestry, выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` полностью успешен и опубликовал exact executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. Защищённый Project CI/CD profile в `ci-cd-rules.md` намеренно не изменён без отдельного explicit CI/CD policy request; фактическое расхождение записано в delivery checkpoint.
+EPIC-01 release automation использует отдельный tag-only workflow с immutable action pins и split permissions. Unprivileged build job проверяет SemVer и ancestry из deterministic trusted line (`v1.0.x` — `release/v1.0`, остальные lines — `main`), выполняет полный CI-equivalent, один single-file publish и создаёт checksum/SPDX/manifest/release notes. Privileged publish job не checkout-ит repository, перепроверяет exact downloaded payload, создаёт GitHub/Sigstore build provenance и SBOM attestation и публикует GitHub Release. Первый run `33813681861` выявил только отсутствие repository identity в final checkout-free step; PR #22 добавил scoped `GH_REPO`. Trusted `v1.0.0-rc.2` run `33815294790` полностью успешен и опубликовал exact executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`. Explicit CI/CD policy decision от `2026-09-04` разрешил maintenance line и синхронизацию Project CI/CD profile; server/runtime CD остаётся disabled.
 
 Release design:
 
 1. Trusted tag/release flow performs locked restore, build, tests и один self-contained single-file `win-x64` publish; downstream manifest/checksum/SBOM/provenance consume that exact hashed output without rebuild.
-2. Observation-only exact revision получает immutable SemVer prerelease tag до B01 lifecycle code. Failed `v1.0.0-rc.1` не переиспользуется; reviewed forward-fix публикуется как `v1.0.0-rc.2`.
+2. Observation-only exact revision получает immutable SemVer prerelease tag до B01 lifecycle code. Failed `v1.0.0-rc.1` и published-but-rejected `v1.0.0-rc.2` не переиспользуются; reviewed forward-fix публикуется с `release/v1.0` как `v1.0.0-rc.3`.
 3. Publish unsigned portable executable, SHA-256, SBOM, provenance and user-facing SmartScreen warning to GitHub Releases. No installer/admin requirement and no automatic update behavior.
 4. Verify artifact identity, launch, tray/background, proxy, SQLite recovery and critical end-to-end behavior on Windows 11 `25H2` Home and Pro. Manual results always reference exact artifact hash.
-5. Lifecycle release line starts at `v1.1`; evidence from v1.0 candidate cannot be reused for changed lifecycle surfaces without explicit applicability.
+5. Lifecycle release line starts at `v1.1` from `main`; `release/v1.0` остаётся observation-only и принимает только reviewed release infrastructure/forward fixes. Evidence двух lines не переиспользуется без explicit applicability.
 
 Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate release backlog and do not block the approved portable channel. No release artifact is a server deployment; applicable Evidence is build/artifact/Windows runtime validation, while `DEPLOY`/`LIVE` remain `N/A` for E01.
 
@@ -409,7 +409,7 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `RELEASED ARTIFACT / MANUAL GATE FAILED` | `v1.0.0-rc.2` publication/SBOM/provenance pass, but Pro `25H2` critical proxy flow crashes in tray cleanup; development hotfix passes reproduction, while a new observation-only candidate and Home/Pro matrix remain E01 gate |
+| Portable distribution | `FORWARD FIX MERGED / NEW CANDIDATE PENDING` | `v1.0.0-rc.2` publication/SBOM/provenance pass, but Pro `25H2` critical proxy flow crashes in tray cleanup; PR #25 / merge `8481b49` fixes it and Ollama/OpenCode/Hermes reproduction passes, while `release/v1.0`, a new exact candidate and Home/Pro matrix remain E01 gate |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
 | Secure remote | `CODE+CI COMPLETE / LIVE PENDING` | PR #24 / merge `538d1f0` / exact-main CI `33822719346` pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
