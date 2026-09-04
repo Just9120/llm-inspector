@@ -1,12 +1,12 @@
 # Architecture baseline
 
-> Status: `DECIDED — E01 RELEASED/PARTIAL; B01 READY; B02 IMPLEMENTED LOCALLY/LIVE PENDING`
+> Status: `DECIDED — E01 MANUAL FAILURE/PARTIAL; B01 READY; B02 CODE+CI COMPLETE/LIVE PENDING`
 > Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
 > Evidence reviewed: `2026-09-04`
 
 ## 1. Evidence boundary
 
-Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` включает core epics, EPIC-12 profiles/harness, успешный trusted `v1.0.0-rc.2` release flow и B01 lifecycle через PR #23 / exact-main CI `33819193701`. Локальный B02 code commit `e9ab6084a16b7b1f1c04c6b69415eecf9c61c0a8` реализует secure remote boundary и проходит focused Unit/Integration/Windows suites; exact-head PR/main CI и обязательный two-host LIVE test ещё отсутствуют.
+Этот документ задаёт implementation baseline для ратифицированного [`project-spec.md`](project-spec.md), но сам по себе не является product runtime Evidence. Verified `main` `538d1f028e9d73a43f7de734e5fbce387f8f73ad` включает core epics, EPIC-12 profiles/harness, B01 lifecycle и B02 secure remote boundary через PR #24 / exact-main CI `33822719346`; B02 two-host LIVE test ещё отсутствует. Trusted `v1.0.0-rc.2` release flow и payload успешны, но manual Pro critical flow выявил runtime crash из-за tray P/Invoke; development hotfix `0095fcdff378a121c239d1bb66905bc6878ae480` исправляет exact entry point и проходит reproduced Ollama/OpenCode flow.
 
 Server/runtime deployment target отсутствует. LLM Inspector устанавливается на Windows PC, поэтому CD отключён. Windows build, signing и distribution остаются release concerns, но не являются deployment на управляемый runtime host.
 
@@ -409,9 +409,9 @@ Microsoft Store/MSIX/trusted signing/automatic Store updates form a separate rel
 | Non-NVIDIA GPU/provider coverage | `BACKLOG` | Current fixed-path NVIDIA source fails closed; multi-device/vendor expansion requires scoped provider and tests |
 | Controlled E12 measurements | `PENDING_EXTERNAL_GATE` after harness implementation | Run every built-in profile on exact reference hardware/runtime/model; unavailable mandatory metric is not pass |
 | Store signing/MSIX/update | `BACKLOG`, not E01 blocker | Separate owner-approved release Goal after portable channel |
-| Portable distribution | `RELEASED / MANUAL MATRIX PENDING` | `v1.0.0-rc.2` publication/SBOM/provenance pass; Windows Home/Pro exact-artifact runs remain E01 gate |
+| Portable distribution | `RELEASED ARTIFACT / MANUAL GATE FAILED` | `v1.0.0-rc.2` publication/SBOM/provenance pass, but Pro `25H2` critical proxy flow crashes in tray cleanup; development hotfix passes reproduction, while a new observation-only candidate and Home/Pro matrix remain E01 gate |
 | ARM64 / Windows 11 26H1 | `BACKLOG` | Dedicated build/native dependency/test matrix and owner scope decision |
-| Secure remote | `IMPLEMENTED LOCALLY / LIVE PENDING` | Commit `e9ab608`; local security tests pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
+| Secure remote | `CODE+CI COMPLETE / LIVE PENDING` | PR #24 / merge `538d1f0` / exact-main CI `33822719346` pass; actual Windows↔VPS/second-PC encrypted LIVE Evidence required |
 | Default listener port | `IMPLEMENTED` | `5117`; exact loopback bind проверяется integration/runtime Evidence |
 | Lifecycle implementation | `READY` | PR #23, merge `7c71fbc`, exact-main CI `33819193701`; `5/5`, SPEC/CODE/TEST/CI `✅` |
 | Lifecycle compatibility versions | `PENDING_EXTERNAL_GATE` for two adapters | Ollama `0.33.2` verified locally; llama.cpp `b10516` and LM Studio/lms target versions require actual-runtime Evidence |

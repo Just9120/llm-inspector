@@ -439,11 +439,11 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-01 `5/5`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`; trusted [`v1.0.0-rc.2`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.2) publication/SBOM/provenance успешны, но `E01-AC01` не кредитуется до Windows Home/Pro exact-artifact Evidence. Локальный B02 commit `e9ab6084a16b7b1f1c04c6b69415eecf9c61c0a8` реализует `B02-AC01..09` и прошёл focused Unit/Integration/Windows tests; его exact-head PR/main CI и обязательный encrypted two-host LIVE test ещё отсутствуют. `E12-AC01..06` также не кредитуются без controlled results.
+Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `538d1f028e9d73a43f7de734e5fbce387f8f73ad` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-01 `5/5`, BACKLOG-02 `9/9`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`. BACKLOG-02 PR #24 и exact-head/main CI успешны, но эпик не READY без encrypted two-host LIVE Evidence. Trusted [`v1.0.0-rc.2`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.2) publication/SBOM/provenance успешны, но exact artifact на Windows 11 Pro `25H2` build `26200.9168` deterministic падает в critical proxy flow из-за неверного tray P/Invoke entry point; `E01-AC01` не кредитуется. Development hotfix `0095fcdff378a121c239d1bb66905bc6878ae480` проходит воспроизведённый Ollama/OpenCode flow, но не изменяет immutable `rc.2`. `E12-AC01..06` также не кредитуются без controlled results.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ✅ | ❌ | ✅ | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -455,14 +455,14 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟩 READY | 5/5 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 9/9 | 100% | ✅ | ✅ | ✅ | — | N/A | — |
+| BACKLOG-02 | 🟦 IN PROGRESS | 9/9 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **152/164** | **92.7%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **—** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **152/164** | **92.7%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **—** |
 
 Для remote backlog runtime deployment отсутствует (`DEPLOY: N/A`), но фактический encrypted two-host test обязателен (`LIVE: ✅`) до READY.
 
@@ -471,9 +471,9 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
 
 1. `EPIC-12`: profiles/evaluator/frozen corpus merged; выполнить controlled reference runs для `E12-AC01..06`.
-2. `EPIC-01`: immutable `v1.0.0-rc.2` опубликован run `33815294790`; executable/payload/SBOM/provenance проверены. Осталось вручную подтвердить Windows 11 `25H2` Home/Pro matrix.
+2. `EPIC-01`: immutable `v1.0.0-rc.2` опубликован run `33815294790`; executable/payload/SBOM/provenance проверены. Exact artifact провалил Pro `25H2` critical proxy flow из-за tray P/Invoke crash; требуется новый observation-only candidate с reviewed fix и отдельные Home/Pro checks. `rc.2` не переиспользуется.
 3. `BACKLOG-01`: PR #23, merge `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` и exact-main CI `33819193701` завершены; `5/5`, READY. llama.cpp и LM Studio exact versions остаются manual compatibility gates и matrix не называет их verified.
-4. `BACKLOG-02`: local code/test выполняет `9/9`; exact-head PR/main CI pending. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE`; это не блокирует safe code PR, но блокирует READY.
+4. `BACKLOG-02`: PR #24, merge `538d1f028e9d73a43f7de734e5fbce387f8f73ad`, exact-head CI `33822508134` и exact-main CI `33822719346` завершены; `9/9`. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE` и блокирует READY.
 5. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
 6. `BACKLOG-04`: новый protocol не нужен для OpenCode/Hermes/Open WebUI; manual client E2E выполняются в финальной validation phase без readiness credit по `B04-*`.
 
@@ -485,16 +485,16 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-04T00:20:00Z`.
+- Last recalculation: `2026-09-04T00:57:51Z`.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
 - Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
 - Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: prior terminal runs remain recorded in delivery archive/current plan; EPIC-01 release fix PR/main runs `33814760385`/`33814980537` and trusted-tag release run `33815294790` completed successfully at exact main `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`.
-- Code/tests/runtime: public `v1.0.0-rc.2` contains 6 assets; executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`, manifest exact source SHA `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, SPDX 2.3 (`32` packages/`1` file), both Sigstore bundles and GitHub attestation verification pass. B01 PR #23 / exact-main CI `33819193701` are terminal success. B02 code commit `e9ab6084a16b7b1f1c04c6b69415eecf9c61c0a8` adds default-off Serve identity+bearer guard, 256-bit DPAPI CurrentUser credential, explicit Tailscale HTTPS remote backend, separate DNS+TCP availability/latency and remote resource-unavailable semantics; focused suites pass `91/91`, `57/57`, `71/71` with zero skips.
+- GitHub Actions: prior terminal runs remain recorded in delivery archive/current plan; EPIC-01 release fix PR/main runs `33814760385`/`33814980537` and trusted-tag release run `33815294790` completed successfully. B02 PR/main runs `33822508134`/`33822719346` completed successfully at exact main `538d1f028e9d73a43f7de734e5fbce387f8f73ad`.
+- Code/tests/runtime: public `v1.0.0-rc.2` contains 6 assets; executable SHA-256 `4e78ee7cdcde7eb6188d8299f9576447b65faad7439f839e739e32048bd7e683`, manifest exact source SHA `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, SPDX 2.3 (`32` packages/`1` file), both Sigstore bundles and GitHub attestation verification pass. B01 is terminal READY. B02 is merged with SPEC/CODE/TEST/CI `✅` and LIVE absent. On Windows 11 Pro `25H2` build `26200.9168`, exact `rc.2` smoke and `/models` pass, but proxied POST deterministically terminates the app with `EntryPointNotFoundException` for tray `ShellNotifyIconW`. Development hotfix `0095fcdff378a121c239d1bb66905bc6878ae480` binds exported `Shell_NotifyIconW`; its isolated publish SHA-256 `c89d543527fd1c4692a3b8c51280e024b73c12fdbbbbf114687971ec850d589b` passes smoke, proxy POST and installed OpenCode `1.18.25` E2E through Ollama `0.33.2` / `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M`, with Inspector alive and empty stderr.
 - EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
 - Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
-- Full agreed roadmap readiness on current B02 branch: `152/164 = 92.7%`; B02 remains `IN PROGRESS` despite `9/9` until exact-head CI and required LIVE Evidence.
+- Full agreed roadmap readiness on current hotfix branch: `152/164 = 92.7%`; B02 remains `IN PROGRESS` despite `9/9` until required LIVE Evidence, and hotfix adds no AC.
 - GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-01 release flow завершён через PR [#22](https://github.com/Just9120/llm-inspector/pull/22), merge `8aae2fbdd69ae8d8d2c1dd0b4796d1bea6883479`, exact-main CI `33814980537` и release run `33815294790`; B01 завершён через [PR #23](https://github.com/Just9120/llm-inspector/pull/23), merge `7c71fbcb05744e18d95fcb91f6fb90296e0e4030`, exact-main CI `33819193701`. Branch `codex/goal-005-backlog-02-secure-remote` реализует bounded B02 increment; PR/CI/LIVE pending.
+- Active approved Goal: `GOAL-005 IN_PROGRESS`; EPIC-01 release publication завершена через PR [#22](https://github.com/Just9120/llm-inspector/pull/22) / run `33815294790`, но manual Pro gate теперь `❌`; B01 завершён через [PR #23](https://github.com/Just9120/llm-inspector/pull/23); B02 завершён в code/CI через [PR #24](https://github.com/Just9120/llm-inspector/pull/24), но LIVE pending. Branch `codex/goal-005-tray-pinvoke-hotfix` исправляет выявленный Windows runtime defect; PR/CI pending.
