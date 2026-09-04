@@ -23,9 +23,9 @@ rules — в [`../ci-cd-rules.md`](../ci-cd-rules.md). Workflow: `.github/workfl
 
 ## Запуск trusted flow
 
-`v1.0.0-rc.1` уже является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. `v1.0.0-rc.2` опубликован, но провалил Pro manual gate. Не переиспользовать эти versions.
+`v1.0.0-rc.1` является immutable failed-delivery tag: его build и attestations прошли, но Release не был создан. `v1.0.0-rc.2` опубликован, но провалил Pro manual gate. `v1.0.0-rc.3` опубликован из exact source `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; release pipeline и доступные Windows Pro flows прошли, но Windows Home/full matrix ещё pending. Ни одну из этих versions не переиспользовать.
 
-Maintenance line `release/v1.0` создаётся один раз от exact annotated-tag target `v1.0.0-rc.2`, после проверки отсутствия remote branch:
+Ниже — историческая one-time bootstrap procedure. Maintenance line `release/v1.0` уже создана от exact annotated-tag target `v1.0.0-rc.2`; повторно выполнять этот блок нельзя. Он сохранён только для audit/recovery context:
 
 ```powershell
 git fetch origin main --tags
@@ -37,18 +37,18 @@ git branch release/v1.0 $sourceSha
 git push origin refs/heads/release/v1.0
 ```
 
-Каждый forward fix проходит PR с base `release/v1.0` и exact-branch CI. Пример для следующего candidate; `<EXACT_RELEASE_SHA>` заменяется только фактически проверенным SHA:
+Каждый forward fix проходит PR с base `release/v1.0` и exact-branch CI. Для будущего candidate `<NEXT_SEMVER_TAG>` и `<EXACT_RELEASE_SHA>` заменяются только новым, ещё не существующим SemVer tag и фактически проверенным SHA:
 
 ```powershell
 git fetch origin release/v1.0 --tags
 git switch release/v1.0
 git merge --ff-only origin/release/v1.0
-git tag -a v1.0.0-rc.3 <EXACT_RELEASE_SHA> -m "LLM Inspector v1.0.0-rc.3"
-git push origin refs/tags/v1.0.0-rc.3
+git tag -a <NEXT_SEMVER_TAG> <EXACT_RELEASE_SHA> -m "LLM Inspector <NEXT_SEMVER_TAG>"
+git push origin refs/tags/<NEXT_SEMVER_TAG>
 ```
 
 Tag считается immutable. Не перемещать и не переиспользовать опубликованный version. При defect
-исправление проходит новым PR и получает следующий prerelease version, например `v1.0.0-rc.3`.
+исправление проходит новым PR и получает новый prerelease version после `v1.0.0-rc.3`.
 
 ## Что обязан сделать workflow
 
@@ -66,6 +66,8 @@ Build job имеет только `contents: read`. Publish job не checkout-и
 `gh release create` step.
 
 ## Проверка результата
+
+Текущий trusted candidate проверяется следующими exact командами. Для будущего release используется его новый tag и соответствующее имя asset:
 
 ```powershell
 gh release view v1.0.0-rc.3 --json url,isPrerelease,targetCommitish,assets

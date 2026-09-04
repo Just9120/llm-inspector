@@ -2,6 +2,19 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-005 — Завершить согласованный Windows delivery scope
+
+- **Terminal state:** `PENDING_EXTERNAL_GATE` с `2026-09-04T06:59:16Z`; explicit closeout и cleanup подтверждены пользователем. `DONE` не заявляется, потому что required Windows Home, controlled performance и B02 LIVE Evidence отсутствуют.
+- **Authorization:** последовательные explicit user decisions от `2026-09-03`–`2026-09-04`: реализовать оставшиеся canonical AC одной Goal через отдельные reviewable PR, не удерживать безопасные partial increments из-за внешних gates, разделить observation-only `v1.0` и lifecycle `v1.1`, выпустить forward fix через `release/v1.0`, затем остановиться перед новой Goal.
+- **Scope outcome:** весь безопасно выполнимый code scope доставлен. Из исходных `21` active product AC выполнены `B01-AC01..05` и `B02-AC01..09` (`14/21`); `E01-AC01` и `E12-AC01..06` не получают partial credit без required manual/controlled Evidence. Итоговая readiness: initial `132/139 = 95.0%`, full `152/164 = 92.7%`.
+- **Main line:** PR #27 исправил deterministic resource-monitor test fixture; merge `d2c3df58fb111ce62968b6144cf58720ab036053`, exact-main CI [33840821568](https://github.com/Just9120/llm-inspector/actions/runs/33840821568) success, full suite `260/260` без skips.
+- **Observation-only line:** `release/v1.0` создана от exact `v1.0.0-rc.2` source и после reviewed PR [#28](https://github.com/Just9120/llm-inspector/pull/28) указывает на merge `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; lifecycle/remote code из `main` в неё не переносился. Exact-branch CI [33842121186](https://github.com/Just9120/llm-inspector/actions/runs/33842121186) success, `225/225` без skips.
+- **Release Evidence:** trusted run [33842346524](https://github.com/Just9120/llm-inspector/actions/runs/33842346524) опубликовал immutable [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) из exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`. Public executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`; exact `6/6` assets, `3/3` payload checksums, SPDX 2.3 (`32` packages / `1` file), build provenance и SBOM Sigstore verification pass, public executable smoke exit `0`.
+- **Manual Evidence:** exact public artifact на Windows 11 Pro `25H2` x64 build `26200.9168` прошёл direct Ollama `0.33.2` flow (`RC3_DIRECT`), OpenCode `1.18.25` (`OPENCODE`) и Hermes Agent `0.20.0` (`HERMES`); каждый client exit `0`, Inspector оставался жив, stderr пуст. Полный terminal record: [PR #28 comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281).
+- **External gates:** Windows Home `25H2` exact-artifact matrix; controlled Saver/Balanced/Detailed measurements `E12-AC01..06`; encrypted Tailscale Windows↔VPS/second-PC `LIVE`; llama.cpp `b10516`; LM Studio/lms; Open WebUI E2E. Ни один отсутствующий результат не выдан за pass.
+- **Residual maintenance:** release workflow успешно прошёл, но GitHub Actions отметил deprecation `actions/attest-sbom`; migration на `actions/attest` требует отдельной authorized Goal. Server/runtime deployment отсутствует, `DEPLOY/LIVE` для E01 — `N/A`.
+- **Cleanup contract:** после terminal reconciliation сохраняются только долгоживущие branches `main` и `release/v1.0`; временная reconciliation branch удаляется после проверки merge/tree identity. Новая Goal без explicit authorization не начинается.
+
 ## GOAL-005 / BACKLOG-02 — Secure remote connectivity
 
 - **Product outcome:** `B02-AC01..09` выполнены (`9/9`); SPEC/CODE/TEST/CI `✅`, DEPLOY `N/A`, LIVE отсутствует, поэтому BACKLOG-02 остаётся `IN PROGRESS / PENDING_EXTERNAL_GATE`, а не READY.

@@ -1,106 +1,51 @@
 # Delivery plan
 
-> Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T05:26:01Z`
+> Dashboard status: `NO ACTIVE GOAL`
+> Updated: `2026-09-04T06:59:16Z`
 
 ## Current Goal
 
-### `GOAL-005 — Завершить согласованный Windows delivery scope`
+Активная Goal отсутствует. `GOAL-005 — Завершить согласованный Windows delivery scope` остановлена в предусмотренном terminal state `PENDING_EXTERNAL_GATE`: весь безопасно выполнимый implementation scope доставлен, а отсутствующие обязательные проверки требуют внешней среды или длительного controlled run. Полный terminal record перенесён в [`delivery-plan-archive.md`](delivery-plan-archive.md#goal-005--завершить-согласованный-windows-delivery-scope).
 
-- **State:** `IN_PROGRESS` (release-line exact-main CI failure repair before observation-only `v1.0` forward-fix release).
-- **Authorization source:** explicit user instructions от `2026-09-03`–`2026-09-04`: реализовывать оставшиеся AC в одной Goal, разносить эпики по отдельным PR, не удерживать safe implementation PR из-за внешнего manual gate, затем выполнить manual validation; все performance, release, lifecycle, remote и version-policy decisions согласованы последовательно.
-- **Verified base:** `origin/main` / local `main` = `e8fb053f9c3731e816c51f53371cc37eff65bd51`; release-line PR [#26](https://github.com/Just9120/llm-inspector/pull/26) head CI [33839994417](https://github.com/Just9120/llm-inspector/actions/runs/33839994417) succeeded, but exact-main CI [33840160541](https://github.com/Just9120/llm-inspector/actions/runs/33840160541) failed one resource-monitor test because of a reproduced fixture timing race.
-- **Canonical denominator:** initial release `139`, full roadmap `164`; completed на base — `132/139` и `152/164`.
-- **Active implementation denominator:** из исходных `21` AC реализованы `B01-AC01..05` и `B02-AC01..09` (`14/21`); остаются семь manual criteria: `E01-AC01` (`1`) + `E12-AC01..06` (`6`). B02 имеет SPEC/CODE/TEST/CI `✅`, но ещё не READY без обязательного encrypted two-host LIVE gate.
-
-**Scope**
-
-- Ратифицировать уже согласованные durable decisions без readiness credit за documentation-only work.
-- Реализовать каждый из четырёх затронутых эпиков отдельным reviewable PR: E12, E01/release, B01, B02.
-- До появления lifecycle controls зафиксирован immutable observation-only `v1.0.0-rc.2`; failed-publication `rc.1` и published-but-rejected `rc.2` не переиспользуются. Explicit decision от `2026-09-04` разрешает создать от exact `rc.2` source maintenance line `release/v1.0`, перенести только release infrastructure и tray forward fix, затем выпустить `v1.0.0-rc.3`; B01 остаётся только в линии `v1.1` из `main`.
-- После code increments выполнить общую manual-validation phase по exact artifacts/configuration; каждый недоступный внешний target оставить `PENDING_EXTERNAL_GATE`, не подменяя Evidence.
-- После каждого merge подтвердить exact-main CI, синхронизировать local `main`, безопасно удалить merged branch и только затем начать следующий increment.
-
-**Non-goals**
-
-- `BACKLOG-03` Linux/macOS (`3` AC): demand не подтверждён, implementation не требуется сейчас.
-- `BACKLOG-04` additional protocols (`2` AC): OpenCode, Hermes и Open WebUI используют существующий OpenAI-compatible contract; `/v1/responses`, Anthropic Messages и Ollama native generation не добавляются.
-- Microsoft Store/MSIX/trusted signing/automatic Store updates; backend/model download/install/update; automatic backend restart after crash.
-- Arbitrary command/args/env execution, privileged service management, public listener/Funnel/direct backend Internet exposure.
-- Изменение остальных canonical AC, privacy/fault-isolation rules или CI/CD safety gates.
-
-**Goal acceptance criteria**
-
-1. Все `21/21` active AC выполнены либо Goal остановлена в `PENDING_EXTERNAL_GATE` с exact отсутствующим Evidence; частичный AC не получает credit.
-2. Каждый epic increment проходит focused tests, полный local CI-equivalent, PR exact-head CI, merge и exact-main CI.
-3. Observation-only lineage сохраняется: `release/v1.0` начинается от exact `v1.0.0-rc.2` source, принимает только reviewed release infrastructure/forward fixes, а новый candidate получает version `v1.0.0-rc.3`; `v1.1` lifecycle code не попадает в artifact.
-4. Manual phase проверяет exact frozen artifacts/configuration и не смешивает v1.0/v1.1 Evidence.
-5. Readiness пересчитывается только как completed canonical AC / `139` и / `164`; завершение active scope даёт максимум `139/139` initial и `159/164` full, потому что B03/B04 явно остаются backlog.
-6. Terminal documentation содержит exact commits, PR/CI, artifact hashes, manual results и unresolved gates без metadata-only PR loop.
-
-**Required Evidence**
-
-- `E12-AC01..06`: SPEC/CODE/TEST/CI `✅` плюс controlled reference benchmark results для каждого built-in profile.
-- `E01-AC01`: SPEC/CODE/TEST/CI `✅`, exact artifact SHA-256/SBOM/provenance и manual Windows 11 `25H2` Home/Pro run Evidence; DEPLOY/LIVE `N/A`.
-- `B01-AC01..05`: SPEC/CODE/TEST/CI `✅`; Ollama `0.33.2` verified, llama.cpp `b10516` и LM Studio/lms target versions требуют отдельного actual-runtime Evidence до compatibility claim.
-- `B02-AC01..09`: security review и SPEC/CODE/TEST/CI `✅`, DEPLOY `N/A`, LIVE `✅` только по фактическому encrypted Windows↔VPS/second-PC test.
-
-**Known external gates**
-
-- Windows Home `25H2` exact-artifact run (ожидается nested VM). Windows Pro `25H2` build `26200.9168` run выявил deterministic crash published `v1.0.0-rc.2`; hotfix merged, но необходим новый observation-only `rc.3` candidate, а не переиспользование `rc.2`.
-- llama.cpp `b10516` и LM Studio/lms target runtime ещё не установлены/проверены.
-- Tailscale second PC/VPS encrypted E2E пока недоступен.
-- OpenCode и Hermes manual E2E пройдены на merged hotfix; Open WebUI остаётся `PENDING_EXTERNAL_GATE` до появления runtime.
-
-**Stop condition:** `DONE` после `21/21` с required Evidence; `PENDING_EXTERNAL_GATE`, если safe implementation завершена, но обязательный manual/LIVE target недоступен; `BLOCKED` только при impasse, не сводящемся к ожидаемому внешнему gate. После terminal state не переходить к следующей Goal без explicit authorization.
-
-## Working pipeline
-
-| Order | Increment | Exit gate |
-|---:|---|---|
-| 0 | Decision ratification | Documentation PR merged; exact-main CI success; denominator unchanged |
-| 1 | EPIC-12 performance profiles/harness | Built-in profiles и immutable fixture implemented/tested; controlled measurements deferred only as explicit external gate |
-| 2 | EPIC-01 portable release | Reproducible single-file artifact, SHA-256, SBOM/provenance and release validation automation |
-| 3 | Freeze v1.0 candidate | Immutable public observation-only `v1.0.0-rc.2` exact SHA/artifact before B01 merge; forward fix через isolated `release/v1.0` / `rc.3` |
-| 4 | BACKLOG-01 lifecycle | Inspector-owned process controls, allowlisted parameters, compatibility matrix; no v1.0 contamination |
-| 5 | BACKLOG-02 secure remote | Loopback Inspector + Tailscale Serve guidance/token boundary, remote backend semantics and tests |
-| 6 | Manual validation | E12 controlled profiles; Windows Home/Pro; Ollama/llama.cpp/LM Studio; Tailscale; OpenCode/Hermes/Open WebUI |
-| 7 | Terminal reconciliation | Final readiness/Evidence, Goal `DONE` or `PENDING_EXTERNAL_GATE`, local main sync/cleanup |
+- **Последняя authorization:** explicit user instructions от `2026-09-03`–`2026-09-04`, включая terminal reconciliation и удаление всех branches кроме `main` и `release/v1.0`.
+- **Stop condition:** выполнена ветка `PENDING_EXTERNAL_GATE`; `DONE` не заявляется без Windows Home, controlled E12 measurements и обязательного B02 LIVE Evidence.
+- **Implementation authorization:** отсутствует. Candidate Goals ниже являются только предложениями.
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T05:26:01Z` |
+| Updated UTC | `2026-09-04T06:59:16Z` |
 | Expected base branch | `main` |
-| Base SHA | `e8fb053f9c3731e816c51f53371cc37eff65bd51` — verified local/`origin/main`; PR #26 head CI passed and exact-main CI `33840160541` failed on identified test-fixture race |
-| Working branch | `codex/goal-005-resource-monitor-test-race` |
-| Last verified revision | `c2b3ea96265e70fb3645731f30b9d9c265c3d9b7` — deterministic fixture fix; repeated focused test and full local CI-equivalent pass |
-| Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
-| Completed work | B02 delivered through PR #24. Tray hotfix delivered through PR #25 / merge `8481b49`; Ollama/OpenCode/Hermes reproduction passes. Release-line infrastructure delivered through PR #26 / merge `e8fb053`; head CI passed. Its exact-main run failed because `FakeProbe` kept returning the final timestamped snapshot, allowing a fast runner to append a zero-delta unavailable sample. Commit `c2b3ea9` makes the two-snapshot fixture block any third capture until session cancellation, preserving production fail-closed semantics and removing scheduler dependence |
-| Current step | Commit failure/checkpoint reconciliation, fetch-check unchanged base, then perform the one grouped fix push and open a focused PR |
-| Next exact action | Commit current documentation reconciliation, fetch `origin`, verify base `e8fb053` is unchanged and branch contains only the intended fixture fix/docs, then push once and create the fix PR |
-| PR / CI | Fix PR not created. Release-line PR [#26](https://github.com/Just9120/llm-inspector/pull/26): head `7ee32d77fe77f9e9a9d53f51107cd14f3b5d5c22`, CI `33839994417` success; merged as `e8fb053`, exact-main CI `33840160541` failed at `ResourceMonitoringTests.MonitorCorrelatesTimestampedHostProcessGpuDiskAndTrafficMetrics` |
+| Base SHA | `d2c3df58fb111ce62968b6144cf58720ab036053` — verified local/`origin/main`, clean before reconciliation branch creation |
+| Release line | `origin/release/v1.0` = `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; annotated `v1.0.0-rc.3` peels to the same commit |
+| Last verified product revision | `d2c3df58fb111ce62968b6144cf58720ab036053`; this terminal metadata commit does not self-reference |
+| Worktree state | No unrelated or pre-existing changes; one reconciliation branch is used only for this closeout PR and must be deleted after merge |
+| Completed work | All GOAL-005 code increments merged. Observation-only `rc.3` published from isolated `release/v1.0`; B01 lifecycle and B02 secure remote remain on `main`/future `v1.1` and are absent from `v1.0` artifact |
+| Current step | Terminal reconciliation and branch cleanup requested explicitly by the user |
+| Next exact action | After terminal PR/CI/merge, verify only `main` and `release/v1.0` locally/remotely, then await explicit authorization for a new Goal |
+| Validation / Evidence | Exact-main CI `33840821568` success (`260/260`); release-line CI `33842121186` success (`225/225`); trusted release run `33842346524` success; exact public executable smoke and Windows Pro Ollama/OpenCode/Hermes E2E pass |
+| PR / CI | PR #27 merged as `d2c3df58fb111ce62968b6144cf58720ab036053`; PR #28 merged into `release/v1.0` as `821b17abf68bb63dd09f83a834d2d3bdec2e899c`; terminal release Evidence: [PR #28 comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281) |
+| Release artifact | [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3), executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`; exact 6-asset set, `3/3` checksums, SPDX 2.3 (`32` packages / `1` file), provenance and SBOM Sigstore verification pass |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | On `c2b3ea9`: exact failing test passes `20/20`; exact SDK `10.0.400`; locked normal/RID restores; format clean; Release build `0` warnings/errors; full `260/260` (`91` Unit + `57` Integration + `72` Windows + `27` Contract + `7` Privacy + `6` Performance), zero skips; one-file win-x64 publish and smoke `exit 0`. Runtime Evidence remains from exact merged tray hotfix |
-| Blockers | Exact-main CI failure must be repaired by reviewed fix before creating `release/v1.0`. Published `v1.0.0-rc.2` remains immutable and failed the Pro critical flow; a corrected `rc.3` candidate is still required. Tailscale VPS/second-PC LIVE, Windows Home, E12 controlled measurements, llama.cpp `b10516`, LM Studio/lms and Open WebUI remain external gates |
-| Unverified assumptions | Actual Windows Home, llama.cpp, LM Studio, Tailscale and Open WebUI results remain unverified; fixture fix awaits PR exact-head/main CI |
-| Preserved pre-existing changes | None; branch began clean from verified base |
+| External gates | Windows Home `25H2` exact-artifact matrix; controlled E12 measurements for all three built-in profiles; Tailscale encrypted two-host LIVE; llama.cpp `b10516`; LM Studio/lms; Open WebUI E2E |
+| Unverified assumptions | No result is inferred for an unavailable target. Windows Pro evidence covers exact public `rc.3` direct Ollama/OpenCode/Hermes flows, not Windows Home or unavailable clients/runtimes |
+| Preserved pre-existing changes | None |
 
 ## Project readiness snapshots
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-04T05:26:01Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged main `e8fb053`: release-line policy adds no product AC; exact-main CI test-fixture failure suspends terminal CI confidence for this increment but does not falsify previously completed product AC. E01 remains `3/4`; E12 remains `7/13` |
-| Previous | `2026-09-04T05:12:11Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact tray-hotfix main `8481b49`; B02 remains `9/9` with LIVE absent and E01 exact public `rc.2` remains failed |
+| Current | `2026-09-04T06:59:16Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged `main` `d2c3df5` plus exact `rc.3` release/runtime Evidence. E01 remains `3/4`; E12 remains `7/13`; no partial AC credit |
+| Previous | `2026-09-04T05:26:01Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent calculation before PR #27/#28 terminal delivery; denominators and completed AC were identical |
 
-Delta: `0.0 п.п.` initial, `0.0 п.п.` full. Denominators и completed AC unchanged; tray fix, release-line infrastructure и client compatibility checks не являются новыми product AC. `E01-AC01` остаётся binary-fail до нового exact-artifact Windows matrix, а B02 не READY без LIVE.
+Delta: `0.0 п.п.` initial и `0.0 п.п.` full. Новая Evidence устранила failed `rc.2` implementation path и подтвердила Pro exact-artifact flows, но `E01-AC01` остаётся binary-unfulfilled без полной Home/Pro matrix; controlled E12 results также отсутствуют.
 
 ## Epic readiness и Evidence
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ✅ | ❌ | ✅ | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
 | EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
@@ -111,31 +56,30 @@ Delta: `0.0 п.п.` initial, `0.0 п.п.` full. Denominators и completed AC unc
 | EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **N/A** |
+| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
+| **Initial release** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **✅** | **◐** | **✅** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟩 READY | 5/5 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-02 | 🟦 IN PROGRESS | 9/9 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full roadmap** | **🟦 IN PROGRESS** | **152/164** | **92.7%** | **✅** | **◐** | **❌** | **◐** | **N/A** | **—** |
+| **Full roadmap** | **🟦 IN PROGRESS** | **152/164** | **92.7%** | **✅** | **◐** | **◐** | **✅** | **N/A** | **—** |
 
-## Active AC and gate map
+## Remaining gate map
 
-| AC | Current fact / completion gate |
+| Surface | Verified state / completion gate |
 |---|---|
-| `E01-AC01` | Not complete: `rc.2` publication/payload/SBOM/provenance pass, but exact artifact fails the Windows Pro critical proxy flow with a tray P/Invoke crash; Windows Home is absent. PR #25 / merge `8481b49` passes reproduced Ollama/OpenCode/Hermes flows, but does not alter immutable `rc.2`; `release/v1.0` / `rc.3` exact artifact is pending |
-| `E12-AC01..06` | Not complete: profiles, fail-closed evaluator and frozen fixture merged through PR #20; controlled results for every built-in profile absent |
-| `B01-AC01..05` | Complete: PR #23, merge `7c71fbc` and exact-main CI `33819193701`; llama.cpp/LM Studio remain non-verified compatibility targets rather than false support claims |
-| `B02-AC01..09` | Complete in code through PR #24 / merge `538d1f0`; exact-head/main CI pass. Encrypted two-host LIVE Evidence remains absent, so status remains IN PROGRESS despite `9/9` |
-| `B03-AC01..03` | Conditional backlog; no current demand/authorization |
-| `B04-AC01..02` | Conditional backlog; current named clients require no new protocol |
+| `E01-AC01` | Public `rc.3` artifact identity, release pipeline, smoke and Pro Ollama/OpenCode/Hermes flows pass; full Windows Home/Pro release matrix remains required, so AC receives no partial credit |
+| `E12-AC01..06` | Profiles, budgets, evaluator and frozen corpus exist with automated CI; controlled reference measurements for Saver/Balanced/Detailed are absent |
+| `B01` compatibility | Product AC complete; Ollama `0.33.2` verified, llama.cpp `b10516` and LM Studio/lms remain non-verified targets |
+| `B02` LIVE | Product AC complete in code/test/CI; encrypted Windows↔VPS/second-PC LIVE Evidence absent, so epic is not READY |
+| Conditional backlog | B03 Linux/macOS and B04 additional protocols remain unimplemented and unauthorized; they do not block the Windows initial-release denominator |
 
 ## Candidate next Goals
 
-- Store/MSIX/trusted signing/automatic Store updates — release backlog proposal only.
-- Linux/macOS support — only after explicit product demand.
-- Additional protocol — only after a supported client demonstrably requires one.
+- Manual validation `v1.0.0-rc.3`: full exact-artifact Windows Pro/Home walkthrough, controlled E12 profiles and available runtime/client integrations; defect fixes only when reproduced.
+- WinGet publication readiness: license decision, stable version, multi-file manifests and isolated install/uninstall validation after product validation.
+- Release workflow maintenance: replace deprecated `actions/attest-sbom` with the supported `actions/attest` path without changing release trust boundaries.
 
-Эти candidates не авторизуют implementation. Пока `GOAL-005` active, следующая Goal не выбирается.
+Эти candidates не авторизуют implementation. Новая Goal начинается только после explicit user approval.
