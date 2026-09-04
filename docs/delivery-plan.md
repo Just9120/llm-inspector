@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `GOAL-005 IN_PROGRESS`
-> Updated: `2026-09-04T00:25:01Z`
+> Updated: `2026-09-04T00:34:40Z`
 
 ## Current Goal
 
@@ -71,18 +71,18 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T00:25:01Z` |
+| Updated UTC | `2026-09-04T00:34:40Z` |
 | Expected base branch | `main` |
 | Base SHA | `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` — verified local/`origin/main`; BACKLOG-01 exact-main CI `33819193701` success |
 | Working branch | `codex/goal-005-backlog-02-secure-remote` |
-| Last verified revision | `0b9cc5d8a478ece7a09cd9e017d6d3c0c2c5299c` — full local CI-equivalent succeeded; this checkpoint commit intentionally does not self-reference its own containing revision |
+| Last verified revision | `47a82d25efc69b0759667f83285b06709a97cc1b` — both failed CI fixtures pass in five consecutive focused runs; full CI-equivalent on the grouped fix head pending |
 | Initial worktree state | Clean branch created from verified `origin/main`; unrelated changes absent |
 | Completed work | EPIC-01 `v1.0.0-rc.2` terminal release Evidence preserved; B01 terminal through PR #23 / merge `7c71fbc` / exact-main CI `33819193701`. B02 code commit `e9ab608` implements default-off identity+bearer ingress, DPAPI CurrentUser credential lifecycle, explicit Tailscale HTTPS remote backend, separate availability/connect latency and fail-closed remote resource semantics; secure-remote runbook and operational documentation prepared in the worktree |
-| Current step | Create final checkpoint commit, revalidate exact local head, fetch-check unchanged base, then perform the one initial push and create the B02 PR |
-| Next exact action | Re-run full CI-equivalent on final checkpoint head, verify `origin/main` remains `7c71fbc…`, push once and open B02 PR |
-| PR / CI | B02 PR not created; exact-head CI pending |
+| Current step | Validate the single grouped follow-up batch for the confirmed PR CI failure, then push it once and wait for replacement exact-head CI |
+| Next exact action | Commit this failure checkpoint, run the full CI-equivalent, fetch-check unchanged base, then perform the one allowed grouped follow-up push to PR #24 |
+| PR / CI | PR [#24](https://github.com/Just9120/llm-inspector/pull/24) initial head `6b417a6993fa16680993634d411e326d914d7e02`; run [33822032660](https://github.com/Just9120/llm-inspector/actions/runs/33822032660) failed only in tests: IPv4-listener/`localhost` probe mismatch and a transient post-process-kill SQLite handle race; downstream restore/publish/smoke steps were skipped and are not counted as success |
 | Deployment | N/A; server/runtime CD remains disabled |
-| Validation | At exact `0b9cc5d`: SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, full `259/259` tests with zero skips, clean one-file self-contained publish (`62,826,143` bytes, SHA-256 `6e41ad82e9516e4caf41c57345f13682d55f5a525e259ce3624d5ef465cf44aa`) and smoke pass. Automated evidence does not substitute for encrypted two-host LIVE Evidence |
+| Validation | Initial exact-head local run at `6b417a6`: SDK `10.0.400`, locked normal/RID restores, format, Release build `0` warnings/errors, full `259/259`, one-file publish and smoke pass. CI run `33822032660`: restore/format/build success, tests `2` failed / `257` passed / `0` skipped, later steps skipped. Fix `47a82d2` uses exact IPv4 fixture target and waits for actual DB/WAL/SHM handle release; both cases pass `5/5` consecutive focused iterations (`10/10` test executions) |
 | Blockers | None for safe B02 PR. Tailscale VPS/second-PC LIVE environment is unavailable. Windows Home/Pro exact release checks and E12 controlled measurements remain manual gates. llama.cpp `b10516`, LM Studio/lms and named clients remain unverified manual compatibility targets. `docs/ci-cd-rules.md` profile remains stale (`windows_release.enabled: false`) until explicit CI/CD policy-document request |
 | Unverified assumptions | No current external-runtime claim beyond locally verified Ollama/model/hardware facts; actual llama.cpp, LM Studio, Tailscale and client results remain unverified |
 | Preserved pre-existing changes | None; branch began clean from verified base |
