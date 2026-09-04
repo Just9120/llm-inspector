@@ -1,31 +1,31 @@
 # Delivery plan
 
 > Dashboard status: `NO ACTIVE GOAL`
-> Updated: `2026-09-04T07:51:09Z`
+> Updated: `2026-09-04T08:07:21Z`
 
 ## Current Goal
 
-Активная Goal отсутствует. `GOAL-005 — Завершить согласованный Windows delivery scope` остановлена в предусмотренном terminal state `PENDING_EXTERNAL_GATE`: весь безопасно выполнимый implementation scope доставлен, а отсутствующие обязательные проверки требуют внешней среды или длительного controlled run. Полный terminal record перенесён в [`delivery-plan-archive.md`](delivery-plan-archive.md#goal-005--завершить-согласованный-windows-delivery-scope).
+Активная Goal отсутствует. `GOAL-005 — Завершить согласованный Windows delivery scope` имеет terminal state `DONE`: implementation/delivery scope выполнен, а explicit user instruction от `2026-09-04` вынесла manual/runtime validation в отдельную будущую Goal. Полный terminal record находится в [`delivery-plan-archive.md`](delivery-plan-archive.md#goal-005--завершить-согласованный-windows-delivery-scope).
 
-- **Последняя authorization:** explicit user instruction от `2026-09-04`: отменить version branches, оставить единственную line `main`, не публиковать новые prerelease, сохранять product version `1.0` до final `v1.0.0` после required validation; historical `rc.3` не удалять.
-- **Stop condition:** выполнена ветка `PENDING_EXTERNAL_GATE`; `DONE` не заявляется без Windows Home, controlled E12 measurements и обязательного B02 LIVE Evidence.
+- **Последняя authorization:** explicit user instruction от `2026-09-04`: завершить `GOAL-005` по фактически доставленной реализации; manual checks не входят в её Goal DoD и выполняются отдельно.
+- **Stop condition:** выполнена ветка `DONE`; финальный remaining-scope denominator `14/14` implementation AC доставлен с required SPEC/CODE/TEST/CI Evidence. Отсутствующая manual/LIVE Evidence не переносится и продолжает блокировать product READY там, где она обязательна.
 - **Implementation authorization:** отсутствует. Candidate Goals ниже являются только предложениями.
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | `2026-09-04T07:51:09Z` |
+| Updated UTC | `2026-09-04T08:07:21Z` |
 | Expected base branch | `main` |
-| Base SHA | `1c865e0561c45955906c902c6d23a761ed8ad363` — verified local/`origin/main`, clean before single-main policy branch creation |
+| Base SHA | `74f710ab1f7a9457377045191b0f62a472e8f40c` — verified local/`origin/main`, clean before DONE reconciliation branch creation |
 | Branch policy | `main` is the only persistent branch after the owner-approved cleanup; historical tags/releases remain immutable |
-| Last verified product revision | `1c865e0561c45955906c902c6d23a761ed8ad363`; policy changes do not add product AC credit |
-| Worktree state | Terminal target is one clean synchronized `main`; the temporary policy branch is deleted after merge/exact-main CI and the exact cleanup record is kept in the merged PR comment |
-| Completed work | All GOAL-005 code increments and terminal reconciliation merged. Historical `rc.3` remains public Evidence; subsequent release source is single `main` and the next allowed public version is final `v1.0.0` after required validation |
-| Current step | No active execution after owner-authorized single-main/final-only policy reconciliation and obsolete branch cleanup |
+| Last verified product revision | `74f710ab1f7a9457377045191b0f62a472e8f40c`; Goal closure metadata adds no product AC credit |
+| Worktree state | Terminal target is one clean synchronized `main`; the temporary DONE reconciliation branch is deleted after merge/exact-main CI and its exact cleanup record is kept in the merged PR comment |
+| Completed work | `GOAL-005` implementation/delivery scope complete; в финальном remaining-scope tranche выполнены B01 `5/5` + B02 `9/9` = `14/14` implementation AC. Все increments, release/policy work и terminal reconciliation merged. Manual E01/E12/B02 и compatibility checks явно отделены в future validation Goal |
+| Current step | No active execution after owner-authorized `GOAL-005 DONE` reconciliation |
 | Next exact action | Await explicit authorization for a new bounded Goal; do not create final `v1.0.0` tag before required validation |
-| Validation / Evidence | Single-main policy branch local full CI-equivalent success: exact SDK `10.0.400`, `260/260`, no skips, build 0 warnings/errors, RID publish/smoke pass, executable FileVersion `1.0.0.0`; GOAL-005 closeout PR/main CI `33847850161`/`33848084925` success |
-| PR / CI | PR #29 merged as `1c865e0561c45955906c902c6d23a761ed8ad363`; historical PR #28/release Evidence remains in [terminal comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281) |
+| Validation / Evidence | Single-main policy PR/main CI `33850743370`/`33850992022` success (`260/260`, no skips, publish/smoke pass); prior GOAL-005 terminal code/release Evidence remains archived |
+| PR / CI | PR #30 merged as `74f710ab1f7a9457377045191b0f62a472e8f40c`; historical PR #28/release Evidence remains in [terminal comment](https://github.com/Just9120/llm-inspector/pull/28#issuecomment-5536465281) |
 | Release artifact | [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3), executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`; exact 6-asset set, `3/3` checksums, SPDX 2.3 (`32` packages / `1` file), provenance and SBOM Sigstore verification pass |
 | Deployment | N/A; server/runtime CD remains disabled |
 | External gates | Windows Home `25H2` exact-artifact matrix; controlled E12 measurements for all three built-in profiles; Tailscale encrypted two-host LIVE; llama.cpp `b10516`; LM Studio/lms; Open WebUI E2E |
@@ -36,10 +36,10 @@
 
 | Snapshot | Timestamp | Initial release | Full agreed roadmap | Denominator и основание |
 |---|---|---:|---:|---|
-| Current | `2026-09-04T07:51:09Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged `main` `1c865e0` plus historical exact `rc.3` release/runtime Evidence. Version/branch policy changes no denominator or AC; E01 remains `3/4`, E12 `7/13` |
-| Previous | `2026-09-04T06:59:16Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent calculation on exact merged `main` `d2c3df5` plus exact `rc.3` Evidence; denominators and completed AC were identical |
+| Current | `2026-09-04T08:07:21Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent AC-by-AC calculation on exact merged `main` `74f710a` plus historical exact `rc.3` Evidence. Goal DoD amendment changes no product denominator or AC; E01 remains `3/4`, E12 `7/13` |
+| Previous | `2026-09-04T07:51:09Z` | `132/139 = 95.0%` | `152/164 = 92.7%` | Independent calculation on exact merged `main` `1c865e0`; version/branch policy changed no product AC |
 
-Delta: `0.0 п.п.` initial и `0.0 п.п.` full. Новая Evidence устранила failed `rc.2` implementation path и подтвердила Pro exact-artifact flows, но `E01-AC01` остаётся binary-unfulfilled без полной Home/Pro matrix; controlled E12 results также отсутствуют.
+Delta: `0.0 п.п.` initial и `0.0 п.п.` full. `GOAL-005 DONE` относится к amended implementation Goal, а не к product READY: `E01-AC01` остаётся binary-unfulfilled без полной Home/Pro matrix, controlled E12 results и B02 LIVE также отсутствуют.
 
 ## Epic readiness и Evidence
 
