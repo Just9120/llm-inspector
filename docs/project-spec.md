@@ -458,23 +458,23 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | — | — | — | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
 
-Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS). Tranche 3 SQLite/history/analytics/artifacts локально проверен: migrations v1–v5, actual .NET WAL interoperability, Go crash recovery, retention/clear, aggregate boundaries и proxy→DB→export negative content corpus. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
+Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS); storage PR #36 (`3fdf3ca`, exact-main CI `33952214437` PASS). Tranche 4 локально проверен: Windows/native probes, bounded resource timelines и proxy→resource→SQLite wiring, multi-GPU projection, settings v1/v2, performance profiles/evaluator/frozen corpus, notification policy, tray ABI/message loop на собственном hidden HWND с заменённым Shell notification call. Пользовательские autostart/settings не менялись, реальный Windows walkthrough ещё не выполнен. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
 
 Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
 
@@ -498,7 +498,7 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-05`, Go tranche-2 pre-PR review; denominator и completed AC не изменились.
+- Last recalculation: `2026-09-05`, Go tranche-4 pre-PR review; denominator и completed AC не изменились: final desktop wiring отсутствует.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Verified migration base: `c611856c81b1dc7dc239805a095d054249b3043d`, main CI `33864679915` success (C# reference).
 - Active approved Goal: `GOAL-006`, `IN_PROGRESS`; exact checkpoint и pipeline — `docs/delivery-plan.md`.

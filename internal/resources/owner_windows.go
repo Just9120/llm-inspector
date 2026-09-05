@@ -45,6 +45,25 @@ func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
 	if port < 1 || port > 65535 {
 		return nil
 	}
+	pid := listenerOwner(ip, port)
+	if pid == 0 {
+		return nil
+	}
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return nil
+	}
+	defer windows.CloseHandle(h)
+	identity, err := winhost.IdentityForHandle(h, pid)
+	// Keep the handle alive across revalidation: an exited process cannot have
+	// its PID reused under us. A changed/disappeared listener is unavailable.
+	if err != nil || listenerOwner(ip, port) != pid {
+		return nil
+	}
+	return identity.Association()
+}
+
+func listenerOwner(ip net.IP, port int) uint32 {
 	family := uintptr(2)
 	if ip.To4() == nil {
 		family = 23
@@ -52,12 +71,12 @@ func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
 	var size uint32
 	code, _, _ := tcpTable.Call(0, uintptr(unsafe.Pointer(&size)), 0, family, 3, 0)
 	if code != 122 || size < 4 || size > 4<<20 {
-		return nil
+		return 0
 	}
 	// The listener table can grow between sizing and capture. Retry boundedly.
 	for attempts := 0; attempts < 3; attempts++ {
 		if size < 4 || size > 4<<20 {
-			return nil
+			return 0
 		}
 		buf := make([]byte, size)
 		code, _, _ = tcpTable.Call(uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size)), 0, family, 3, 0)
@@ -65,19 +84,11 @@ func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
 			continue
 		}
 		if code != 0 || int(size) > len(buf) {
-			return nil
+			return 0
 		}
-		pid := ownerFromTable(buf[:size], ip, port)
-		if pid == 0 {
-			return nil
-		}
-		identity, err := winhost.ProcessIdentity(pid)
-		if err != nil {
-			return nil
-		}
-		return identity.Association()
+		return ownerFromTable(buf[:size], ip, port)
 	}
-	return nil
+	return 0
 }
 
 func ownerFromTable(data []byte, ip net.IP, port int) uint32 {
