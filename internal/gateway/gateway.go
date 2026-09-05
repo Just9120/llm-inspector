@@ -35,6 +35,7 @@ type Gateway struct {
 	correlation *state.Correlation
 	operations  *state.Operations
 	monitor     atomic.Pointer[monitorHolder]
+	authorizer  atomic.Pointer[authorizerHolder]
 }
 
 func New(c Config, sink chan<- domain.Observation) (*Gateway, error) {
@@ -176,8 +177,12 @@ func safeResponse(w http.ResponseWriter, status int, code string) {
 }
 
 func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !localIngress(r) {
-		safeResponse(w, 403, "remote_access_disabled")
+	authorizedRemote, denialStatus, denialCode := g.authorizeIngress(r)
+	if denialStatus != 0 {
+		if denialStatus == 401 {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+		}
+		safeResponse(w, denialStatus, denialCode)
 		return
 	}
 	path, client, ok := route(r.URL.Path, r.Method, g.config.Backend)
@@ -252,6 +257,9 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer func() { obs.Agent.AvailableTools, obs.Agent.ToolResults = capture.Result() }()
 	}
 	scrubHopHeaders(out.Header)
+	if authorizedRemote {
+		out.Header.Del("Authorization")
+	}
 	for _, k := range append(append([]string{}, identityHeaders...), correlationHeaders...) {
 		out.Header.Del(k)
 	}

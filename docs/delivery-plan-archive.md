@@ -13,6 +13,11 @@
 - Storage PR [#36](https://github.com/Just9120/llm-inspector/pull/36): head `9cf4c3a0cf7672a87bfdc8ba33edfd768ec4395f`, merge `3fdf3caaae4f982f6e5db393cd6c493a24a644ba`; PR CI `33952081663`, main CI `33952214437`: windows-go/windows-dotnet SUCCESS. One initial push; transient PR-create TLS response was reconciled by readback, no duplicate PR.
 - Local: 65 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, real .NET WAL→Go read/write interoperability and ten repeated concurrent/flush/process-kill cases passed. No user DB accessed. Local/remote `codex/goal-006-go-storage` safely removed after main synchronization.
 
+## GOAL-006 — completed increment 4 (Goal remains active)
+
+- Windows PR [#37](https://github.com/Just9120/llm-inspector/pull/37): head `e0945e08357c7a9f38ff66634548a222bdd5a312`, merge `976a8214d2ca3b3f0e9da02522eeef913122065f` at `2026-09-05T08:07:54Z`; PR CI `33954262844`, main CI `33954426102`: windows-go/windows-dotnet SUCCESS. One initial push; no CI failure batch or speculative rerun.
+- Local: 98 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, native probes/hidden HWND tests, 50 background repeats and 10 resource/background pipeline repeats passed. Settings/autostart fixtures did not modify user registration. No real tray notification or manual Windows/performance Evidence claimed. Local/remote `codex/goal-006-go-windows` safely removed; main synced to merge revision.
+
 ## Release strategy correction — single `main`, final-only publication
 
 - **Authorization:** explicit user decision от `2026-09-04`: версия остаётся `1.0` до полного тестирования и финальной публикации; отдельная `release/v1.0` line не нужна.

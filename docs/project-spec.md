@@ -458,25 +458,29 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
-| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | — | — | — | N/A | — |
+| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | ◐ | ◐ | — | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
 
 Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS); storage PR #36 (`3fdf3ca`, exact-main CI `33952214437` PASS). Tranche 4 локально проверен: Windows/native probes, bounded resource timelines и proxy→resource→SQLite wiring, multi-GPU projection, settings v1/v2, performance profiles/evaluator/frozen corpus, notification policy, tray ABI/message loop на собственном hidden HWND с заменённым Shell notification call. Пользовательские autostart/settings не менялись, реальный Windows walkthrough ещё не выполнен. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
 
 Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
+
+Последующие operational Evidence: Windows PR #37 (`976a821`, PR CI `33954262844`, main CI `33954426102`: оба jobs SUCCESS). Tranche-5 remote credentials/ingress/probe локально проверены: native DPAPI и synthetic .NET interoperability, one-time rotation/revocation, default deny, private-Serve/token guards, secret scrubbing и отдельная calculated DNS+TCP latency. Реального two-host LIVE нет; final Wails product surface ещё не подключён.
+
+Tranche-5 lifecycle core локально проверен: target/parameter confirmation, serialized/idempotent operations, uncapped active-request gate, exact installed/loaded model identities, partial-start cleanup, PID/start/path + Job Object ownership, attached/detached synthetic Windows listeners, capture-time output bounds и no-redirect local HTTP. Установленные backend processes/модели не запускались и не изменялись. Readiness остаётся 0/143 и 0/168 до final product wiring; CODE/TEST B01 — partial, а не READY.
 
 ## 8. Resolved decisions и external gates
 
