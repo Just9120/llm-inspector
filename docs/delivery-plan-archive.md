@@ -8,6 +8,11 @@
 - Telemetry PR [#35](https://github.com/Just9120/llm-inspector/pull/35): head `6603e53f5ceaa46e842737de4078f5c3f7525ebc`, merge `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87`; PR CI `33949980492`, main CI `33950314660`, both Windows Go/.NET jobs SUCCESS. Local and remote `codex/goal-006-go-telemetry` safely removed after main synchronization.
 - These are completed increments, not Goal closure or Go desktop readiness. No release/deployment performed.
 
+## GOAL-006 — completed increment 3 (Goal remains active)
+
+- Storage PR [#36](https://github.com/Just9120/llm-inspector/pull/36): head `9cf4c3a0cf7672a87bfdc8ba33edfd768ec4395f`, merge `3fdf3caaae4f982f6e5db393cd6c493a24a644ba`; PR CI `33952081663`, main CI `33952214437`: windows-go/windows-dotnet SUCCESS. One initial push; transient PR-create TLS response was reconciled by readback, no duplicate PR.
+- Local: 65 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, real .NET WAL→Go read/write interoperability and ten repeated concurrent/flush/process-kill cases passed. No user DB accessed. Local/remote `codex/goal-006-go-storage` safely removed after main synchronization.
+
 ## Release strategy correction — single `main`, final-only publication
 
 - **Authorization:** explicit user decision от `2026-09-04`: версия остаётся `1.0` до полного тестирования и финальной публикации; отдельная `release/v1.0` line не нужна.
