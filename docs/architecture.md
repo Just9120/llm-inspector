@@ -22,6 +22,7 @@
 | `internal/resources`, `internal/winhost` | Windows CPU/RAM/process APIs, exact loopback listener PID/start/exe association, bounded NVIDIA CSV; максимум 128 asynchronous request collectors / 2048 samples per request. Remote resources unavailable, host metrics не дублируются по GPU |
 | `internal/performance` | Canonical profiles/budgets и fail-closed evaluator; custom не даёт release Evidence, mandatory missing не даёт pass |
 | `internal/background` | Совместимые settings v1/v2, atomic save без перезаписи newer/corrupt document; current-user autostart, точный rollback, bounded notification worker, русский native tray на dedicated OS thread и lifetime controls |
+| `internal/remote` | Opt-in 256-bit bearer manager, one-time creation/rotation, constant-time verification/revocation; bounded legacy-compatible DPAPI CurrentUser file, atomic persistence и fail-closed error state. Не управляет Tailscale/ACL/Serve |
 
 LM Studio native `/api/v1/chat` имеет отдельный parser mode: только terminal stats подтверждают cold/warm; OpenAI-compatible flow не получает guessed native metrics. Correlation headers валидируются и удаляются до backend. Request projection считает tools/trailing tool roles без content decode; response projection собирает не более 256 tool names до 128 bytes, хранит finish state и отвергает multi-choice/index ambiguity. Operation grouping требует exact adjacent turns и count-compatible pending tool results; measured duration — calculated call-to-next-turn wall time, не guessed tool execution time.
 
