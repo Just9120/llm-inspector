@@ -84,7 +84,7 @@ func TestBuildRetainsLockedChecksAndPortableVersionContract(t *testing.T) {
 	if !strings.Contains(repositoryText(t, ".gitattributes"), "*.go text eol=lf") {
 		t.Fatal("Go checkout must preserve gofmt line endings")
 	}
-	for _, path := range []string{"go.mod", "go.sum", "benchmarks/fixtures/**", "internal/telemetry/testdata/**", "internal/lifecycle/config/**", "build/windows/*.manifest"} {
+	for _, path := range []string{"go.mod", "go.sum", "benchmarks/fixtures/**", "internal/telemetry/testdata/**", "internal/lifecycle/config/**", "internal/history/schema/*.sql", "build/windows/*.manifest"} {
 		if !strings.Contains(repositoryText(t, ".gitattributes"), path+" text") {
 			t.Fatalf("locked source/fixture line endings missing: %s", path)
 		}
