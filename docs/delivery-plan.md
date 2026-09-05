@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `IN_PROGRESS`
-> Updated UTC: `2026-09-05T20:32:30Z`
+> Updated UTC: `2026-09-05T20:56:00Z`
 
 ## Current Goal
 
@@ -35,18 +35,19 @@ Goal AC не добавляются в product denominator. Полный roadmap
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T20:32:30Z — repository/environment preflight |
+| Updated UTC | 2026-09-05T20:56:00Z — local capture implementation/test checkpoint |
 | Base branch / SHA | main / `88cbe291309105c495da5f488d23d48f8c74b007`; local main = origin/main = GitHub main, fetch/readback verified |
 | Working branch | `codex/goal-007-validation` |
-| Last verified revision | `88cbe291309105c495da5f488d23d48f8c74b007`; prior main CI `33978125113` SUCCESS |
-| Worktree | Clean at branch creation, no pre-existing user changes; only own main checkout |
+| Last verified revision | `81ce04019eb10550e3a2cb599e24777c975efca8` — approved reference/Goal docs; new capture work locally tested, full validation next. Prior main CI `33978125113` SUCCESS |
+| Worktree | Clean at branch creation, no pre-existing user changes; only Goal-owned capture code/tests/runbook/navigation/checkpoint changes |
 | Recovery | GOAL-006 DONE 9/9 по [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062); stale pre-merge dashboard не является новой authorization. Closed Goal перенесена в archive |
-| Completed work | Goal scope/reference questions поставлены; Windows-only и Ollama 0.33.3 owner decisions получены. Safe read-only hardware/runtime preflight |
-| Current step | Scope/reference update и frozen corpus v2 (только Ollama 0.33.3) выполнены; идёт независимая validation tooling work. Computer Use остановлен Escape, UI Evidence не заявлено |
-| Next exact action | Реализовать и проверить bounded read-only process-tree measurements для exact running executable; не возобновлять Computer Use без сигнала пользователя |
+| Completed work | Approved Ollama reference/corpus v2 committed; v1 сохранён byte-for-byte. Read-only exact-PID process capture, error/privacy/exclusive-output/cancellation/descendant tests и windows-validation runbook готовы. Focused Go tests PASS: validation 85.1%, CLI 73.6%, performance 100% statement coverage (не product readiness) |
+| Current step | Законченный bounded validation-tool increment проходит full local validation. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
+| Next exact action | Commit capture increment и выполнить canonical build/release-tool checks в собственном isolated checkout; не возобновлять Computer Use без сигнала пользователя |
 | Environment | Windows Pro 25H2 x64 26200.9168, Ryzen 7 9800X3D 8C/16T, RTX 5060 Ti 16311 MiB / driver 610.74. Ollama API 0.33.3, reference model digest installed, 0 loaded models на preflight |
 | Existing state preserved | Ollama user process уже запущен; не owned Inspector, не останавливать. Existing Inspector DB присутствует; settings/token files отсутствовали. Не очищать историю и не изменять remote/privacy settings скрыто |
 | Artifact | Existing local `build/bin/LlmInspector.exe` SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; supporting candidate, не public release. Prior hosted hash отличается; cross-host identity не доказана |
+| Pilot | Actual read-only capture `2026-09-05T20:47:45Z`–`20:48:15Z`, 31 samples / 30.006883 measured seconds, 7 observed processes. Private bytes P95 249102336 (~237.56 MiB), growth 16384 bytes, observed CPU delta and generic I/O-write delta 0. Profile balanced только declared; не verified UI state. Report SHA-256 `cda5f3cc5c1899464185a6c1b2fc79493e9a9c0461af276d9bcc73cf5f27d4b4`, local ignored `artifacts/goal007-validation/process-pilot-88cbe29.json`; pre-commit tool schema. Supporting pilot, **не E12 PASS** |
 | PR / CI | GOAL-007 PR ещё нет; новый CI ещё не запускался |
 | Deployment / LIVE | CD disabled / DEPLOY N/A; B02 LIVE отсутствует, не считать local fixture подтверждением |
 | Blockers / unverified | Windows Home, second host/Tailscale, exact other backend/client versions, B04 decision, controlled resource/wakeup source и stable candidate identity |

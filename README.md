@@ -100,6 +100,7 @@ Automated smoke не заменяет ручную Windows Home/Pro матриц
 - [docs/ci-cd-rules.md](docs/ci-cd-rules.md) — обязательный safety contract.
 - [docs/architecture.md](docs/architecture.md) — актуальные components, ownership, data flow и ограничения.
 - [docs/runbooks/windows-release.md](docs/runbooks/windows-release.md) — final portable release и Windows gates.
+- [docs/runbooks/windows-validation.md](docs/runbooks/windows-validation.md) — подготовка Windows Evidence, read-only process capture и ограничения измерений.
 - [docs/runbooks/backend-lifecycle.md](docs/runbooks/backend-lifecycle.md) — безопасное управление локальным backend.
 - [docs/runbooks/secure-remote-access.md](docs/runbooks/secure-remote-access.md) — private remote setup, threat model и LIVE checklist.
 - [Upstream requirements](https://docs.google.com/document/d/1r4o0UiJohJf34j3nL56LWnOxGRi7WDC3jqoDIIjDTnA/edit) — provenance; canonical source of truth — project-spec.
