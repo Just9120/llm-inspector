@@ -103,6 +103,10 @@ guidance, tray/background, local proxy, SQLite restart/recovery и critical supp
 flow. После публикации identity public artifact сверяется с pre-publication candidate. До полного
 Evidence `E01-AC01` не получает credit, а final release tag не создаётся.
 
+### Ограничение текущего Go candidate
+
+На code SHA `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7` local root и independent clean checkout дали одинаковый executable SHA-256, но hosted CI — другой. Значения и exact run записаны в [delivery checkpoint](../delivery-plan.md). Cross-host byte identity не доказана; ни локальный smoke, ни hosted CI не являются pre-publication manual Evidence. До начала manual phase нужно выбрать exact source/artifact candidate; при последующем несовпадении hashes проверка не переносится. Это фиксация открытого gate, не изменение release policy.
+
 ## Failure policy
 
 - Failed/skipped/cancelled build, tests, payload verification, attestation или publish — не success.

@@ -1,6 +1,6 @@
 # Архитектура LLM Inspector
 
-> Актуальный Go runtime, GOAL-006. Дата сверки: 2026-09-05.
+> Актуальный Go runtime, GOAL-006. Дата сверки: 2026-09-05; code `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, [main CI SUCCESS](https://github.com/Just9120/llm-inspector/actions/runs/33975817279).
 > Фактическая карта, не замена canonical product contract или TEST/CI/LIVE Evidence.
 
 ## Стек и границы
@@ -85,6 +85,7 @@ CI `windows-go` работает на ephemeral `windows-2025` с read-only toke
 - Native listener/process ownership, permissions и external runtime CLI зависят от Windows/runtime version; unsupported capability не включается автоматически.
 - Локальный race detector недоступен без C compiler; deterministic concurrency/repeat tests не являются его заменой.
 - Release workflow ещё не выполнялся для Go public artifact; signing/installer/WinGet/manual tests — отдельные gates. Исторический C# release не подтверждает Go.
-- Автоматический post-deploy metadata writer отсутствует и CD выключен. Нельзя обходить protections или создавать metadata-only follow-up PR ради терминальной отметки; exact PR/main checks остаются внешним delivery Evidence.
+- Локальные root/clean checkout дали одинаковый executable hash, но hosted CI hash отличается. Cross-host byte identity не доказана; manual/release Evidence нельзя переносить между hashes. Exact candidate gate остаётся открытым до публикации.
+- Автоматический post-deploy metadata writer отсутствует, CD выключен. Для GOAL-006 owner отдельно разрешил этот документационный closeout PR и terminal-комментарий в PR #39 с actual final SHA/CI/cleanup. Это разовое разрешение, не общий metadata write mechanism и не обход protections.
 
 Canonical scope и readiness — [project-spec](project-spec.md); current execution — [delivery-plan](delivery-plan.md); закрытая история — [archive](delivery-plan-archive.md).

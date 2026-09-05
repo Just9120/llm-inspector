@@ -132,7 +132,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-02 — Backend/client adapters и OpenAI-compatible API
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 
 **Goal:** наблюдать обязательные local backends и compatible clients через штатную endpoint configuration.
 
@@ -158,7 +158,7 @@ Definition of Done: `15/15` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-03 — Live state и качество telemetry
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** показывать реальное состояние active request без fabricated progress.
 
 Acceptance criteria:
@@ -181,7 +181,7 @@ Definition of Done: `13/13` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-04 — Tokens, context и timings
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** объяснять объём prompt/context и latency decomposition по доступным backend data.
 
 Acceptance criteria:
@@ -203,7 +203,7 @@ Definition of Done: `12/12` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-05 — Agent operations, tools и concurrency
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** представлять multi-turn agent workflow как изолированную ordered operation.
 
 Acceptance criteria:
@@ -221,7 +221,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-06 — System resource telemetry
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** коррелировать system resource load с request timeline без недостоверной attribution.
 
 Acceptance criteria:
@@ -239,7 +239,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-07 — Explainable diagnostics и errors
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** объяснять bottlenecks и errors на основе наблюдаемых metrics, отделяя facts от hypotheses.
 
 Acceptance criteria:
@@ -265,7 +265,7 @@ Definition of Done: `16/16` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-08 — Local history, analytics и retention
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** хранить и анализировать только technical metadata с управляемым retention.
 
 Acceptance criteria:
@@ -293,7 +293,7 @@ Definition of Done: `18/18` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-09 — Privacy, locality и transparent proxying
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** доказуемо исключить user content из data surfaces и сохранить API semantics.
 
 Acceptance criteria:
@@ -317,7 +317,7 @@ Definition of Done: `14/14` AC, включая automated negative privacy/pass-t
 
 ### EPIC-10 — Background operation и Windows notifications
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** продолжать monitoring в фоне и уведомлять без спама.
 
 Acceptance criteria:
@@ -335,7 +335,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-11 — Anonymized diagnostic snapshot
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 **Goal:** создавать локально проверяемый diagnostic artifact, безопасный для передачи человеку или coding agent.
 
 Acceptance criteria:
@@ -382,7 +382,7 @@ Backlog requirements согласованы и не входят в initial rele
 
 ### BACKLOG-01 — Backend/model lifecycle management
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 
 - `B01-AC01`: Пользователь может запустить supported backend. [source: `UP-C01-05`]
 - `B01-AC02`: Пользователь может остановить supported backend. [source: `UP-C01-05`]
@@ -429,7 +429,7 @@ Definition of Done: `2/2` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-05 — Multiple GPUs
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 
 - `B05-AC01`: Inspector обнаруживает несколько supported GPU devices. [source: `UP-C04-03`]
 - `B05-AC02`: Resource UI показывает metrics раздельно для каждого device. [source: `UP-C04-03`]
@@ -439,7 +439,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-06 — Export analytics
 
-**Status:** 🟦 IN PROGRESS
+**Status:** 🟩 READY
 
 - `B06-AC01`: Пользователь экспортирует выбранный range anonymized technical history. [source: `UP-C09-04`]
 - `B06-AC02`: Пользователь экспортирует aggregate metrics за выбранный range. [source: `UP-C09-04`]
@@ -449,31 +449,31 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-> **Operational snapshot — final local Go cutover review, 2026-09-05.** Это датированный pre-merge snapshot. Последующий exact CI/merge/cleanup и terminal status публикуются в том же [финальном PR по exact head branch](https://github.com/Just9120/llm-inspector/pulls?q=is%3Apr+head%3Acodex%2Fgoal-006-go-desktop), согласно explicit owner approval. До этих проверок CI не считается ✅, эпики не объявлены READY.
+> **Operational snapshot — Go code delivery verified, 2026-09-05T16:16:10Z.** Проверенный code SHA `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, exact-main [CI 33975817279](https://github.com/Just9120/llm-inspector/actions/runs/33975817279) SUCCESS. Для 13 эпиков выполнены все AC и обязательные SPEC/CODE/TEST/CI: они READY. Отдельный owner-requested docs PR ещё проходит delivery; окончательные Goal DONE/merge/cleanup фиксируются terminal-комментарием [PR #39](https://github.com/Just9120/llm-inspector/pull/39), согласно explicit owner approval. Product readiness и готовность публичного release не равны Goal DoD.
 
 Пересчитаны все **168 уникальных atomic AC** текущего contract: **143 initial**, **25 backlog**. Кредит бинарный: выполненный AC = 1; частичный или требующий отсутствующего actual runtime = 0. Ни прошлые проценты, ни coverage/число tests не использованы как denominator.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 7/8 | 87.5% | ✅ | ✅ | ◐ | — | N/A | N/A |
-| EPIC-02 | 🟦 IN PROGRESS | 15/15 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-04 | 🟦 IN PROGRESS | 12/12 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-05 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-06 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-07 | 🟦 IN PROGRESS | 16/16 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-09 | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-10 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-11 | 🟦 IN PROGRESS | 10/10 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ✅ | ◐ | ◐ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **136/143** | **95.1%** | ✅ | ✅ | ◐ | ◐ | N/A | N/A |
-| BACKLOG-01 | 🟦 IN PROGRESS | 5/5 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 5/9 | 55.6% | ✅ | ✅ | ◐ | ◐ | N/A | — |
+| EPIC-01 | 🟦 IN PROGRESS | 7/8 | 87.5% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
+| EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-05 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-06 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-07 | 🟩 READY | 16/16 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
+| **Initial release total** | **🟦 IN PROGRESS** | **136/143** | **95.1%** | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
+| BACKLOG-01 | 🟩 READY | 5/5 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| BACKLOG-02 | 🟦 IN PROGRESS | 5/9 | 55.6% | ✅ | ✅ | ◐ | ✅ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
-| BACKLOG-06 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
+| BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
 | **Full agreed roadmap total** | **🟦 IN PROGRESS** | **152/168** | **90.5%** | ✅ | ◐ | ◐ | ◐ | N/A | — |
 
 **Без кредита:** E01-AC01 (1: Windows Home/Pro exact-artifact release matrix); E12-AC01..06 (6: controlled overhead/throughput/idle); B02-AC01/02/04/05 (4: actual other-PC/LAN/VPS/authenticated encrypted flow); B03-AC01..03 (3: conditional platforms); B04-AC01..02 (2: conditional protocols). Итого 7 initial / 16 full невыполненных AC. У B02 code/tests обеспечивают путь, но localhost fixtures не доказывают четыре фактических multi-host AC или обязательный LIVE.
@@ -509,7 +509,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 | B05-AC01..03 | 3 | `internal/resources/project_test.go`, monitor_test.go и Resources.svelte: multiple distinct supported devices, separate selection/metrics, unavailable workload attribution. |
 | B06-AC01..03 | 3 | `internal/artifact/{snapshot,bounds}_test.go`, desktop/facade_test.go, History/ArtifactDialog: selected complete range, aggregates, same negative privacy corpus, exact saved preview. |
 
-Core delivery Evidence: PR #34 / main CI `33948852046`; #35 / `33950314660`; #36 / `33952214437`; #37 / `33954426102`; #38 / `33958021155` — SUCCESS. Это evidence соответствующих increments, не будущего cutover PR. Final local checks: 149 internal test functions + fuzz seed corpus, root host 2 tests, frontend format/Svelte/TypeScript/3 Node tests, native Windows smoke и release payload/tamper suite. Детальные source/artifact IDs — в delivery checkpoint; CI final revision пока ожидается.
+Final delivery Evidence: [cutover PR #39](https://github.com/Just9120/llm-inspector/pull/39), merge `238d3ba5f7d607fa6768a6092f9cd3f2ce36f3fd`; [checkout policy fix #40](https://github.com/Just9120/llm-inspector/pull/40), merge `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`. PR CI `33965234911` / `33975525588` и main CI `33975166335` / `33975817279` — SUCCESS, required skips отсутствуют. Final exact-main local build/smoke/release suite PASS. 149 internal test functions + fuzz seed corpus, root host 2 tests, frontend format/Svelte/TypeScript/3 Node tests; отдельный Go JSON test run: 201 pass events с subtests/seeds, 0 fail / 0 skip. Source/artifact hashes и ограничения воспроизводимости — в delivery checkpoint; ранние increment chains — в archive.
 
 ### Audit quality review
 
@@ -519,23 +519,23 @@ Core delivery Evidence: PR #34 / main CI `33948852046`; #35 / `33950314660`; #36
 - Возможные false positives: факт threshold не доказывает первопричину, CPU offload остаётся hypothesis; соседство по времени не correlation. Возможные false negatives: bounded telemetry drops, unknown provider fields и отсутствующий driver/source дают unavailable; это может скрыть реальную проблему, но не разрешает fabricated telemetry.
 - Coverage gaps: нет локального race detector (C compiler отсутствует), длительного fuzz/soak, visual regression/DPI matrix, полноценного frontend interaction suite всех actions и физического multi-GPU/remote verification. Число Go tests нельзя сравнивать 1:1 со старым C# test count.
 - Generated assets/bindings/node_modules/exe не source и не orphan code; vendored production code не добавлен. Legacy C#/.NET production/test scaffolding удалён, 14 protocol fixtures перенесены intact, reference SQL/matrix закреплён hashes. Устаревшая C# architecture/quickstart заменена actual Go map; archive не участвует в оценке.
-- Scope не расширен: E01-AC04 уточнён только по explicit owner approval, остальные 168 AC идентичны согласованным. Contract stack/command edits в AGENTS/CI profile не меняют safety rules, permissions, final release gates или disabled CD.
+- Scope не расширен: E01-AC04 уточнён только по explicit owner approval; все 168 AC соответствуют текущему согласованному contract и не изменены этим docs PR. Contract stack/command edits в AGENTS/CI profile не меняют safety rules, permissions, final release gates или disabled CD.
 
-Рост относительно промежуточного verified minimum `4/143` и `4/168` превышает 10 п.п., потому что ранее был проверен только первый UI surface; теперь independently сверены все AC и final wiring. Это не перенос исторического C# credit. Разница с историческим C# процентом также объясняется четырьмя новыми stack/UX AC и консервативным отказом от B02 multi-host credit без фактического LIVE.
+Повторный подсчёт ledger даёт те же 136/143 и 152/168, что final local review: **0 п.п. изменения**, denominator не изменился. CI закрыл отсутствующее Evidence, а не добавил AC. В active delivery plan остаются только эти current/previous snapshots; более ранние оценки и объяснение роста >10 п.п. — в archive.
 
 ## 8. Resolved decisions и external gates
 
-Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
+Все известные SPEC decisions для активного implementation scope согласованы. Для доставленного scope implementation gaps закрыты; оставшиеся gates требуют внешнего Evidence либо нового согласования conditional backlog, а не вымышленного denominator:
 
-1. `GOAL-006`: все ранее реализованные Windows-функции переносятся на Go. Прежний C# code/test corpus — reference, но не evidence выполнения AC целевым runtime.
-2. `EPIC-12`: controlled reference runs для `E12-AC01..06` выполняются отдельно после переноса profiles/evaluator/frozen corpus.
+1. `GOAL-006`: перенос реализованных Windows-функций на Go завершён и подтверждён code/tests/CI. Остаётся requested documentation delivery/cleanup. Прежний C# corpus — historical reference, не Go Evidence.
+2. `EPIC-12`: profiles/evaluator/frozen corpus перенесены; controlled reference runs для `E12-AC01..06` ещё не выполнены и остаются отдельной validation phase.
 3. `EPIC-01`: Windows Home и полная release matrix остаются обязательными. Следующая публикация разрешена только как final `v1.0.0` из `main` после required validation. Исторические immutable `v1.0.0-rc.*` не переиспользуются и не подтверждают Go artifact.
-4. `BACKLOG-01`: lifecycle требует Go parity; llama.cpp и LM Studio exact versions остаются manual compatibility gates.
-5. `BACKLOG-02`: secure remote требует Go parity. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся внешним gate и блокирует READY даже после выполнения code AC.
+4. `BACKLOG-01`: Go lifecycle parity подтверждена automated fixtures; llama.cpp и LM Studio exact runtime versions остаются manual compatibility gates, не blanket LIVE claim.
+5. `BACKLOG-02`: secure remote code и automated parity checks перенесены. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся внешним gate и блокирует READY даже после выполнения code AC.
 6. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
 7. `BACKLOG-04`: новый protocol не нужен для OpenCode/Hermes/Open WebUI; manual client E2E выполняются в отдельной validation phase без readiness credit по `B04-*`.
 
-Versioned diagnostic thresholds, minimum sample size и notification anti-spam policy являются implementation/configuration decisions, но должны быть explicit и boundary-tested до READY.
+Versioned diagnostic thresholds, minimum sample size и notification anti-spam policy зафиксированы в implementation/architecture и проверены boundary tests. Это закрытое CODE/TEST Evidence, не новая product requirement.
 
 ---
 
@@ -543,10 +543,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Recalculation: `2026-09-05`, final local Go AC-by-AC review; exact build/commit/time — delivery-plan.
+- Recalculation: `2026-09-05T16:16:10Z`, повторный подсчёт canonical AC/ledger после verified code delivery; выполнение AC относительно final local Go review не изменилось.
 - Repository: `https://github.com/Just9120/llm-inspector`.
-- Cutover base: `ee32a97fd63110abe7688b48994579d97f8fdb05`, core main CI `33958021155` SUCCESS.
-- Active approved Goal: `GOAL-006`; pre-merge checkpoint `IN_PROGRESS`, terminal Evidence — в том же PR по owner-approved path. Snapshot не является обещанием будущего CI/merge.
+- Verified code revision: `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, exact-main CI `33975817279` SUCCESS; code PR #39/#40 MERGED.
+- Active approved Goal: `GOAL-006`; implementation delivery завершён, датированный docs pre-merge checkpoint `IN_PROGRESS`. Terminal Evidence — комментарий `GOAL-006 — terminal Evidence` в PR #39 со ссылкой на docs PR, final SHA/checks/cleanup. Snapshot не обещает будущий merge.
 - Initial `136/143 = 95.1%`; full `152/168 = 90.5%`. Полный ledger и 16 отсутствующих AC — §7. Product readiness не равна Goal DoD или готовности публичного release.
 - Historical C# Evidence находится в delivery archive/Git, не подтверждает Go artifact.
 - DEPLOY N/A; no release/tag/WinGet. Manual Windows/performance/compatibility и encrypted two-host LIVE — отдельные gates.
