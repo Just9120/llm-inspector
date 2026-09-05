@@ -9,7 +9,7 @@ import (
 	"github.com/Just9120/llm-inspector/internal/domain"
 )
 
-type RequestContext struct{ RequestID, OperationID, BackendURL string }
+type RequestContext = domain.RequestResourceContext
 type Traffic struct{ Sent, Received uint64 }
 
 // Project emits each host/process counter only in the first GPU row, preventing

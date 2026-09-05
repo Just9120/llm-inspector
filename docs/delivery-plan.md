@@ -36,12 +36,12 @@
 | Updated UTC | 2026-09-05T07:26:16Z |
 | Base branch / SHA | main / `3fdf3caaae4f982f6e5db393cd6c493a24a644ba` |
 | Working branch | `codex/goal-006-go-windows` |
-| Last verified revision | `3fdf3caaae4f982f6e5db393cd6c493a24a644ba` — exact main CI PASS; Windows native probe/projection working increment locally tested |
+| Last verified revision | `48d7daba8782635a58f64a37cff7581e37005ef2` — native Windows probes/projection committed and locally validated; asynchronous monitor working increment also validated |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranches 1–2 merged (exact IDs in archive). Tranche 3: legacy SQLite v1–v5 compatibility, atomic request/graph writes, resource history, readonly consistent slices, filters, safe bounded retention/confirmed clear, statistics/trends/comparisons/runtime correlation, offline v1 snapshot/export and bounded writer. Final review added native proxy-to-history error enum mapping, cross-client correlation identity guards and export/truncation boundaries |
 | Current step | Tranche 4 — Windows resource probes/monitoring, profiles and background integration |
-| Next exact action | Commit verified native probes/projection, then implement bounded asynchronous request resource monitor and profiles |
-| Validation / Evidence | Go formatting/mod verify/vet/build and 65 test functions + fuzz seeds PASS; history statement coverage 83.9%, artifact 80.1% (not product readiness). Concurrent writer, bounded flush and process-kill recovery: 10 repeats PASS. Actual .NET CrashWriterWorker WAL fixture read by Go; Go appended/read new record without losing legacy row. Full reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. Local race detector not run (no C compiler). No Go desktop runtime/LIVE claim |
+| Next exact action | Port compatible background settings, performance profiles and notification policy, then native tray/autostart integration |
+| Validation / Evidence | Go formatting/mod verify/vet/build and 77 test functions + fuzz seeds PASS; resources statement coverage 86.7%, gateway 81.7% (not product readiness). Native own-listener PID/start/exe and CPU/RAM/process fixtures PASS. Monitor/gateway tests: 10 repeats PASS; maximum 128 active collectors/2048 samples per request, remote isolation, terminal byte counters, collector panic/error isolation. Prior storage WAL compatibility and full reference .NET 260 tests/publish/smoke PASS. Local race detector not run (no C compiler). No Go desktop runtime/LIVE claim |
 | PR / CI | PR #36 merged at `3fdf3caaae4f982f6e5db393cd6c493a24a644ba`; PR CI `33952081663` and main CI `33952214437`: both required jobs SUCCESS. Main synced, local/remote storage branches safely removed. Windows increment: local only. No speculative reruns |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
