@@ -5,3 +5,5 @@ go.sum text eol=lf
 frontend/** text=auto eol=lf
 benchmarks/fixtures/** text=auto eol=lf
 internal/telemetry/testdata/** text=auto eol=lf
+internal/lifecycle/config/** text=auto eol=lf
+build/windows/*.manifest text eol=lf
