@@ -29,8 +29,8 @@ Remote backend задаётся только explicit option `--remote-backend-u
 ## 3. Включение Inspector ingress
 
 1. Запустите Inspector локально и проверьте в UI exact loopback listener/port.
-2. В разделе «Настройки → Защищённый удалённый доступ» подтвердите все четыре условия: private HTTPS Serve, user identity, intended ACL, Funnel выключен.
-3. Нажмите «Создать token и включить».
+2. В разделе «Настройки → Защищённое удалённое подключение» подтвердите все четыре условия: private HTTPS Serve, user identity, intended ACL, Funnel выключен.
+3. Нажмите «Включить доступ».
 4. Скопируйте показанный token непосредственно в secret storage клиента. После скрытия token Inspector его повторно не показывает; при потере выполните rotation.
 5. В отдельном PowerShell пользователя, управляющего Tailscale, выполните для default port:
 
@@ -108,13 +108,13 @@ DNS+TCP connect не включает TLS handshake и backend inference, поэ
 Rotation:
 
 1. Снова подтвердите security boundary.
-2. Нажмите «Ротировать token» и перенесите новый token в client secret storage.
+2. Нажмите «Сменить токен» и перенесите новый token в client secret storage.
 3. Старый token становится недействительным сразу после успешной atomic save.
 4. Перезапустите/reload client configuration и повторите negative/positive checks.
 
 Отключение:
 
-1. Нажмите «Выключить и отозвать token»: persisted token удаляется, remote requests начинают fail closed.
+1. Нажмите «Выключить»: persisted token удаляется, remote requests начинают fail closed.
 2. Удалите exact Serve mapping той же конфигурацией, которой он был создан:
 
 ```powershell

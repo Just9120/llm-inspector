@@ -2,6 +2,16 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-006 — superseded desktop/cutover checkpoints, 2026-09-05
+
+До final AC review сохранялась нижняя граница 4/143 и 4/168 (E01-AC02/03/07/08), предыдущий migration-start snapshot — 0/143 и 0/168. Только current/previous snapshots остаются в active plan; эти оценки не используются как основание нового расчёта.
+
+Desktop local increments: composition `058758f`, typed facade `54709f8`, Wails/Russian UI/native smoke `a83ad3f`, runtime/version/operation evidence `5d14494`, cutover `dbb5558`. Intermediate artifact `59c97e1a4936249e1a50fda74142a194aebe4a8f6f1967675142697c8b84aafa` и initial packaging artifact `36ca36b7c6b77ab01e103547b41e4f3d85899eb368046e3e0c38a5d0c2f02f0e` — superseded, не final release candidates.
+
+Local clean-build failures до initial push: frontend/Go formatter и frozen corpus зависели от core.autocrlf; после scoped LF fix сборка проходила, но embedded SQL/config давали иной executable hash. Exact-byte attributes исправлены и проверены новым checkout; ничего не исправлялось через speculative CI rerun. Final artifact/validation — active delivery checkpoint.
+
+Ранее один локальный artifact test получил TempDir cleanup `directory not empty`; readback был empty, 10 repeats и последующие full suites PASS. Причина не установлена (возможный Windows filesystem transient), production storage behavior не изменён и test не подавлен.
+
 ## GOAL-006 — completed increments 1–2 (Goal remains active)
 
 Historical pre-migration C# snapshot: initial `132/139 = 95.0%`, full `152/164 = 92.7%` (GOAL-005). Смена production target на Go обнулила переносимый credit; snapshot не используется как Go evidence.
