@@ -1,2 +1,3 @@
-# Frontend formatting is LF regardless of the caller's core.autocrlf setting.
+# Source formatting is LF regardless of the caller's core.autocrlf setting.
+*.go text eol=lf
 frontend/** text=auto eol=lf

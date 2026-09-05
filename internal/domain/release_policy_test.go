@@ -81,6 +81,9 @@ func TestBuildRetainsLockedChecksAndPortableVersionContract(t *testing.T) {
 	if !strings.Contains(repositoryText(t, ".gitattributes"), "frontend/** text=auto eol=lf") {
 		t.Fatal("frontend checkout must preserve formatter line endings")
 	}
+	if !strings.Contains(repositoryText(t, ".gitattributes"), "*.go text eol=lf") {
+		t.Fatal("Go checkout must preserve gofmt line endings")
+	}
 	script := repositoryText(t, "scripts/build-windows.ps1")
 	for _, command := range []string{"./scripts/validate-go.ps1", "ci --ignore-scripts --no-audit --no-fund", "wails/v2/cmd/wails@v2.15.0", "-webview2 error", "-platform windows/amd64", "-trimpath", "go vet .", "go test . -count=1", "./scripts/smoke-windows.ps1"} {
 		if !strings.Contains(script, command) {
