@@ -73,7 +73,7 @@ Upstream документ остаётся provenance source, но после р
 
 Reference hardware/configuration: Windows 11 Pro `25H2` x64 build `26200.9168`; Ryzen 7 9800X3D (`8C/16T`, max `4700 MHz`); `64 GB` nominal RAM (`61.7 GiB` available); NVIDIA RTX 5060 Ti `16311 MiB`, driver `610.74`, плюс integrated AMD Radeon; system Samsung SSD 970 EVO Plus 1TB NVMe (`931.5 GiB`) для app/DB/fixtures; WDC WD30EZRZ 3TB HDD документируется, но не используется как benchmark storage; Windows Balanced power plan `381b4222-f694-41f0-9685-ff5bb260df2e`. WMI `4 GB` NVIDIA value не используется вместо verified `nvidia-smi` value. Это controlled reference, не minimum hardware requirement.
 
-Reference runtime/model: Ollama `0.33.2`, executable SHA-256 `c79df1e0c1bfa10ed813c7030ac4c3ba38bb0e350bd7322d9bb58320343235c6`; installed community model `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M`, digest `6fac2f98fdf716f292de04c8554681b1e1f3a0d71445e374afebb3433911f705`, GGUF/Q4_K_M, `27.3B`, size `17741860746` bytes, model context capability `262144`, fixed benchmark context `8192`. Model не распространяется с Inspector; из-за размера больше reference VRAM ожидается hybrid offload. Workloads: idle, cold load, hybrid GPU/CPU inference, CPU-only, streaming/non-streaming, concurrency `1/4`, tools/fragmented stream и collector failure на immutable synthetic corpus с deterministic seed/output, когда supported.
+Reference runtime/model: Ollama `0.33.3` (explicit owner approval `2026-09-05`, GOAL-007), executable SHA-256 `e4fe6bd835fe146659f5c969dccaff2e25a9de63d90ee204ca5d11b9034b0ca5`; installed community model `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M`, digest `6fac2f98fdf716f292de04c8554681b1e1f3a0d71445e374afebb3433911f705`, GGUF/Q4_K_M, `27.3B`, size `17741860746` bytes, model context capability `262144`, fixed benchmark context `8192`. Model не распространяется с Inspector; из-за размера больше reference VRAM ожидается hybrid offload. Workloads: idle, cold load, hybrid GPU/CPU inference, CPU-only, streaming/non-streaming, concurrency `1/4`, tools/fragmented stream и collector failure на immutable synthetic corpus с deterministic seed/output, когда supported.
 
 ### 3.2. Утверждённый lifecycle и compatibility contract
 
@@ -449,7 +449,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-> **Operational snapshot — Go code delivery verified, 2026-09-05T16:16:10Z.** Проверенный code SHA `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, exact-main [CI 33975817279](https://github.com/Just9120/llm-inspector/actions/runs/33975817279) SUCCESS. Для 13 эпиков выполнены все AC и обязательные SPEC/CODE/TEST/CI: они READY. Отдельный owner-requested docs PR ещё проходит delivery; окончательные Goal DONE/merge/cleanup фиксируются terminal-комментарием [PR #39](https://github.com/Just9120/llm-inspector/pull/39), согласно explicit owner approval. Product readiness и готовность публичного release не равны Goal DoD.
+> **Operational snapshot — Go code delivery verified, 2026-09-05T16:16:10Z.** Проверенный code SHA `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, exact-main [CI 33975817279](https://github.com/Just9120/llm-inspector/actions/runs/33975817279) SUCCESS. Для 13 эпиков выполнены все AC и обязательные SPEC/CODE/TEST/CI: они READY. GOAL-006 завершена после docs PR #41 и main CI 33978125113 на `88cbe291309105c495da5f488d23d48f8c74b007`, [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062). GOAL-007 начинает закрытие оставшихся Windows gates; новых product AC credit пока нет. Product readiness и готовность публичного release не равны Goal DoD.
 
 Пересчитаны все **168 уникальных atomic AC** текущего contract: **143 initial**, **25 backlog**. Кредит бинарный: выполненный AC = 1; частичный или требующий отсутствующего actual runtime = 0. Ни прошлые проценты, ни coverage/число tests не использованы как denominator.
 
@@ -527,7 +527,7 @@ Final delivery Evidence: [cutover PR #39](https://github.com/Just9120/llm-inspec
 
 Все известные SPEC decisions для активного implementation scope согласованы. Для доставленного scope implementation gaps закрыты; оставшиеся gates требуют внешнего Evidence либо нового согласования conditional backlog, а не вымышленного denominator:
 
-1. `GOAL-006`: перенос реализованных Windows-функций на Go завершён и подтверждён code/tests/CI. Остаётся requested documentation delivery/cleanup. Прежний C# corpus — historical reference, не Go Evidence.
+1. `GOAL-006`: перенос реализованных Windows-функций на Go завершён и подтверждён code/tests/CI. Documentation delivery/cleanup завершены; remaining Windows validation выполняется в GOAL-007. Прежний C# corpus — historical reference, не Go Evidence.
 2. `EPIC-12`: profiles/evaluator/frozen corpus перенесены; controlled reference runs для `E12-AC01..06` ещё не выполнены и остаются отдельной validation phase.
 3. `EPIC-01`: Windows Home и полная release matrix остаются обязательными. Следующая публикация разрешена только как final `v1.0.0` из `main` после required validation. Исторические immutable `v1.0.0-rc.*` не переиспользуются и не подтверждают Go artifact.
 4. `BACKLOG-01`: Go lifecycle parity подтверждена automated fixtures; llama.cpp и LM Studio exact runtime versions остаются manual compatibility gates, не blanket LIVE claim.
@@ -546,7 +546,7 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 - Recalculation: `2026-09-05T16:16:10Z`, повторный подсчёт canonical AC/ledger после verified code delivery; выполнение AC относительно final local Go review не изменилось.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Verified code revision: `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7`, exact-main CI `33975817279` SUCCESS; code PR #39/#40 MERGED.
-- Active approved Goal: `GOAL-006`; implementation delivery завершён, датированный docs pre-merge checkpoint `IN_PROGRESS`. Terminal Evidence — комментарий `GOAL-006 — terminal Evidence` в PR #39 со ссылкой на docs PR, final SHA/checks/cleanup. Snapshot не обещает будущий merge.
+- Active approved Goal: `GOAL-007`; Windows-only по explicit owner decision. B03 остаётся conditional backlog, B04 ждёт конкретного protocol/client decision. GOAL-006 DONE подтверждена terminal Evidence; current checkpoint — delivery-plan.
 - Initial `136/143 = 95.1%`; full `152/168 = 90.5%`. Полный ledger и 16 отсутствующих AC — §7. Product readiness не равна Goal DoD или готовности публичного release.
 - Historical C# Evidence находится в delivery archive/Git, не подтверждает Go artifact.
 - DEPLOY N/A; no release/tag/WinGet. Manual Windows/performance/compatibility и encrypted two-host LIVE — отдельные gates.

@@ -1,6 +1,7 @@
 package performance
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,26 @@ import (
 	"slices"
 	"testing"
 )
+
+func TestApprovedReferenceRuntimeUpdatePreservesWorkloads(t *testing.T) {
+	root := filepath.Join("..", "..", "benchmarks", "fixtures", "epic12")
+	old, err := os.ReadFile(filepath.Join(root, "v1", "reference-workloads.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	current, err := os.ReadFile(filepath.Join(root, "v2", "reference-workloads.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.Sum256(current)
+	if hex.EncodeToString(hash[:]) != "07553f1053ccbfbce2dd175e28b343260d6fa7520024ba8b276bb3124367d5e9" {
+		t.Fatal("current frozen reference corpus changed")
+	}
+	want := bytes.Replace(old, []byte(`"version": "0.33.2"`), []byte(`"version": "0.33.3"`), 1)
+	if !bytes.Equal(current, want) {
+		t.Fatal("owner approved only reference runtime version; workload/model/budgets unchanged")
+	}
+}
 
 func TestFrozenPerformanceCorpusIsPreserved(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("..", "..", "benchmarks", "fixtures", "epic12", "v1", "reference-workloads.json"))
