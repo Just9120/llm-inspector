@@ -4,7 +4,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, десять завершённых core epics и terminal `GOAL-005 DONE`; активной implementation Goal сейчас нет. Manual/runtime validation выделена в отдельную будущую Goal и не считается выполненной:
+Активна `GOAL-006`: перенос на Go + Wails v2 + Svelte/TypeScript и русский современный UI. Текущий pipeline и readiness — в [delivery-plan.md](docs/delivery-plan.md). Ниже описана C# reference implementation до cutover; её Evidence не подтверждает Go runtime. Manual/runtime validation остаётся отдельной будущей Goal:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
@@ -34,6 +34,18 @@ Verified product base `main` — `74f710ab1f7a9457377045191b0f62a472e8f40c`: ini
 Утверждённый release path: единственная development/release line `main`; до полной validation продукт остаётся версией `1.0`, новые prerelease и version branches не создаются. Первый следующий public stable tag — `v1.0.0`; после публикации development version переходит к `1.1`. Distribution unit — unsigned portable self-contained single-file `win-x64` executable в GitHub Releases с SHA-256, SBOM/provenance и документированным SmartScreen warning. Store/MSIX/signing/automatic updates отложены. Secure remote target использует loopback-only Inspector, private Tailscale Serve и отдельный application token; public exposure запрещён. Linux/macOS и новые API protocols сейчас не реализуются.
 
 ## Быстрый старт
+
+### Go migration — GOAL-006
+
+Go foundation находится в `internal/domain`, `internal/telemetry` и `internal/gateway`. Exact toolchain — Go `1.27.1` из `.go-version`; проверка из repository root:
+
+```powershell
+./scripts/validate-go.ps1
+```
+
+Скрипт проверяет version pin, formatting, module integrity, vet, unit/integration tests и build. Дополнительный CI check — `windows-go`; прежний `windows-dotnet` остаётся обязательным reference gate до cutover. Foundation пока не является готовым Go desktop executable: UI, persistent storage, Windows integration и managed connectivity переносятся следующими increments той же Goal. Проверки parser используют existing synthetic fixtures без реальных prompt/response data.
+
+### C# reference application — до Go cutover
 
 Prerequisite: Windows x64 и exact [.NET SDK `10.0.400`](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). `global.json` запрещает автоматический roll-forward на другой SDK.
 

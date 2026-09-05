@@ -1,11 +1,12 @@
 # LLM Inspector — canonical product contract
 
 > Contract status: `RATIFIED`  
-> Contract version: `1.2`
+> Contract version: `1.3`
 > Ratified by: explicit user instruction от `2026-09-02`  
 > Compatibility amendment: approved `GOAL-002` от `2026-09-02`
 > Delivery amendments: explicit user decisions от `2026-09-03`–`2026-09-04`
-> Source revision verified: `ANLCKQnzyDom5DeN3wi-2dxPnK0emPJPFJh5F8R-W-gdIOdgbB97DBs9sGlbKtyj4pIU-4jyzwSBurSlDjbO0NS94cy-90xjHspDIs7Vmtc`
+> Stack/UX amendment: user-approved `GOAL-006`, `2026-09-05`
+> Source revision verified: `ANLCKQltnuK86GVFujJ4vcNY3P3MaplO1utZDHTr74LYeLz3rzZV6OL1P-tX8tAonmxDYTMWT5np0SVuRzVl0vxA2APv6204JlnLcFqHqT4`
 
 ## 1. Назначение и authority
 
@@ -18,6 +19,10 @@ Upstream документ остаётся provenance source, но после р
 ## 2. Product boundary и release scope
 
 - LLM Inspector — Windows-first desktop-приложение для мониторинга, аналитики и диагностики локальных LLM.
+- Production core и финальный Windows executable реализуются на Go; release path версии 1.0 не зависит от C#/.NET/Avalonia. Существующая C# implementation служит временным migration reference до подтверждённого cutover.
+- Desktop shell использует stable Wails v2, embedded frontend — Svelte и TypeScript; dependency graph фиксируется для воспроизводимой сборки.
+- Пользовательский интерфейс по умолчанию русский: navigation, labels, actions, hints, validation errors и notifications. Английский допускается для устойчивых technical names, API values и identifiers.
+- UI современный и неперегруженный: главный экран содержит ключевую сводку, остальные функции доступны через понятную навигацию, технические подробности раскрываются по действию пользователя.
 - Initial release наблюдает локальные backends на том же Windows PC и не управляет lifecycle моделей/backends.
 - Приложение помогает понять текущую стадию работы модели, причины медленного ответа или apparent stall и ограничивающий ресурс.
 - Пользовательский content не является telemetry: prompt, response, reasoning, tool arguments, tool results и user code не должны попадать в persistence, indexes, logs, analytics или diagnostic snapshot.
@@ -118,11 +123,16 @@ Acceptance criteria:
 - `E01-AC03`: Initial release подключается к LLM backends на том же Windows PC. [source: `UP-C01-04`]
 - `E01-AC04`: Initial release не содержит команд запуска, остановки, restart, загрузки моделей или изменения backend runtime parameters. [source: `UP-C01-03`]
 
-Definition of Done: `4/4` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
+- `E01-AC05`: Production core и final Windows executable используют Go, без зависимости production/release path от C#/.NET/Avalonia. [source: user-approved `GOAL-006`, upstream stack amendment]
+- `E01-AC06`: Desktop shell использует stable Wails v2, frontend — Svelte/TypeScript; dependency graph воспроизводимо зафиксирован. [source: user-approved `GOAL-006`, upstream stack amendment]
+- `E01-AC07`: Navigation, labels, actions, hints, validation errors и notifications по умолчанию русские; technical names, API values и identifiers сохраняются. [source: user-approved `GOAL-006`, upstream UX amendment]
+- `E01-AC08`: Главный экран содержит ключевую сводку; остальные функции разделены понятной навигацией, подробные technical data раскрываются по действию пользователя. [source: user-approved `GOAL-006`, upstream UX amendment]
+
+Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-02 — Backend/client adapters и OpenAI-compatible API
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 
 **Goal:** наблюдать обязательные local backends и compatible clients через штатную endpoint configuration.
 
@@ -148,7 +158,7 @@ Definition of Done: `15/15` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-03 — Live state и качество telemetry
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** показывать реальное состояние active request без fabricated progress.
 
 Acceptance criteria:
@@ -171,7 +181,7 @@ Definition of Done: `13/13` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-04 — Tokens, context и timings
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** объяснять объём prompt/context и latency decomposition по доступным backend data.
 
 Acceptance criteria:
@@ -193,7 +203,7 @@ Definition of Done: `12/12` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-05 — Agent operations, tools и concurrency
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** представлять multi-turn agent workflow как изолированную ordered operation.
 
 Acceptance criteria:
@@ -211,7 +221,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-06 — System resource telemetry
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** коррелировать system resource load с request timeline без недостоверной attribution.
 
 Acceptance criteria:
@@ -229,7 +239,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-07 — Explainable diagnostics и errors
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** объяснять bottlenecks и errors на основе наблюдаемых metrics, отделяя facts от hypotheses.
 
 Acceptance criteria:
@@ -255,7 +265,7 @@ Definition of Done: `16/16` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-08 — Local history, analytics и retention
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** хранить и анализировать только technical metadata с управляемым retention.
 
 Acceptance criteria:
@@ -283,7 +293,7 @@ Definition of Done: `18/18` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-09 — Privacy, locality и transparent proxying
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** доказуемо исключить user content из data surfaces и сохранить API semantics.
 
 Acceptance criteria:
@@ -307,7 +317,7 @@ Definition of Done: `14/14` AC, включая automated negative privacy/pass-t
 
 ### EPIC-10 — Background operation и Windows notifications
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** продолжать monitoring в фоне и уведомлять без спама.
 
 Acceptance criteria:
@@ -325,7 +335,7 @@ Definition of Done: `8/8` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### EPIC-11 — Anonymized diagnostic snapshot
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 **Goal:** создавать локально проверяемый diagnostic artifact, безопасный для передачи человеку или coding agent.
 
 Acceptance criteria:
@@ -372,7 +382,7 @@ Backlog requirements согласованы и не входят в initial rele
 
 ### BACKLOG-01 — Backend/model lifecycle management
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 
 - `B01-AC01`: Пользователь может запустить supported backend. [source: `UP-C01-05`]
 - `B01-AC02`: Пользователь может остановить supported backend. [source: `UP-C01-05`]
@@ -419,7 +429,7 @@ Definition of Done: `2/2` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-05 — Multiple GPUs
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 
 - `B05-AC01`: Inspector обнаруживает несколько supported GPU devices. [source: `UP-C04-03`]
 - `B05-AC02`: Resource UI показывает metrics раздельно для каждого device. [source: `UP-C04-03`]
@@ -429,7 +439,7 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ### BACKLOG-06 — Export analytics
 
-**Status:** 🟩 READY
+**Status:** 🟦 IN PROGRESS
 
 - `B06-AC01`: Пользователь экспортирует выбранный range anonymized technical history. [source: `UP-C09-04`]
 - `B06-AC02`: Пользователь экспортирует aggregate metrics за выбранный range. [source: `UP-C09-04`]
@@ -439,43 +449,44 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Фактическое состояние пересчитано с нуля по 164 atomic product AC. Exact merged `main` `74f710ab1f7a9457377045191b0f62a472e8f40c` подтверждает EPIC-01 `3/4`, EPIC-02–EPIC-11 полностью, EPIC-12 `E12-AC07..13`, BACKLOG-01 `5/5`, BACKLOG-02 `9/9`, BACKLOG-05 `3/3` и BACKLOG-06 `3/3`. BACKLOG-02 PR #24 и exact-head/main CI успешны, но эпик не READY без encrypted two-host LIVE Evidence. Historical [`v1.0.0-rc.3`](https://github.com/Just9120/llm-inspector/releases/tag/v1.0.0-rc.3) был опубликован из прежней isolated observation-only line exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`: release pipeline, checksums, SPDX/provenance, public smoke и Windows Pro Ollama/OpenCode/Hermes flows прошли. Этот prerelease не является финальным `v1.0.0`. `E01-AC01` всё ещё не кредитуется без полной Windows Home/Pro release matrix. `E12-AC01..06` не кредитуются без controlled results для каждого built-in profile.
+Migration checkpoint `GOAL-006`, base `c611856`: текущая оцениваемая production implementation — Go. На старте Go runtime отсутствует; старые C# результаты не подтверждают её AC. Исторический C# snapshot `132/139`, `152/164` сохранён в delivery plan как previous для сравнения. Новый denominator — 143 initial и 168 full AC. Снижение готовности связано со сменой implementation, а не с удалением требований.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 3/4 | 75% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
-| EPIC-02 | 🟩 READY | 15/15 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-03 | 🟩 READY | 13/13 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-04 | 🟩 READY | 12/12 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-05 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-06 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-07 | 🟩 READY | 16/16 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-08 | 🟩 READY | 18/18 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-09 | 🟩 READY | 14/14 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-10 | 🟩 READY | 8/8 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-11 | 🟩 READY | 10/10 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ✅ | ◐ | ✅ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **132/139** | **95.0%** | **✅** | **✅** | **◐** | **✅** | **N/A** | **N/A** |
-| BACKLOG-01 | 🟩 READY | 5/5 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 9/9 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | — |
+| EPIC-01 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
+| **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
+| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | — | — | — | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| BACKLOG-06 | 🟩 READY | 3/3 | 100% | ✅ | ✅ | ✅ | ✅ | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **152/164** | **92.7%** | **✅** | **◐** | **◐** | **✅** | **N/A** | **—** |
+| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
 
-Для remote backlog runtime deployment отсутствует (`DEPLOY: N/A`), но фактический encrypted two-host test обязателен (`LIVE: ✅`) до READY.
+Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
 
 ## 8. Resolved decisions и external gates
 
 Все известные SPEC decisions для активного implementation scope согласованы. Оставшиеся gaps относятся к реализации или внешнему Evidence, а не к denominator:
 
-1. `EPIC-12`: profiles/evaluator/frozen corpus merged; выполнить controlled reference runs для `E12-AC01..06`.
-2. `EPIC-01`: immutable `v1.0.0-rc.2` остаётся rejected candidate. Reviewed PR #28 доставил exact tray forward fix в прежнюю observation-only line; trusted run `33842346524` опубликовал historical `v1.0.0-rc.3` из exact SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`. Public artifact smoke и Windows Pro Ollama/OpenCode/Hermes flows прошли; Windows Home и оставшаяся полная release matrix всё ещё обязательны. Следующая публикация разрешена только как final `v1.0.0` из `main` после required validation. Existing tags/releases не переиспользуются.
-3. `BACKLOG-01`: PR #23, merge `7c71fbcb05744e18d95fcb91f6fb90296e0e4030` и exact-main CI `33819193701` завершены; `5/5`, READY. llama.cpp и LM Studio exact versions остаются manual compatibility gates и matrix не называет их verified.
-4. `BACKLOG-02`: PR #24, merge `538d1f028e9d73a43f7de734e5fbce387f8f73ad`, exact-head CI `33822508134` и exact-main CI `33822719346` завершены; `9/9`. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся `PENDING_EXTERNAL_GATE` и блокирует READY.
-5. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
-6. `BACKLOG-04`: новый protocol не нужен для OpenCode/Hermes/Open WebUI; manual client E2E выполняются в финальной validation phase без readiness credit по `B04-*`.
+1. `GOAL-006`: все ранее реализованные Windows-функции переносятся на Go. Прежний C# code/test corpus — reference, но не evidence выполнения AC целевым runtime.
+2. `EPIC-12`: controlled reference runs для `E12-AC01..06` выполняются отдельно после переноса profiles/evaluator/frozen corpus.
+3. `EPIC-01`: Windows Home и полная release matrix остаются обязательными. Следующая публикация разрешена только как final `v1.0.0` из `main` после required validation. Исторические immutable `v1.0.0-rc.*` не переиспользуются и не подтверждают Go artifact.
+4. `BACKLOG-01`: lifecycle требует Go parity; llama.cpp и LM Studio exact versions остаются manual compatibility gates.
+5. `BACKLOG-02`: secure remote требует Go parity. Encrypted Windows↔VPS/second-PC `LIVE` test остаётся внешним gate и блокирует READY даже после выполнения code AC.
+6. `BACKLOG-03`: Linux/macOS остаются conditional backlog до нового explicit demand.
+7. `BACKLOG-04`: новый protocol не нужен для OpenCode/Hermes/Open WebUI; manual client E2E выполняются в отдельной validation phase без readiness credit по `B04-*`.
 
 Versioned diagnostic thresholds, minimum sample size и notification anti-spam policy являются implementation/configuration decisions, но должны быть explicit и boundary-tested до READY.
 
@@ -485,16 +496,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-04T08:07:21Z`.
+- Last recalculation: `2026-09-05`, Go migration baseline.
 - Repository: `https://github.com/Just9120/llm-inspector`.
-- Initial documentation base commit: `e0860e4972e486e59fcf3a8499b5da0f2863b96c`.
-- Architecture baseline: PR [#1](https://github.com/Just9120/llm-inspector/pull/1), merge commit `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
-- Verified `GOAL-003` base SHA: `00ca8c3ef727d784ca2e0c9d837231be7f68c5e4`.
-- Foundation code/toolchain commit: `1d74b4a5b053b0c2e908ca7e5fa18aa89d9bc83c`; CI workflow/policy-test commit: `5fd0b67213044b7b7318553d32195621fa488d3f`; separate normal/RID lock-graph commit: `dc1a9b6f1938307160872f8fe99044c5f56f0e3c`.
-- GitHub Actions: prior terminal runs remain recorded in delivery archive/current plan. B02 PR/main runs `33822508134`/`33822719346`; tray hotfix PR/main runs `33824414484`/`33824822771`; historical release-line policy PR run `33839994417`; deterministic fixture fix PR/main runs `33840633983`/`33840821568`; historical release-line PR/exact-branch runs `33841946886`/`33842121186`; trusted `rc.3` release run `33842346524`; GOAL-005 closeout PR/main runs `33847850161`/`33848084925`; single-main/final-only policy PR/main runs `33850743370`/`33850992022` all completed successfully. Last verified product tree is exact main `74f710ab1f7a9457377045191b0f62a472e8f40c`.
-- Code/tests/runtime: B01 is terminal READY. B02 is merged with SPEC/CODE/TEST/CI `✅` and LIVE absent. Public `v1.0.0-rc.3` contains exact 6 assets; executable SHA-256 `8816be54377101d73030e5a876a61b971f21ec9783c9c36905e1df9054ec2c48`, manifest source SHA `821b17abf68bb63dd09f83a834d2d3bdec2e899c`, `3/3` payload checksums, SPDX 2.3 (`32` packages/`1` file), provenance and SBOM Sigstore verification pass. Exact downloaded executable smoke succeeds. On Windows 11 Pro `25H2` build `26200.9168`, Ollama `0.33.2` / `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M` direct proxy returns `RC3_DIRECT`; OpenCode `1.18.25` returns `OPENCODE`; Hermes `0.20.0` returns `HERMES`; each client exits `0`, Inspector stays alive and stderr remains empty.
-- EPIC-09 completion: `14/14`; real SQLite schema/disclosure/privacy corpus confirmed by PR #9 and exact-main CI.
-- Initial release readiness: `132/139 = 95.0%` (`EPIC-12 7/13`; `E12-AC01..06` remain pending controlled measurements and uncredited).
-- Full agreed roadmap readiness on exact merged main: `152/164 = 92.7%`; B02 remains `IN PROGRESS` despite `9/9` until required LIVE Evidence, and delivery/test-fixture fixes add no AC.
-- GOAL-003 delivery: PR [#2](https://github.com/Just9120/llm-inspector/pull/2), merge commit `384556f693df9b3dbbc9d06dc2ddbd67328fa5d7`; PR/main CI terminal success.
-- Active approved Goal: отсутствует. `GOAL-005` достигла terminal `DONE` после explicit owner amendment: её implementation/delivery scope завершён, а manual/runtime validation вынесена в отдельную будущую Goal. Это не меняет product AC denominator, completion или Evidence: Windows Home, controlled E12 measurements, B02 two-host LIVE, llama.cpp, LM Studio/lms и Open WebUI остаются неподтверждёнными gates. Новая product Goal требует explicit user authorization.
+- Verified migration base: `c611856c81b1dc7dc239805a095d054249b3043d`, main CI `33864679915` success (C# reference).
+- Active approved Goal: `GOAL-006`, `IN_PROGRESS`; exact checkpoint и pipeline — `docs/delivery-plan.md`.
+- Initial release: `0/143 = 0%`; full agreed roadmap: `0/168 = 0%`. Go product AC не получают credit за C# реализацию.
+- История предыдущих Goals/PR/runtime validation находится в `docs/delivery-plan-archive.md` и Git revision выше; не используется как current Go Evidence.
+- DEPLOY — N/A для Windows desktop без server CD. Manual Windows/performance/compatibility и B02 two-host LIVE не входят в implementation Goal и остаются отдельными gates.

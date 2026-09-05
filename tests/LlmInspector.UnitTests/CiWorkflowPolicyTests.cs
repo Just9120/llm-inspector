@@ -8,7 +8,9 @@ public sealed partial class CiWorkflowPolicyTests
     private static readonly string[] ExpectedPinnedActions =
     [
         "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
         "actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68",
+        "actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
     ];
 
     [TestMethod]

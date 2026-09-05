@@ -15,3 +15,8 @@ coverage/
 *.trx
 *.coverage
 *.coveragexml
+node_modules/
+frontend/dist/
+build/bin/
+frontend/wailsjs/
+*.exe
