@@ -135,30 +135,44 @@ func (m *Manager) Confirm(token string) error {
 }
 
 func (m *Manager) SetParameter(id, value string) error {
+	return m.SetParameters(map[string]string{id: value})
+}
+
+// SetParameters validates the complete edit before changing any field. A port
+// change invalidates confirmation once, without causing a partial UI form save.
+func (m *Manager) SetParameters(values map[string]string) error {
 	m.op.Lock()
 	defer m.op.Unlock()
 	s := m.Snapshot()
 	if err := m.require(s, Parameters); err != nil {
 		return err
 	}
-	normalized, err := Normalize(m.backend, id, value)
-	if err != nil {
-		return err
+	if len(values) == 0 || len(values) > len(s.Parameters) {
+		return ErrParameter
 	}
-	if id == "local-port" && normalized != s.Parameters[id] {
+	next := make(map[string]string, len(s.Parameters))
+	for key, value := range s.Parameters {
+		next[key] = value
+	}
+	for key, value := range values {
+		normalized, err := Normalize(m.backend, key, value)
+		if err != nil {
+			return err
+		}
+		next[key] = normalized
+	}
+	if next["local-port"] != s.Parameters["local-port"] {
 		if s.Owned != nil && m.runtime.Alive(*s.Owned) {
 			return ErrOwnership
 		}
-		s.Parameters[id] = normalized
-		s.Target.Endpoint = endpoint(m.backend, s.Parameters)
+		s.Target.Endpoint = endpoint(m.backend, next)
 		s.Target.ConfirmationToken = confirmation(*s.Target)
 		s.Confirmed = false
 		s.State = PendingConfirmation
-	} else {
-		s.Parameters[id] = normalized
 	}
-	if id == "model-id" {
-		s.Model = normalized
+	s.Parameters = next
+	if m.backend == LMStudio {
+		s.Model = next["model-id"]
 	}
 	s.Error = ""
 	m.put(s)

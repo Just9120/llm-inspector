@@ -321,6 +321,13 @@ func (f *Facade) SetBackendParameter(backend lifecycle.Backend, id, value string
 	}
 	return m.SetParameter(id, value)
 }
+func (f *Facade) SetBackendParameters(backend lifecycle.Backend, values map[string]string) error {
+	m, _, err := f.manager(backend)
+	if err != nil {
+		return err
+	}
+	return m.SetParameters(values)
+}
 func (f *Facade) ResetBackendParameters(backend lifecycle.Backend) error {
 	m, _, err := f.manager(backend)
 	if err != nil {

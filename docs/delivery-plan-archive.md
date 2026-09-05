@@ -4,6 +4,8 @@
 
 ## GOAL-006 — completed increments 1–2 (Goal remains active)
 
+Historical pre-migration C# snapshot: initial `132/139 = 95.0%`, full `152/164 = 92.7%` (GOAL-005). Смена production target на Go обнулила переносимый credit; snapshot не используется как Go evidence.
+
 - Foundation PR [#34](https://github.com/Just9120/llm-inspector/pull/34): merge `1ffb485277a7b12ad54657119de4dc268dfa997a`; PR CI `33948720562`, main CI `33948852046`, both Windows Go/.NET jobs SUCCESS. Local and remote `codex/goal-006-go-foundation` safely removed after main synchronization.
 - Telemetry PR [#35](https://github.com/Just9120/llm-inspector/pull/35): head `6603e53f5ceaa46e842737de4078f5c3f7525ebc`, merge `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87`; PR CI `33949980492`, main CI `33950314660`, both Windows Go/.NET jobs SUCCESS. Local and remote `codex/goal-006-go-telemetry` safely removed after main synchronization.
 - These are completed increments, not Goal closure or Go desktop readiness. No release/deployment performed.

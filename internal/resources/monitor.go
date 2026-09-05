@@ -182,7 +182,7 @@ func (s *session) capture() {
 			ctx, cancel := context.WithTimeout(s.ctx, time.Second)
 			defer cancel()
 			value, err := s.owner.probe.Capture(ctx, s.association)
-			if err != nil {
+			if err != nil || value.CapturedAt.IsZero() {
 				if s.ctx.Err() == nil {
 					s.owner.failures.Add(1)
 				}

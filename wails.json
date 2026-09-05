@@ -1,0 +1,17 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "LLM Inspector",
+  "outputfilename": "LlmInspector.exe",
+  "frontend:install": "npm ci --ignore-scripts --no-audit --no-fund",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {"name": "Just9120"},
+  "info": {
+    "companyName": "Just9120",
+    "productName": "LLM Inspector",
+    "productVersion": "1.0.0",
+    "copyright": "LLM Inspector contributors",
+    "comments": "Локальная техническая диагностика LLM"
+  }
+}

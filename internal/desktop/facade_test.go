@@ -169,7 +169,7 @@ func TestFacadeAvailabilityValidationAndSettings(t *testing.T) {
 
 func TestBoundFacadeMethodAllowlist(t *testing.T) {
 	// Wails binds all exported methods. An accidental broad helper must fail CI.
-	want := []string{"Analyze", "ChooseExecutable", "ChooseModel", "Compare", "ConfirmBackend", "ConfirmClear", "DisableRemote", "DiscoverBackend", "EnableRemote", "Exit", "GetHistory", "GetHistoryDetails", "GetLifecycle", "GetLifecycleParameters", "GetModels", "GetOperation", "GetRetention", "GetState", "HideWindow", "LoadModel", "PreviewClear", "PreviewExport", "PreviewSnapshot", "ProbeRemoteBackend", "ResetBackendParameters", "RestartBackend", "RotateRemoteToken", "SavePreview", "SaveSettings", "SetBackendParameter", "SetRetention", "StartBackend", "StopBackend", "ToggleNotifications"}
+	want := []string{"Analyze", "ChooseExecutable", "ChooseModel", "Compare", "ConfirmBackend", "ConfirmClear", "DisableRemote", "DiscoverBackend", "EnableRemote", "Exit", "GetHistory", "GetHistoryDetails", "GetLifecycle", "GetLifecycleParameters", "GetModels", "GetOperation", "GetRetention", "GetState", "HideWindow", "LoadModel", "PreviewClear", "PreviewExport", "PreviewSnapshot", "ProbeRemoteBackend", "ResetBackendParameters", "RestartBackend", "RotateRemoteToken", "SavePreview", "SaveSettings", "SetBackendParameter", "SetBackendParameters", "SetRetention", "StartBackend", "StopBackend", "ToggleNotifications"}
 	slices.Sort(want)
 	typ := reflect.TypeFor[*Facade]()
 	got := []string{}

@@ -449,11 +449,11 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Migration checkpoint `GOAL-006`, base `c611856`: текущая оцениваемая production implementation — Go. На старте Go runtime отсутствует; старые C# результаты не подтверждают её AC. Исторический C# snapshot `132/139`, `152/164` сохранён в delivery plan как previous для сравнения. Новый denominator — 143 initial и 168 full AC. Снижение готовности связано со сменой implementation, а не с удалением требований.
+Migration checkpoint `GOAL-006`, base `c611856`: оцениваемая implementation — Go. Historical C# snapshot сохранён в delivery archive и не подтверждает Go AC. Denominator — 143 initial и 168 full AC. Текущая оценка — нижняя граница уже проверенных AC; полный независимый AC-by-AC review требуется до cutover PR.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-01 | 🟦 IN PROGRESS | 4/8 | 50% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
@@ -465,14 +465,14 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
+| **Initial release total** | **🟦 IN PROGRESS** | **4/143** | **2.8%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **4/168** | **2.4%** | **✅** | **◐** | **◐** | **◐** | **N/A** | **—** |
 
 Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS); storage PR #36 (`3fdf3ca`, exact-main CI `33952214437` PASS). Tranche 4 локально проверен: Windows/native probes, bounded resource timelines и proxy→resource→SQLite wiring, multi-GPU projection, settings v1/v2, performance profiles/evaluator/frozen corpus, notification policy, tray ABI/message loop на собственном hidden HWND с заменённым Shell notification call. Пользовательские autostart/settings не менялись, реальный Windows walkthrough ещё не выполнен. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
 
@@ -480,7 +480,7 @@ Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS
 
 Последующие operational Evidence: Windows PR #37 (`976a821`, PR CI `33954262844`, main CI `33954426102`: оба jobs SUCCESS). Tranche-5 remote credentials/ingress/probe локально проверены: native DPAPI и synthetic .NET interoperability, one-time rotation/revocation, default deny, private-Serve/token guards, secret scrubbing и отдельная calculated DNS+TCP latency. Реального two-host LIVE нет; final Wails product surface ещё не подключён.
 
-Tranche-5 lifecycle core локально проверен: target/parameter confirmation, serialized/idempotent operations, uncapped active-request gate, exact installed/loaded model identities, partial-start cleanup, PID/start/path + Job Object ownership, attached/detached synthetic Windows listeners, capture-time output bounds и no-redirect local HTTP. Установленные backend processes/модели не запускались и не изменялись. Readiness остаётся 0/143 и 0/168 до final product wiring; CODE/TEST B01 — partial, а не READY.
+Tranche-5 lifecycle core локально проверен: target/parameter confirmation, serialized/idempotent operations, uncapped active-request gate, exact installed/loaded model identities, partial-start cleanup, PID/start/path + Job Object ownership, attached/detached synthetic Windows listeners, capture-time output bounds и no-redirect local HTTP. Установленные backend processes/модели не запускались и не изменялись. CODE/TEST B01 — partial до final parity review.
 
 Tranche-5 terminal CI Evidence: PR #38 merge `ee32a97`, PR CI `33957842755`, exact-main CI `33958021155`: windows-go/windows-dotnet SUCCESS. B01/B02 CI — partial для core; desktop wiring и внешние manual/LIVE gates не заменяются CI.
 
@@ -504,10 +504,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-05`, Go tranche-4 pre-PR review; denominator и completed AC не изменились: final desktop wiring отсутствует.
+- Last recalculation: `2026-09-05T10:47:36Z`, Go desktop smoke/визуальный обзор. E01-AC02/03/07/08 подтверждены: пять разделов, loopback synthetic relay, русский язык, summary/progressive disclosure. Рост E01 на 50 п.п. связан с первым working Go desktop; denominator прежний. Остальные AC ожидают final review, не объявлены отсутствующим кодом.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Verified migration base: `c611856c81b1dc7dc239805a095d054249b3043d`, main CI `33864679915` success (C# reference).
 - Active approved Goal: `GOAL-006`, `IN_PROGRESS`; exact checkpoint и pipeline — `docs/delivery-plan.md`.
-- Initial release: `0/143 = 0%`; full agreed roadmap: `0/168 = 0%`. Go product AC не получают credit за C# реализацию.
+- Initial release: `4/143 = 2.8%`; full agreed roadmap: `4/168 = 2.4%` — промежуточный verified minimum. Go product AC не получают credit за C# реализацию.
 - История предыдущих Goals/PR/runtime validation находится в `docs/delivery-plan-archive.md` и Git revision выше; не используется как current Go Evidence.
 - DEPLOY — N/A для Windows desktop без server CD. Manual Windows/performance/compatibility и B02 two-host LIVE не входят в implementation Goal и остаются отдельными gates.

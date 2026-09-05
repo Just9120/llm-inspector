@@ -146,3 +146,13 @@ func TestMonitorSamplingCapAndOutageReset(t *testing.T) {
 		t.Fatal("terminal evidence")
 	}
 }
+
+func TestCollectorZeroTimestampCannotPoisonResourceTimeline(t *testing.T) {
+	m := NewMonitor(probeFunc(func(context.Context, *domain.ProcessAssociation) (Snapshot, error) { return Snapshot{}, nil }), nil, nil)
+	defer closeMonitor(t, m)
+	s := &session{owner: m, request: RequestContext{}, ctx: context.Background(), local: true, stage: domain.StageValue{Stage: domain.Generating, Evidence: "protocol_observed", SourceVersion: "fixture-v1"}}
+	s.capture()
+	if len(s.samples) != 1 || s.samples[0].CapturedAt.IsZero() || s.samples[0].CPU.Value != nil || m.Health().Failures != 1 {
+		t.Fatal("invalid collector data admitted", s.samples, m.Health())
+	}
+}
