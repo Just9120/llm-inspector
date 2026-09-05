@@ -78,19 +78,20 @@ func MissingAgentTurn() AgentTurn {
 }
 
 type Observation struct {
-	RequestID     string       `json:"request_id"`
-	StartedAt     time.Time    `json:"started_at"`
-	DurationMS    float64      `json:"duration_ms"`
-	HTTPStatus    *int         `json:"http_status"`
-	Outcome       string       `json:"outcome"`
-	ErrorType     string       `json:"error_type"`
-	ErrorOrigin   string       `json:"error_origin"`
-	Client        Client       `json:"client"`
-	Telemetry     Telemetry    `json:"telemetry"`
-	TTFT          Metric       `json:"ttft"`
-	Correlation   *Correlation `json:"correlation,omitempty"`
-	ContextChange Metric       `json:"context_change"`
-	Agent         AgentTurn    `json:"agent"`
+	RequestID     string        `json:"request_id"`
+	StartedAt     time.Time     `json:"started_at"`
+	DurationMS    float64       `json:"duration_ms"`
+	HTTPStatus    *int          `json:"http_status"`
+	Outcome       string        `json:"outcome"`
+	ErrorType     string        `json:"error_type"`
+	ErrorOrigin   string        `json:"error_origin"`
+	Client        Client        `json:"client"`
+	Telemetry     Telemetry     `json:"telemetry"`
+	TTFT          Metric        `json:"ttft"`
+	Correlation   *Correlation  `json:"correlation,omitempty"`
+	ContextChange Metric        `json:"context_change"`
+	Agent         AgentTurn     `json:"agent"`
+	Runtime       *RuntimeFacts `json:"runtime,omitempty"`
 	// A consumer persists the graph separately; do not recursively duplicate it
 	// in every request JSON/export record.
 	Operation *OperationGraph `json:"-"`

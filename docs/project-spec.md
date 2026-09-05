@@ -455,15 +455,15 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
@@ -471,10 +471,10 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
+| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
 
-Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); live/correlation/tools и diagnostic rules локально проверены в GOAL-006 tranche 2. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
+Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS). Tranche 3 SQLite/history/analytics/artifacts локально проверен: migrations v1–v5, actual .NET WAL interoperability, Go crash recovery, retention/clear, aggregate boundaries и proxy→DB→export negative content corpus. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
 
 Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
 
