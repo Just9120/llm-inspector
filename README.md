@@ -4,7 +4,7 @@ LLM Inspector — Windows-first desktop-приложение для локаль
 
 ## Текущее состояние
 
-Проект имеет repository/CI foundation, десять завершённых core epics и terminal `GOAL-005 DONE`; активной implementation Goal сейчас нет. Manual/runtime validation выделена в отдельную будущую Goal и не считается выполненной:
+Активна `GOAL-006`: перенос на Go + Wails v2 + Svelte/TypeScript и русский современный UI. Текущий pipeline и readiness — в [delivery-plan.md](docs/delivery-plan.md). Ниже описана C# reference implementation до cutover; её Evidence не подтверждает Go runtime. Manual/runtime validation остаётся отдельной будущей Goal:
 
 - solution содержит девять production boundaries и шесть test projects из `docs/architecture.md`;
 - Avalonia application запускает embedded Kestrel proxy на `http://127.0.0.1:5117`; доступны Ollama (`:11434`), llama.cpp (`:8080`) и LM Studio (`:1234`) adapters с безопасным override literal-loopback URL;
