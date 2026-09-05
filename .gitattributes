@@ -1,17 +1,2 @@
-* text=auto
-
-*.cs text eol=lf
-*.go text eol=lf
-go.mod text eol=lf
-go.sum text eol=lf
-.go-version text eol=lf
-*.csproj text eol=lf
-*.props text eol=lf
-*.targets text eol=lf
-*.slnx text eol=lf
-*.axaml text eol=lf
-*.json text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.md text eol=lf
-*.ps1 text eol=crlf
+# Frontend formatting is LF regardless of the caller's core.autocrlf setting.
+frontend/** text=auto eol=lf

@@ -15,6 +15,7 @@
 - **Stop condition:** все Goal AC выполнены и merged branches safely removed (`DONE`); либо конкретный неустранимый scope blocker/external gate после завершения независимой работы.
 - **Safety:** CI/CD safety contract, permissions, trusted release trigger и production operations не ослабляются. Owner от `2026-09-05` явно разрешил обновить **только стек и команды** в `AGENTS.md` и Project CI/CD profile при cutover; safety rules, permissions, release gates и disabled CD остаются неизменными.
 - **Точечное согласование:** owner `2026-09-05` разрешил уточнить только E01-AC04: наблюдение не выполняет lifecycle автоматически; отдельный B01 доступен после explicit exact-target confirmation. Другие product AC и denominator не изменены.
+- **Terminal metadata:** explicit owner approval `2026-09-05`: main хранит датированный pre-merge checkpoint со ссылкой на финальный PR; фактические DONE, exact CI/merge SHA и clean-main/branch cleanup фиксируются terminal-комментарием того же PR. Post-deploy writer не включается, metadata-only PR/extra push и обход protections не нужны.
 
 ### Goal acceptance criteria
 

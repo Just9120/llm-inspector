@@ -13,6 +13,10 @@ Single-instance mutex захватывается до открытия SQLite. �
 
 ## Components и data flow
 
+<a id="3-supported-platform-matrix"></a>
+
+Утверждённая platform matrix — Windows 11 25H2 Home/Pro x64, как в `project-spec.md` §2. Windows 10, 24H2, 26H1/ARM64 и другие editions не получают support автоматически; требуется отдельное согласование. Clean-machine запуск, tray, recovery и backend/client flows на обеих editions остаются manual gate текущего Go executable. Историческая compatibility rationale сохранена в reference revision; она не является Go runtime Evidence.
+
 Client → literal-loopback HTTP gateway → выбранный backend. Telemetry parser наблюдает bytes, но не меняет relay. Request completion → bounded Hub → UI projection / notification worker / SQLite writer; resource timeline публикуется после request observation. UI queries и local exports не находятся в critical forwarding path.
 
 | Package | Ownership / boundary |
@@ -55,6 +59,8 @@ CSP и embedded assets не разрешают external fonts/scripts/telemetry;
 Диагностика завершённого запроса использует сохранённый actual nonterminal resource sample именно этого request с явным timestamp. Terminal marker без CPU/GPU не заменяется вымышленными нулями или историческим значением под видом current load. Список current resource samples и diagnostic evidence разделены.
 
 ## Хранение и privacy
+
+Versioned policies: `diagnostic-rules-v1` — large prompt ≥8192 tokens, slow generation ≤10 tokens/s, offload hypothesis при process CPU ≥60% и GPU ≤20%, VRAM/context pressure ≥90%, model-load/queue ≥1000 ms. Stall assessment 30000 ms не доказывает stall без explicit request-scoped backend signal. `notification-policy-v1`: одинаковый event key подавляется 15 min, global максимум 3 публикации за 10 min; thresholds и точные границы тестируются в `internal/diagnostics/rules_test.go` и `internal/background/notifications_test.go`. Performance budgets/protocol остаются canonical в `project-spec.md` §3.1.
 
 State directory: `%LOCALAPPDATA%\\LLM Inspector\\`; DB `data/inspector.db`, settings `settings.json`, DPAPI token `remote-access.json`. Ни synthetic tests, ни native smoke не открывают пользовательские settings/history или настоящий backend. Native smoke создаёт собственный временный root и loopback stub.
 
