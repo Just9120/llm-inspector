@@ -171,3 +171,27 @@ func TestConcurrentRequestsRemainIsolatedAndRestartIsSafe(t *testing.T) {
 		t.Fatal("retry or dropped request")
 	}
 }
+
+func TestResponseTrailersAndAbsentUserAgentArePreserved(t *testing.T) {
+	gotAgent := make(chan bool, 1)
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, exists := r.Header["User-Agent"]
+		gotAgent <- exists
+		w.Header().Set("Trailer", "X-Technical-Checksum")
+		_, _ = io.WriteString(w, "[]")
+		w.Header().Set("X-Technical-Checksum", "fixture-digest")
+	}))
+	defer backend.Close()
+	base := startTestGateway(t, backend, make(chan domain.Observation, 1))
+	req, _ := http.NewRequest("GET", base+"/v1/models", nil)
+	req.Header["User-Agent"] = nil
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
+	if err != nil || resp.Trailer.Get("X-Technical-Checksum") != "fixture-digest" || <-gotAgent {
+		t.Fatal("header/trailer semantics changed")
+	}
+}

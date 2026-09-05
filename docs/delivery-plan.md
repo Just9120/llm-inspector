@@ -36,12 +36,12 @@
 | Updated UTC | 2026-09-05T05:57:27Z |
 | Base branch / SHA | main / `c611856c81b1dc7dc239805a095d054249b3043d` |
 | Working branch | `codex/goal-006-go-foundation` |
-| Last verified revision | `1ff7b8d3f51e61b44f5af1c78f4b644b898131be` — canonical contract/Goal commit; prior main CI `33864679915` success |
+| Last verified revision | `111f2cf6dde0ecf9e78c7eebee60429c0f3b7d0e` — Go foundation commit; prior main CI `33864679915` success |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Canonical stack/UX ratification committed; Go domain, bounded JSON/SSE parser (OpenAI-compatible + LM Studio native), loopback relay/config/cancellation, pinned read-only Go CI added. Go 1.27.1 downloaded from go.dev with SHA-256 verification |
 | Current step | Tranche 1 — Go foundation: domain, bounded telemetry parser, loopback proxy/adapters regression |
 | Next exact action | Commit validated foundation, initial push and open tranche-1 PR; wait for both Go and C# reference checks |
-| Validation / Evidence | Go formatting/mod verify/vet/build and 18 tests plus fuzz seeds PASS; parser coverage 90.4%, gateway 75.1%, domain 71.7% (not product readiness). Fuzz 803686 executions / 10s PASS; restart/concurrency regression 25 repeats PASS. Reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. No Go desktop runtime/LIVE claim |
+| Validation / Evidence | Go formatting/mod verify/vet/build and regression tests plus fuzz seeds PASS; parser statement coverage 90.4% (not product readiness). Fuzz 803686 executions / 10s PASS; restart/concurrency regression 25 repeats PASS. Reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. No Go desktop runtime/LIVE claim |
 | PR / CI | No GOAL-006 PR yet; initial push after tranche local validation |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | Go final cutover needs CI/CD architecture-profile reconciliation; existing manual performance/Windows/two-host gates remain separate |
