@@ -1,17 +1,10 @@
-* text=auto
-
-*.cs text eol=lf
+# Source formatting is LF regardless of the caller's core.autocrlf setting.
 *.go text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
-.go-version text eol=lf
-*.csproj text eol=lf
-*.props text eol=lf
-*.targets text eol=lf
-*.slnx text eol=lf
-*.axaml text eol=lf
-*.json text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.md text eol=lf
-*.ps1 text eol=crlf
+frontend/** text=auto eol=lf
+benchmarks/fixtures/** text=auto eol=lf
+internal/telemetry/testdata/** text=auto eol=lf
+internal/lifecycle/config/** text=auto eol=lf
+internal/history/schema/*.sql text eol=lf
+build/windows/*.manifest text eol=lf

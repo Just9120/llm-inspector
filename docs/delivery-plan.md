@@ -14,64 +14,70 @@
 - **Required Evidence:** SPEC/CODE/TEST/CI подтверждены для доставленных increments; локальная Windows build/smoke и regression parity для конечного artifact. DEPLOY/LIVE — N/A для Goal; product B02 LIVE по-прежнему обязателен до READY.
 - **Stop condition:** все Goal AC выполнены и merged branches safely removed (`DONE`); либо конкретный неустранимый scope blocker/external gate после завершения независимой работы.
 - **Safety:** CI/CD safety contract, permissions, trusted release trigger и production operations не ослабляются. Owner от `2026-09-05` явно разрешил обновить **только стек и команды** в `AGENTS.md` и Project CI/CD profile при cutover; safety rules, permissions, release gates и disabled CD остаются неизменными.
+- **Точечное согласование:** owner `2026-09-05` разрешил уточнить только E01-AC04: наблюдение не выполняет lifecycle автоматически; отдельный B01 доступен после explicit exact-target confirmation. Другие product AC и denominator не изменены.
+- **Terminal metadata:** explicit owner approval `2026-09-05`: main хранит датированный pre-merge checkpoint со ссылкой на финальный PR; фактические DONE, exact CI/merge SHA и clean-main/branch cleanup фиксируются terminal-комментарием того же PR. Post-deploy writer не включается, metadata-only PR/extra push и обход protections не нужны.
 
 ### Goal acceptance criteria
 
-| ID | Требование | State |
+| ID | Требование | State на pre-merge checkpoint |
 |---|---|---|
-| G06-01 | Canonical spec содержит 4 согласованных stack/UX AC; Goal, migration boundaries и denominator явны | DONE |
-| G06-02 | Go proxy/adapters сохраняют HTTP/SSE bytes/order, cancellation, quality/provenance и privacy по regression corpus | DONE — PR #34, PR/main CI PASS |
-| G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | IN PROGRESS — core validated in PR #35; final storage/UI integration remains |
-| G06-04 | Go SQLite/history/analytics/retention/snapshot/export сохраняют ранее committed data и content allowlist | IN PROGRESS — core/migrations/recovery/analytics/export validated; final desktop wiring remains |
-| G06-05 | Windows resource/GPU collectors, tray/background/autostart/notifications, performance profiles перенесены | IN PROGRESS — native probes/monitor, settings/profiles/notifications and tray validated; final Wails wiring remains |
-| G06-06 | B01 lifecycle и B02 secure remote перенесены с прежними ownership/confirmation/DPAPI/loopback boundaries | IN PROGRESS — remote/DPAPI/ingress/probe and typed lifecycle/native ownership core validated; final desktop wiring remains |
-| G06-07 | Русский Wails v2/Svelte-TypeScript UI предоставляет все функции через понятную навигацию и progressive disclosure | PENDING |
-| G06-08 | Windows executable воспроизводимо собирается, проходит smoke/regression; final runtime path свободен от C#/.NET/Avalonia | PENDING |
-| G06-09 | Increments проходят local checks, PR CI, merge и main CI; документация соответствует результату, temporary branches убраны | PENDING |
+| G06-01 | Canonical spec содержит 4 согласованных stack/UX AC; Goal/boundaries/denominator явны | DONE |
+| G06-02 | Go proxy/adapters сохраняют HTTP/SSE bytes/order, cancellation, quality/provenance и privacy | DONE — PR #34 и main CI PASS |
+| G06-03 | Live state, tokens/context/timings, operations/tools и diagnostics имеют parity | Local PASS — core PR #35; final UI/resource wiring и regression tests PASS; cutover CI pending |
+| G06-04 | SQLite/history/analytics/retention/snapshot/export сохраняют committed data и allowlist | Local PASS — core PR #36; exact migrations/recovery/selection и desktop save/clear confirmation PASS; cutover CI pending |
+| G06-05 | Windows resources/GPU, tray/background/autostart/notifications, profiles перенесены | Local PASS — core PR #37; native/synthetic fixtures и final settings/host wiring PASS; manual walkthrough вне Goal |
+| G06-06 | B01 lifecycle и B02 remote сохраняют ownership/confirmation/DPAPI/loopback | Local PASS — core PR #38; typed facade/UI complete, no user runtime/credentials changed; cutover CI pending |
+| G06-07 | Русский Wails/Svelte UI предоставляет все функции через понятную навигацию | Local PASS — пять разделов, progressive disclosure, Svelte checks, actual WebView2 navigation/history/custom profile smoke |
+| G06-08 | Reproducible Windows executable, smoke/regression, нет C#/.NET/Avalonia runtime path | Local PASS — clean checkout и root дают identical SHA-256; locked build/release payload suite PASS |
+| G06-09 | Local checks → PR CI → merge → main CI; актуальные docs и cleanup branches | PENDING — final PR ещё не открыт; terminal Evidence фиксируется в нём после фактических gates |
+
+Goal — не новая реализация после cutover. G06-03..08 имеют local CODE/TEST Evidence, но full Goal DoD ещё требует final CI/delivery. Не объявлять будущий merge success.
 
 ## Active execution checkpoint
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T09:22:10Z |
-| Base branch / SHA | main / `976a8214d2ca3b3f0e9da02522eeef913122065f` |
-| Working branch | `codex/goal-006-go-connectivity` |
-| Last verified revision | `6473ed5656a6fcf47713b09aef0e2806c8149a5d` — complete tranche-5 scope locally validated and pushed once |
-| Worktree state | Clean at start; only GOAL-006 changes |
-| Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded DPAPI store/token lifecycle, private ingress and network probe; typed lifecycle profiles/manager/adapters, exact model confirmation, native suspended start/job ownership, bounded CLI/HTTP, exact-process cleanup and safe external-process refusal |
-| Current step | Tranche 5 — one grouped correction after confirmed PR #38 Go test failure |
-| Next exact action | Commit the two locally validated CI-fixture corrections and send one grouped push to PR #38, then require both CI jobs |
-| Validation / Evidence | Go formatting/mod verify/vet/build and 131 test functions + fuzz seeds PASS; lifecycle statement coverage 81.9%, remote 93.2%, gateway 87.7% (not readiness). Native attached/detached synthetic listener ownership/cleanup, bounded command output/HTTP, model identity/active-count/confirmation/concurrency tests PASS; full lifecycle suite 3 repeats PASS. Actual synthetic .NET DPAPI interoperability and previous 20-repeat remote tests PASS. .NET locked restore/format/build/260 tests/RID publish/smoke PASS (0 warnings/errors). No local race detector (no C compiler), no installed backend/model or real credentials/settings/Tailscale changed, no two-host LIVE claim |
-| PR / CI | PR #38 head `6473ed5`, CI `33957494031`: windows-dotnet SUCCESS, windows-go FAILURE. Go failures: fixture compared canonical path with uncanonicalized runner temp path; synthetic legacy DPAPI fixture ended at its 10-second PowerShell startup timeout. Production ownership/crypto contracts unchanged; no rerun, merge or extra push yet |
-| Deployment / release | N/A; no publication authorized |
-| Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
+| Updated UTC | 2026-09-05T12:00:04Z — clean build completion; последующая pre-PR документационная сверка |
+| Base branch / SHA | main / `ee32a97fd63110abe7688b48994579d97f8fdb05` |
+| Working branch | `codex/goal-006-go-desktop` |
+| Last verified revision | `7e93c159d9ce238e4b2ec7c378c24beee7af93f8` — final clean-source build/smoke/release validation |
+| Worktree state | Clean at start; только GOAL-006 code/docs. Собственные detached verification worktrees под artifacts ожидают safe cleanup |
+| Completed work | Tranches 1–5 merged и CI verified; tranche 6 полностью реализован и локально проверен: composition/facade, русский UI, Windows host, resource/runtime evidence, locked CI/release cutover, legacy removal и documentation |
+| Current step | Final local validation и independent 168-AC review завершены; подготовка initial push/PR |
+| Next exact action | Один initial push `codex/goal-006-go-desktop` и final cutover PR после commit/validation документации; дождаться CI, merge и exact-main CI |
+| PR locator | [Финальный PR по exact head branch](https://github.com/Just9120/llm-inspector/pulls?q=is%3Apr+head%3Acodex%2Fgoal-006-go-desktop); number/URL появится при создании, не придуман заранее |
+| CI | Core PR #38 / `33957842755`, exact-main `33958021155` SUCCESS. Cutover `windows-go` ещё не запускался |
+| Local executable | `build/bin/LlmInspector.exe`, SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; exact clean checkout hash совпадает |
+| Deployment / release | DEPLOY/LIVE N/A для Goal; no tag/release/WinGet, CD disabled |
+| Blockers / external gates | Для implementation blocker нет. Final PR/main CI ещё pending; manual Windows/E12/B02 LIVE вынесены за scope Goal |
 | Preserved pre-existing changes | None |
+| Terminal recovery | Owner-approved terminal comment в этом же PR содержит exact final SHA/checks/merge/cleanup/DONE. После закрытия не создавать metadata-only PR, не переходить к следующей Goal |
 
-CI correction validation: full Go CI-equivalent PASS; canonical-path/legacy-DPAPI tests each 3 repeats PASS. A separate local artifact-test `TempDir RemoveAll: directory not empty` failure occurred once; readback found the directory empty, focused test 10 repeats and subsequent full suite PASS. Cause remains unconfirmed (possible Windows filesystem transient); no production storage change or suppressed test. CI corrections affect test expectations/startup budget only; production ownership, crypto rules and all release gates unchanged.
+### Validation и ограничения
+
+- `scripts/build-windows.ps1` PASS из root и нового detached checkout без old assets/bindings/node_modules; exact Go/Node/npm pins, Go formatting/mod verify/vet/tests/build, locked npm install, Wails bindings/assets, Svelte/TS/Prettier/Node tests, root host vet/tests.
+- 149 internal Go test functions + fuzz seed corpus, root 2 tests, frontend 3 Node tests. Финальный `go test ./... -json` дал 201 pass events (включая subtests/seeds), 0 fail и 0 skip; frontend 3/3 PASS, Svelte/TypeScript 0 errors / 0 warnings. Это не 1:1 эквивалент прежних 260 C# cases и не readiness denominator.
+- Native smoke: actual GUI exit 0, WebView2 bridge, русский frontend, все 5 screens, synthetic request/history и custom-profile reactivity, proxy/SQLite/private canary. Отдельно визуально проверен обзор. Реальные user DB/settings/credentials/backend models не затронуты.
+- Release-tools PASS: 100 Go/npm/toolchain SBOM dependencies, exact source/manifest/artifact identity, duplicate checksum/wrong source SHA/tamper rejection, no publication.
+- Clean checkout выявил LF/CRLF drift formatting, frozen corpus и embedded SQL/config. Scoped `.gitattributes` + regression policy закрепляют exact bytes; после fixes full clean build PASS и root/clean hashes идентичны. Это локальная воспроизводимость, не утверждение об ещё не запущенном public release.
+- 154 legacy source/config files удалены, 14 protocol fixtures moved intact; SQL/matrix reference hashes независимы от current implementation. История восстановима через Git. Generated output не коммитится.
+- Race detector локально unavailable (нет C compiler); bounded/concurrency/repeat tests не заменяют race detection. Нет manual all-controls/DPI/Windows Home/Pro matrix, controlled performance или real two-host LIVE.
+- Более ранние tranche checkpoints/CI corrections и intermediate artifact hashes перенесены в archive; они не заменяют exact final artifact Evidence.
 
 ## Project readiness snapshots
 
-| Snapshot | Initial release | Full agreed roadmap | Denominator и основание |
+| Snapshot | Initial release | Full agreed roadmap | Основание |
 |---|---:|---:|---|
-| Current — Go target | 0/143 = 0% | 0/168 = 0% | 139 original initial AC + 4 approved stack/UX AC; 25 backlog AC. No Go product runtime exists at migration start, so no old C# runtime Evidence is transferred |
-| Previous — C# reference | 132/139 = 95.0% | 152/164 = 92.7% | Historical assessment in pre-migration spec/GOAL-005; comparison only, not evidence for Go |
+| Current — final local Go review | 136/143 = 95.1% | 152/168 = 90.5% | Все 168 unique AC независимо сверены с current source/tests/product surface; ID ledger и 16 missing AC в project-spec §7 |
+| Previous — first desktop verified minimum | 4/143 = 2.8% | 4/168 = 2.4% | Тогда был подтверждён только E01-AC02/03/07/08; остальные ожидали финального review |
 
-Расхождение больше 10 п.п. объясняется сменой оцениваемой production implementation: предыдущая оценка относится к C#, новая — к Go. Требования и реализованное поведение используются как migration reference, но тестировать Go нужно заново. Product AC credit требует end-to-end implementation, а не только наличия Go structs.
+Рост >10 п.п. объясняется завершением desktop/storage/resource/control integration и полной проверкой каждого AC, не заимствованием C# readiness. Denominator неизменён после 4 approved stack/UX AC. B02-AC01/02/04/05 не получают кредит за local stubs — требуется фактический other-PC/VPS/encrypted flow. CODE/TEST подтверждают implementation path, но не LIVE.
 
-## Execution pipeline
+## Execution pipeline и Roadmap
 
-| Tranche / PR | Содержание | Required local Evidence |
-|---|---|---|
-| 1 — Go foundation | contracts, bounded parser, proxy, adapters, configs | Go unit/integration/privacy tests + C# reference CI unchanged |
-| 2 — Telemetry | live state, correlation/operations/tools, diagnostics | fixture parity, concurrency and error/rule boundary tests |
-| 3 — Storage | SQLite compatibility, history, analytics, retention, snapshot/export | migration/restart/privacy/selection tests |
-| 4 — Windows | resources, GPU, tray/background, autostart, notifications, profiles | Windows probes with safe fixtures, lifecycle tests |
-| 5 — Managed connectivity | lifecycle, capabilities, secure remote and DPAPI | exact process ownership and authenticated ingress tests |
-| 6 — Desktop / cutover | Russian UI, Wails binding, packaging, CI, docs | Svelte/TS check/build, Go test/vet, Windows executable smoke |
+1. **Current Goal:** final cutover PR → required `windows-go` → merge без bypass → exact-main CI → safe main sync/merged branch/worktree cleanup → terminal PR comment → DONE и остановка.
+2. **Candidate manual validation Goal (не авторизована):** exact Go artifact Windows Home/Pro clean-machine/upgrade/tray/autostart/recovery и critical backend/client flows; controlled built-in profile E12 measurements; encrypted Windows↔VPS/second-PC B02 checklist. Non-goals: публикация, новые функции/протоколы/OS. AC: Evidence exact SHA/version/machine/profile; честные PASS/FAIL/PENDING по всем применимым сценариям, без переноса historical C# credit. Required: TEST и B02 LIVE; blockers — доступ к второй Windows edition/машине/стабильному reference workload и runtime versions.
+3. **Candidate publication Goal (не авторизована):** final `v1.0.0` только после approved validation; trusted release/SBOM/provenance/SmartScreen и затем отдельная процедура WinGet при новом owner approval.
+4. **Conditional backlog:** Linux/macOS и дополнительные API protocols только при explicit demand; signing/installer/updates и CI action maintenance — отдельные proposals, не implementation authorization.
 
-Tranches — части одной Goal. Последовательные PR открываются после завершения и локальной проверки соответствующего scope. Непройденный required check нельзя считать успехом. После каждого merge следующий tranche продолжается в этой же Goal.
-
-## Candidate next Goals
-
-- Manual pre-publication validation: Windows matrix, controlled E12 measurements, B02 encrypted two-host LIVE, unavailable runtime/client compatibility.
-- Final release / WinGet publication после product validation и отдельного authorization.
+Только шаг 1 входит в текущую Goal. При обнаружении failed required check исправлять связанную причину в этой же Goal; нельзя обходить gates или объявлять missing manual Evidence успешным.

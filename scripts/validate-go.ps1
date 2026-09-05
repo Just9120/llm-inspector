@@ -10,6 +10,8 @@ if ($LASTEXITCODE -ne 0 -or $actualGoVersion -ne "go$expectedGoVersion") {
     throw "Expected pinned Go $expectedGoVersion."
 }
 $goSources = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot '../internal') -Filter '*.go' -Recurse -File | Select-Object -ExpandProperty FullName)
+$goSources += @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot '..') -Filter '*.go' -File | Select-Object -ExpandProperty FullName)
+$goSources += @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.go' -File | Select-Object -ExpandProperty FullName)
 $unformatted = @(gofmt -l $goSources)
 if ($LASTEXITCODE -ne 0 -or $unformatted.Count -gt 0) {
     throw 'Go formatting verification failed. Run gofmt on changed files.'

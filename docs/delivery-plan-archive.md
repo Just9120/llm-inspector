@@ -2,7 +2,19 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-006 — superseded desktop/cutover checkpoints, 2026-09-05
+
+До final AC review сохранялась нижняя граница 4/143 и 4/168 (E01-AC02/03/07/08), предыдущий migration-start snapshot — 0/143 и 0/168. Только current/previous snapshots остаются в active plan; эти оценки не используются как основание нового расчёта.
+
+Desktop local increments: composition `058758f`, typed facade `54709f8`, Wails/Russian UI/native smoke `a83ad3f`, runtime/version/operation evidence `5d14494`, cutover `dbb5558`. Intermediate artifact `59c97e1a4936249e1a50fda74142a194aebe4a8f6f1967675142697c8b84aafa` и initial packaging artifact `36ca36b7c6b77ab01e103547b41e4f3d85899eb368046e3e0c38a5d0c2f02f0e` — superseded, не final release candidates.
+
+Local clean-build failures до initial push: frontend/Go formatter и frozen corpus зависели от core.autocrlf; после scoped LF fix сборка проходила, но embedded SQL/config давали иной executable hash. Exact-byte attributes исправлены и проверены новым checkout; ничего не исправлялось через speculative CI rerun. Final artifact/validation — active delivery checkpoint.
+
+Ранее один локальный artifact test получил TempDir cleanup `directory not empty`; readback был empty, 10 repeats и последующие full suites PASS. Причина не установлена (возможный Windows filesystem transient), production storage behavior не изменён и test не подавлен.
+
 ## GOAL-006 — completed increments 1–2 (Goal remains active)
+
+Historical pre-migration C# snapshot: initial `132/139 = 95.0%`, full `152/164 = 92.7%` (GOAL-005). Смена production target на Go обнулила переносимый credit; snapshot не используется как Go evidence.
 
 - Foundation PR [#34](https://github.com/Just9120/llm-inspector/pull/34): merge `1ffb485277a7b12ad54657119de4dc268dfa997a`; PR CI `33948720562`, main CI `33948852046`, both Windows Go/.NET jobs SUCCESS. Local and remote `codex/goal-006-go-foundation` safely removed after main synchronization.
 - Telemetry PR [#35](https://github.com/Just9120/llm-inspector/pull/35): head `6603e53f5ceaa46e842737de4078f5c3f7525ebc`, merge `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87`; PR CI `33949980492`, main CI `33950314660`, both Windows Go/.NET jobs SUCCESS. Local and remote `codex/goal-006-go-telemetry` safely removed after main synchronization.
@@ -17,6 +29,11 @@
 
 - Windows PR [#37](https://github.com/Just9120/llm-inspector/pull/37): head `e0945e08357c7a9f38ff66634548a222bdd5a312`, merge `976a8214d2ca3b3f0e9da02522eeef913122065f` at `2026-09-05T08:07:54Z`; PR CI `33954262844`, main CI `33954426102`: windows-go/windows-dotnet SUCCESS. One initial push; no CI failure batch or speculative rerun.
 - Local: 98 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, native probes/hidden HWND tests, 50 background repeats and 10 resource/background pipeline repeats passed. Settings/autostart fixtures did not modify user registration. No real tray notification or manual Windows/performance Evidence claimed. Local/remote `codex/goal-006-go-windows` safely removed; main synced to merge revision.
+
+## GOAL-006 — completed increment 5 (Goal remains active)
+
+- Connectivity/lifecycle PR [#38](https://github.com/Just9120/llm-inspector/pull/38): head `f9e0ccdfc55b527d8ba5ab84daff3a842fcd21a5`, merge `ee32a97fd63110abe7688b48994579d97f8fdb05` at `2026-09-05T09:27:11Z`; PR CI `33957842755`, main CI `33958021155`: windows-go/windows-dotnet SUCCESS. One initial push and one grouped test-fixture correction after confirmed initial CI `33957494031` failure; no speculative rerun.
+- Local: 131 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, native synthetic attached/detached process ownership/cleanup, exact model identity, DPAPI interoperability and bounded authenticated ingress/probe tests PASS. Full lifecycle suite 3 repeats; corrected fixtures 3 repeats; artifact truncation test 10 repeats after one unconfirmed local Windows TempDir-cleanup transient. Installed backends/models/user credentials/settings unchanged. Local/remote `codex/goal-006-go-connectivity` safely removed after main synchronization; no release/CD or Goal closure.
 
 ## Release strategy correction — single `main`, final-only publication
 

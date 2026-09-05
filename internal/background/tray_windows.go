@@ -206,7 +206,12 @@ func (t *WindowsTray) run() {
 	trayWindows.Store(window, t)
 	defer func() { destroyWindow.Call(window); trayWindows.Delete(window); t.window.Store(0) }()
 	defer func() { d := t.iconData(window); t.notify(nimDelete, &d) }()
-	t.icon, _, _ = loadIcon.Call(0, 32512)
+	// Wails v2 packages the application's group icon as resource 3. Unit-test
+	// executables have no app resource, so retain a Windows stock-icon fallback.
+	t.icon, _, _ = loadIcon.Call(uintptr(instance), 3)
+	if t.icon == 0 {
+		t.icon, _, _ = loadIcon.Call(0, 32512)
+	}
 	if t.icon == 0 {
 		fail()
 		return

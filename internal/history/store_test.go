@@ -2,6 +2,7 @@ package history
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -154,22 +155,20 @@ func TestSchemaMigrationCompatibilityAllVersions(t *testing.T) {
 }
 
 func TestSchemaSQLMatchesReviewedReference(t *testing.T) {
-	body, err := os.ReadFile("../../src/LlmInspector.Storage.Sqlite/SqliteTechnicalHistoryStore.cs")
-	if err != nil {
-		t.Fatal(err)
+	// Frozen SHA-256 of whitespace-normalized SQL from C# reference ee32a97,
+	// SqliteTechnicalHistoryStore.cs SchemaSql/Migration2Sql..Migration5Sql.
+	// This retains an independent migration oracle after production cutover.
+	want := []string{
+		"8e2a522057ad46b2e460b20ac58d48a65d809935565a6914cf60e97717321622",
+		"91fd5857088940c66d160162e2afa342895d97707a5a31fbf63b7cabcd74a56f",
+		"ffa7bcfad23e4fb59d538411b2a2b1e7dd0ff4f13d0f7d5287ea99ece9b7ddc4",
+		"e9bee9d06d93e2a6c063082f51fc15b93de57dbf1cf48437279093ff4a2f52ad",
+		"21b3a46adb280f03740ae87ef8d701ab35054e7684f3628d1afc7fb919c2351d",
 	}
-	for i, name := range []string{"SchemaSql", "Migration2Sql", "Migration3Sql", "Migration4Sql", "Migration5Sql"} {
-		_, tail, ok := strings.Cut(string(body), "private const string "+name+" = \"\"\"")
-		if !ok {
-			t.Fatal(name)
-		}
-		legacy, _, ok := strings.Cut(tail, "\"\"\";")
-		if !ok {
-			t.Fatal(name)
-		}
+	for i, expected := range want {
 		actual, _ := schemas.ReadFile(fmt.Sprintf("schema/%d.sql", i+1))
 		_, sqlText, _ := strings.Cut(string(actual), "\n")
-		if strings.Join(strings.Fields(legacy), " ") != strings.Join(strings.Fields(sqlText), " ") {
+		if fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(strings.Fields(sqlText), " ")))) != expected {
 			t.Fatalf("schema v%d changed", i+1)
 		}
 	}

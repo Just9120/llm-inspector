@@ -18,6 +18,32 @@ func (f probeFunc) Capture(c context.Context, p *domain.ProcessAssociation) (Sna
 
 type resolverFunc func(string) *domain.ProcessAssociation
 
+func TestDriverEvidenceIsRequestScopedAndNeverProbesOnRead(t *testing.T) {
+	calls := 0
+	driver := "590.41"
+	m := NewMonitor(probeFunc(func(context.Context, *domain.ProcessAssociation) (Snapshot, error) {
+		calls++
+		return Snapshot{CapturedAt: time.Now(), GPUs: []GPU{{ID: "gpu-0", Driver: driver}}}, nil
+	}), nil, nil)
+	s := &session{owner: m, ctx: context.Background(), local: true}
+	if s.GPUDriverVersion() != "" || calls != 0 {
+		t.Fatal("getter probed or fabricated data")
+	}
+	s.capture()
+	if s.GPUDriverVersion() != driver || calls != 1 {
+		t.Fatal("captured driver missing")
+	}
+	driver = "591.1"
+	s.capture()
+	if s.GPUDriverVersion() != "" {
+		t.Fatal("mixed drivers reported as one version")
+	}
+	other := &session{owner: m, ctx: context.Background()}
+	if other.GPUDriverVersion() != "" {
+		t.Fatal("driver leaked across requests")
+	}
+}
+
 func (f resolverFunc) Resolve(s string) *domain.ProcessAssociation { return f(s) }
 func closeMonitor(t *testing.T, m *Monitor) {
 	t.Helper()
@@ -144,5 +170,15 @@ func TestMonitorSamplingCapAndOutageReset(t *testing.T) {
 	last := s.samples[len(s.samples)-1]
 	if last.DroppedSamples != s.dropped || last.CPU.Value != nil || *last.BackendToClient.Value != 456 {
 		t.Fatal("terminal evidence")
+	}
+}
+
+func TestCollectorZeroTimestampCannotPoisonResourceTimeline(t *testing.T) {
+	m := NewMonitor(probeFunc(func(context.Context, *domain.ProcessAssociation) (Snapshot, error) { return Snapshot{}, nil }), nil, nil)
+	defer closeMonitor(t, m)
+	s := &session{owner: m, request: RequestContext{}, ctx: context.Background(), local: true, stage: domain.StageValue{Stage: domain.Generating, Evidence: "protocol_observed", SourceVersion: "fixture-v1"}}
+	s.capture()
+	if len(s.samples) != 1 || s.samples[0].CapturedAt.IsZero() || s.samples[0].CPU.Value != nil || m.Health().Failures != 1 {
+		t.Fatal("invalid collector data admitted", s.samples, m.Health())
 	}
 }

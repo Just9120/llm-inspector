@@ -9,6 +9,16 @@ import (
 
 type monitorHolder struct{ monitor domain.ResourceMonitor }
 
+func (g *Gateway) SetRuntimeFacts(facts domain.RuntimeFacts) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.server != nil || !facts.Valid() {
+		return errors.New("runtime facts требуют валидного contract и остановленного proxy")
+	}
+	g.facts.Store(&facts)
+	return nil
+}
+
 func (g *Gateway) SetResourceMonitor(m domain.ResourceMonitor) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()

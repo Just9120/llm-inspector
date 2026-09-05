@@ -356,12 +356,12 @@ profile_version: 1
 status: CONFIGURED # current repository/CI profile; disabled release/CD fields are N/A
 
 architecture_design:
-  runtime: .NET 10 LTS
-  desktop_ui: Avalonia UI
-  package_manager: NuGet PackageReference with Central Package Management and lock files
-  solution_format: slnx
+  runtime: Go 1.27.1
+  desktop_ui: Wails v2.15.0 + Svelte 5.57.0 / TypeScript 6.0.3; installed WebView2 prerequisite, no automatic download
+  package_manager: Go modules with go.sum + npm 12.0.2 ci with package-lock.json; Node 22.23.1
+  solution_format: Go module + embedded frontend
   target_rid: win-x64
-  runtime_publish: self-contained
+  runtime_publish: single-file embedded Go runtime/frontend; external installed WebView2 Runtime
   state_store: SQLite WAL, local per-user, single application writer
 
 repository:
@@ -374,15 +374,15 @@ ci:
   workflow: .github/workflows/ci.yml
   events: [pull_request, push:main]
   runner: GitHub-hosted windows-2025 x64 ephemeral standard runner
-  install_command: dotnet restore LlmInspector.slnx --locked-mode
-  lint_command: dotnet format LlmInspector.slnx --verify-no-changes --no-restore
-  typecheck_command: dotnet build LlmInspector.slnx -c Release --no-restore
-  test_command: dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"
-  build_command: locked win-x64 restore + self-contained publish + Avalonia initialization smoke
-  workflow_check: CI / windows-dotnet
+  install_command: go mod download + npm --prefix frontend ci --ignore-scripts --no-audit --no-fund
+  lint_command: ./scripts/validate-go.ps1 + npm --prefix frontend run check
+  typecheck_command: go vet ./... + npm --prefix frontend run check (after initial binding generation)
+  test_command: go test ./... -count=1 -timeout 60s + npm --prefix frontend test
+  build_command: ./scripts/build-windows.ps1 + ./eng/release/Test-ReleaseTools.ps1
+  workflow_check: CI / windows-go
   required_checks: NONE_ENFORCED # no branch protection/rulesets at 2026-09-02 checkpoint
-  lockfile: 15 normal packages.lock.json + 9 RID-specific packages.win-x64.lock.json files
-  package_source: nuget.org only via NuGet.Config source mapping
+  lockfile: go.mod/go.sum + frontend/package-lock.json; exact toolchain files .go-version/.node-version/.npm-version
+  package_source: Go module proxy/checksum database + registry.npmjs.org locked package integrity
   untrusted_pr_policy: contents:read; no secrets, environments, write token, privileged runner or deploy
   action_pinning: full immutable commit SHA; tag only in comments; enforced by unit policy test
   concurrency: per workflow and PR/ref; stale runs cancel safely

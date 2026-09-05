@@ -3,8 +3,7 @@ param(
     [Parameter(Mandatory)]
     [string] $PublishDirectory,
 
-    [Parameter(Mandatory)]
-    [string] $AssetsFile,
+    [string] $PackageLockFile = (Join-Path $PSScriptRoot '../../frontend/package-lock.json'),
 
     [Parameter(Mandatory)]
     [string] $OutputDirectory,
@@ -29,13 +28,22 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $resolvedPublishDirectory = (Resolve-Path -LiteralPath $PublishDirectory).Path
-$resolvedAssetsFile = (Resolve-Path -LiteralPath $AssetsFile).Path
+$resolvedLockFile = (Resolve-Path -LiteralPath $PackageLockFile).Path
 $resolvedOutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $publishedFiles = @(Get-ChildItem -LiteralPath $resolvedPublishDirectory -File)
-if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'LlmInspector.App.exe') {
+if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'LlmInspector.exe') {
     $names = $publishedFiles.Name -join ', '
-    throw "Expected exactly one published LlmInspector.App.exe; found: $names"
+    throw "Expected exactly one published LlmInspector.exe; found: $names"
 }
+
+$buildInfoText = go version -m -json $publishedFiles[0].FullName
+if ($LASTEXITCODE -ne 0) { throw 'Cannot read exact executable Go build information.' }
+$buildInfo = ($buildInfoText -join "`n") | ConvertFrom-Json
+if ($buildInfo.Path -ne 'github.com/Just9120/llm-inspector' -or $buildInfo.GoVersion -notmatch '^go\d+\.\d+\.\d+$') {
+    throw 'Executable Go module/toolchain identity is invalid.'
+}
+$packageLock = Get-Content -LiteralPath $resolvedLockFile -Raw | ConvertFrom-Json -AsHashtable
+if ($packageLock.lockfileVersion -ne 3 -or $packageLock.version -ne $Version) { throw 'Frontend lockfile/version identity is invalid.' }
 
 if (Test-Path -LiteralPath $resolvedOutputDirectory) {
     if (@(Get-ChildItem -LiteralPath $resolvedOutputDirectory -Force).Count -ne 0) {
@@ -56,10 +64,24 @@ $artifactHash = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash
 $normalizedSha = $SourceSha.ToLowerInvariant()
 $created = $SourceCreatedAt.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 
-$projectAssets = Get-Content -LiteralPath $resolvedAssetsFile -Raw | ConvertFrom-Json
-$packageProperties = @($projectAssets.libraries.PSObject.Properties |
-    Where-Object { $_.Value.type -eq 'package' } |
-    Sort-Object Name)
+$dependencies = [Collections.Generic.List[object]]::new()
+foreach ($module in @($buildInfo.Deps | Sort-Object Path)) {
+    if ($module.PSObject.Properties.Name -contains 'Replace' -or $module.Version -notmatch '^v[0-9]' -or $module.Sum -notmatch '^h1:') {
+        throw 'Unreviewed replacement or unverified Go module in executable.'
+    }
+    $dependencies.Add(@{ name=$module.Path; version=$module.Version; ecosystem='golang'; relation='DEPENDS_ON'; location='NOASSERTION'; comment="Exact executable module, Go checksum $($module.Sum)" })
+}
+foreach ($property in @($packageLock.packages.GetEnumerator() | Where-Object Key -ne '' | Sort-Object Key)) {
+    $entry = $property.Value
+    if ($property.Key -notmatch '(^|/)node_modules/(?<package>(@[^/]+/)?[^/]+)$') { throw 'Invalid npm package path.' }
+    $name = $Matches.package
+    if ($entry.version -notmatch '^\d+\.' -or $entry.integrity -notmatch '^sha512-') {
+        throw 'Invalid npm lockfile package identity/integrity.'
+    }
+    $relation = if ($name -eq 'svelte') { 'DEPENDS_ON' } else { 'BUILD_DEPENDENCY_OF' }
+    $dependencies.Add(@{ name=$name; version=$entry.version; ecosystem='npm'; relation=$relation; location=$entry.resolved; comment="Locked frontend build graph; integrity $($entry.integrity)" })
+}
+$dependencies.Add(@{ name='go'; version=$buildInfo.GoVersion.Substring(2); ecosystem='generic'; relation='DEPENDS_ON'; location='https://go.dev/dl/'; comment='Go compiler and linked standard-library runtime' })
 $packages = [Collections.Generic.List[object]]::new()
 $relationships = [Collections.Generic.List[object]]::new()
 $relationships.Add([ordered]@{
@@ -78,33 +100,30 @@ $packages.Add([ordered]@{
     SPDXID = 'SPDXRef-Package-LlmInspector-App'
     versionInfo = $Version
     downloadLocation = 'NOASSERTION'
-    filesAnalyzed = $true
+    filesAnalyzed = $false
     checksums = @([ordered]@{ algorithm = 'SHA256'; checksumValue = $artifactHash })
     licenseConcluded = 'NOASSERTION'
     licenseDeclared = 'NOASSERTION'
     copyrightText = 'NOASSERTION'
 })
 
-for ($index = 0; $index -lt $packageProperties.Count; $index++) {
-    $packageKey = $packageProperties[$index].Name
-    $separator = $packageKey.LastIndexOf('/')
-    if ($separator -le 0 -or $separator -eq $packageKey.Length - 1) {
-        throw "Invalid NuGet package identity in project.assets.json: $packageKey"
-    }
-
-    $packageName = $packageKey.Substring(0, $separator)
-    $packageVersion = $packageKey.Substring($separator + 1)
-    $spdxId = "SPDXRef-NuGet-$($index + 1)"
-    $packageUrl = "pkg:nuget/$([Uri]::EscapeDataString($packageName))@$([Uri]::EscapeDataString($packageVersion))"
+for ($index = 0; $index -lt $dependencies.Count; $index++) {
+    $dependency = $dependencies[$index]
+    $packageName = $dependency.name
+    $packageVersion = $dependency.version
+    $spdxId = "SPDXRef-Dependency-$($index + 1)"
+    $encodedName = [Uri]::EscapeDataString($packageName).Replace('%2F', '/')
+    $packageUrl = "pkg:$($dependency.ecosystem)/$encodedName@$([Uri]::EscapeDataString($packageVersion))"
     $packages.Add([ordered]@{
         name = $packageName
         SPDXID = $spdxId
         versionInfo = $packageVersion
-        downloadLocation = "https://www.nuget.org/packages/$packageName/$packageVersion"
+        downloadLocation = $dependency.location
         filesAnalyzed = $false
         licenseConcluded = 'NOASSERTION'
         licenseDeclared = 'NOASSERTION'
         copyrightText = 'NOASSERTION'
+        comment = $dependency.comment
         externalRefs = @([ordered]@{
             referenceCategory = 'PACKAGE-MANAGER'
             referenceType = 'purl'
@@ -112,9 +131,9 @@ for ($index = 0; $index -lt $packageProperties.Count; $index++) {
         })
     })
     $relationships.Add([ordered]@{
-        spdxElementId = 'SPDXRef-Package-LlmInspector-App'
-        relationshipType = 'DEPENDS_ON'
-        relatedSpdxElement = $spdxId
+        spdxElementId = $(if ($dependency.relation -eq 'BUILD_DEPENDENCY_OF') { $spdxId } else { 'SPDXRef-Package-LlmInspector-App' })
+        relationshipType = $dependency.relation
+        relatedSpdxElement = $(if ($dependency.relation -eq 'BUILD_DEPENDENCY_OF') { 'SPDXRef-Package-LlmInspector-App' } else { $spdxId })
     })
 }
 
@@ -162,8 +181,10 @@ $manifest = [ordered]@{
         self_contained = $true
         single_file = $true
         signed = $false
+        runtime_prerequisite = 'Microsoft Edge WebView2 Evergreen Runtime; installed separately, never auto-downloaded by Inspector'
     }
     sbom = $sbomName
+    frontend_lock_sha256 = (Get-FileHash -LiteralPath $resolvedLockFile -Algorithm SHA256).Hash.ToLowerInvariant()
     provenance = 'GitHub artifact attestation (Sigstore/in-toto SLSA provenance)'
     support_matrix = @('Windows 11 25H2 Home x64', 'Windows 11 25H2 Pro x64')
 }
@@ -187,7 +208,7 @@ $checksumSubjects = @($artifactPath, $sbomPath, $manifestPath) |
 $releaseNotes = @"
 # LLM Inspector v$Version
 
-Observation-only portable preview for Windows 11 25H2 x64. Lifecycle management is not included in v1.0.
+Русскоязычное portable приложение для технического наблюдения за LLM на Windows 11 25H2 x64. Управление supported backend включается только после явного подтверждения точного runtime.
 
 ## Запуск
 
@@ -195,7 +216,7 @@ Observation-only portable preview for Windows 11 25H2 x64. Lifecycle management 
 2. Проверьте SHA-256 командой Get-FileHash .\$artifactName -Algorithm SHA256.
 3. Запустите executable без installer и прав администратора.
 
-Пакет self-contained: установленный .NET SDK/runtime не требуется. Application data остаются в `%LOCALAPPDATA%\LLM Inspector`.
+Go runtime и frontend встроены: .NET, Node.js и Go на компьютере пользователя не нужны. Требуется установленный Microsoft Edge WebView2 Evergreen Runtime. Программа не скачивает и не устанавливает его автоматически. Application data остаются в `%LOCALAPPDATA%\LLM Inspector`.
 
 ## Важное предупреждение
 
@@ -215,5 +236,5 @@ Write-Output ([ordered]@{
     sha256 = $artifactHash
     sbom = $sbomName
     manifest = $manifestName
-    package_count = $packageProperties.Count
+    package_count = $dependencies.Count
 } | ConvertTo-Json -Compress)

@@ -121,6 +121,17 @@ type session struct {
 	association    *domain.ProcessAssociation
 	previous       *Snapshot
 	local          bool
+	driver         string
+	driverConflict bool
+}
+
+func (s *session) GPUDriverVersion() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.driverConflict {
+		return ""
+	}
+	return s.driver
 }
 
 func (s *session) StageChanged(stage domain.StageValue) {
@@ -182,7 +193,7 @@ func (s *session) capture() {
 			ctx, cancel := context.WithTimeout(s.ctx, time.Second)
 			defer cancel()
 			value, err := s.owner.probe.Capture(ctx, s.association)
-			if err != nil {
+			if err != nil || value.CapturedAt.IsZero() {
 				if s.ctx.Err() == nil {
 					s.owner.failures.Add(1)
 				}
@@ -196,6 +207,18 @@ func (s *session) capture() {
 	}
 	s.mu.Lock()
 	stage := s.stage
+	if current != nil {
+		for _, gpu := range current.GPUs {
+			version := domain.TechnicalIdentifier(gpu.Driver)
+			if version == "" {
+				continue
+			}
+			if s.driver != "" && s.driver != version {
+				s.driverConflict = true
+			}
+			s.driver = version
+		}
+	}
 	s.mu.Unlock()
 	at := time.Now()
 	if current != nil {

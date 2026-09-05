@@ -2,8 +2,8 @@ package lifecycle
 
 import (
 	"context"
-	"encoding/json"
-	"os"
+	"crypto/sha256"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -125,12 +125,9 @@ func TestModelJSONStrictIdentityAndBounds(t *testing.T) {
 }
 
 func TestEmbeddedCompatibilityPreservesReferenceMatrix(t *testing.T) {
-	legacy, err := os.ReadFile("../../src/LlmInspector.Adapters/config/runtime-compatibility.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var before, after any
-	if json.Unmarshal(legacy, &before) != nil || json.Unmarshal(compatibilityJSON, &after) != nil || !reflect.DeepEqual(before, after) {
+	// Frozen LF-normalized legacy matrix, source ee32a97. Historical verified
+	// entries do not become Go LIVE evidence solely because this hash matches.
+	if fmt.Sprintf("%x", sha256.Sum256([]byte(strings.ReplaceAll(string(compatibilityJSON), "\r\n", "\n")))) != "8b405cc1d4e445c9b4bc2bf2012e767f2c785945178ac32b68eac19579d07244" {
 		t.Fatal("matrix drift")
 	}
 	a := Matrix()

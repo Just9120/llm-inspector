@@ -36,6 +36,7 @@ type Gateway struct {
 	operations  *state.Operations
 	monitor     atomic.Pointer[monitorHolder]
 	authorizer  atomic.Pointer[authorizerHolder]
+	facts       atomic.Pointer[domain.RuntimeFacts]
 }
 
 func New(c Config, sink chan<- domain.Observation) (*Gateway, error) {
@@ -217,6 +218,14 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			g.live.Finish(obs.RequestID, obs.Outcome, obs.ErrorType)
 			obs.ContextChange = g.correlation.Observe(obs.Correlation, obs.Client, obs.Telemetry.Backend, obs.Telemetry.ContextUsage)
 			obs.DurationMS = float64(time.Since(start)) / float64(time.Millisecond)
+			if base := g.facts.Load(); base != nil {
+				facts := *base
+				facts.ModelVersion = domain.TechnicalIdentifier(obs.Telemetry.Model)
+				if evidence, ok := resources.(domain.ResourceRuntimeEvidence); ok && !g.config.Remote {
+					resourceCall(func() { facts.GPUDriverVersion = domain.TechnicalIdentifier(evidence.GPUDriverVersion()) })
+				}
+				obs.Runtime = &facts
+			}
 			obs.Operation = g.operations.Observe(obs)
 			select {
 			case g.sink <- obs:

@@ -121,7 +121,7 @@ Acceptance criteria:
 - `E01-AC01`: Application распространяется и запускается как desktop application на каждой Windows version из утверждённой support matrix. [source: `UP-C01-01`]
 - `E01-AC02`: Desktop UI содержит доступные пользователю monitoring, analytics и diagnostics surfaces. [source: `UP-C01-01`, `UP-C01-02`]
 - `E01-AC03`: Initial release подключается к LLM backends на том же Windows PC. [source: `UP-C01-04`]
-- `E01-AC04`: Initial release не содержит команд запуска, остановки, restart, загрузки моделей или изменения backend runtime parameters. [source: `UP-C01-03`]
+- `E01-AC04`: Наблюдение работает без управления lifecycle backend. Команды запуска, остановки, restart, загрузки моделей и изменения allowlisted runtime parameters доступны отдельно в BACKLOG-01 только после явного подтверждения точного runtime; наблюдение их не выполняет автоматически. [source: `UP-C01-03`, explicit owner reconciliation `2026-09-05`]
 
 - `E01-AC05`: Production core и final Windows executable используют Go, без зависимости production/release path от C#/.NET/Avalonia. [source: user-approved `GOAL-006`, upstream stack amendment]
 - `E01-AC06`: Desktop shell использует stable Wails v2, frontend — Svelte/TypeScript; dependency graph воспроизводимо зафиксирован. [source: user-approved `GOAL-006`, upstream stack amendment]
@@ -449,38 +449,79 @@ Definition of Done: `3/3` AC, SPEC/CODE/TEST/CI `✅`, DEPLOY/LIVE `N/A`.
 
 ## 7. Current readiness и Evidence
 
-Migration checkpoint `GOAL-006`, base `c611856`: текущая оцениваемая production implementation — Go. На старте Go runtime отсутствует; старые C# результаты не подтверждают её AC. Исторический C# snapshot `132/139`, `152/164` сохранён в delivery plan как previous для сравнения. Новый denominator — 143 initial и 168 full AC. Снижение готовности связано со сменой implementation, а не с удалением требований.
+> **Operational snapshot — final local Go cutover review, 2026-09-05.** Это датированный pre-merge snapshot. Последующий exact CI/merge/cleanup и terminal status публикуются в том же [финальном PR по exact head branch](https://github.com/Just9120/llm-inspector/pulls?q=is%3Apr+head%3Acodex%2Fgoal-006-go-desktop), согласно explicit owner approval. До этих проверок CI не считается ✅, эпики не объявлены READY.
+
+Пересчитаны все **168 уникальных atomic AC** текущего contract: **143 initial**, **25 backlog**. Кредит бинарный: выполненный AC = 1; частичный или требующий отсутствующего actual runtime = 0. Ни прошлые проценты, ни coverage/число tests не использованы как denominator.
 
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
-| EPIC-01 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
-| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | ◐ | ◐ | — | N/A | — |
+| EPIC-01 | 🟦 IN PROGRESS | 7/8 | 87.5% | ✅ | ✅ | ◐ | — | N/A | N/A |
+| EPIC-02 | 🟦 IN PROGRESS | 15/15 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-03 | 🟦 IN PROGRESS | 13/13 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-04 | 🟦 IN PROGRESS | 12/12 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-05 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-06 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-07 | 🟦 IN PROGRESS | 16/16 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-08 | 🟦 IN PROGRESS | 18/18 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 14/14 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-10 | 🟦 IN PROGRESS | 8/8 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-11 | 🟦 IN PROGRESS | 10/10 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS | 7/13 | 53.8% | ✅ | ✅ | ◐ | ◐ | N/A | N/A |
+| **Initial release total** | **🟦 IN PROGRESS** | **136/143** | **95.1%** | ✅ | ✅ | ◐ | ◐ | N/A | N/A |
+| BACKLOG-01 | 🟦 IN PROGRESS | 5/5 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-02 | 🟦 IN PROGRESS | 5/9 | 55.6% | ✅ | ✅ | ◐ | ◐ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
-| BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
-| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
+| BACKLOG-05 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| BACKLOG-06 | 🟦 IN PROGRESS | 3/3 | 100% | ✅ | ✅ | ✅ | ◐ | N/A | N/A |
+| **Full agreed roadmap total** | **🟦 IN PROGRESS** | **152/168** | **90.5%** | ✅ | ◐ | ◐ | ◐ | N/A | — |
 
-Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); telemetry/rules PR #35 (`62a7a31`, exact-main CI `33950314660` PASS); storage PR #36 (`3fdf3ca`, exact-main CI `33952214437` PASS). Tranche 4 локально проверен: Windows/native probes, bounded resource timelines и proxy→resource→SQLite wiring, multi-GPU projection, settings v1/v2, performance profiles/evaluator/frozen corpus, notification policy, tray ABI/message loop на собственном hidden HWND с заменённым Shell notification call. Пользовательские autostart/settings не менялись, реальный Windows walkthrough ещё не выполнен. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
+**Без кредита:** E01-AC01 (1: Windows Home/Pro exact-artifact release matrix); E12-AC01..06 (6: controlled overhead/throughput/idle); B02-AC01/02/04/05 (4: actual other-PC/LAN/VPS/authenticated encrypted flow); B03-AC01..03 (3: conditional platforms); B04-AC01..02 (2: conditional protocols). Итого 7 initial / 16 full невыполненных AC. У B02 code/tests обеспечивают путь, но localhost fixtures не доказывают четыре фактических multi-host AC или обязательный LIVE.
 
-Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
+### AC → проверенное основание
 
-Последующие operational Evidence: Windows PR #37 (`976a821`, PR CI `33954262844`, main CI `33954426102`: оба jobs SUCCESS). Tranche-5 remote credentials/ingress/probe локально проверены: native DPAPI и synthetic .NET interoperability, one-time rotation/revocation, default deny, private-Serve/token guards, secret scrubbing и отдельная calculated DNS+TCP latency. Реального two-host LIVE нет; final Wails product surface ещё не подключён.
+Пути ниже от root repository. Каждая строка покрывает только указанные IDs; остальные AC перечислены выше как непроверенные. UI подтверждён actual five-screen WebView2 smoke и визуальным обзором; native dangerous actions проверяются isolated fixtures, а не изменением пользовательской машины.
 
-Tranche-5 lifecycle core локально проверен: target/parameter confirmation, serialized/idempotent operations, uncapped active-request gate, exact installed/loaded model identities, partial-start cleanup, PID/start/path + Job Object ownership, attached/detached synthetic Windows listeners, capture-time output bounds и no-redirect local HTTP. Установленные backend processes/модели не запускались и не изменялись. Readiness остаётся 0/143 и 0/168 до final product wiring; CODE/TEST B01 — partial, а не READY.
+| Подтверждённые AC | Count | CODE / TEST / product surface |
+|---|---:|---|
+| E01-AC02..08 | 7 | Go/Wails build, `main_windows.go`, `host_windows_test.go`, `internal/desktop/*_test.go`, `frontend/src/App.svelte` и пять screens; actual native smoke. Наблюдение не вызывает lifecycle. Exact clean-checkout build проверяется отдельно от Windows Home/Pro matrix. |
+| E02-AC01..06 | 6 | `internal/telemetry/session_test.go`, `native_test.go`: три adapter fixtures на каждом chunk boundary, usage/native timings, invalid/ambiguous → unavailable; `RequestDetail.svelte` / `Metric.svelte`. |
+| E02-AC07..12 | 6 | `internal/gateway/gateway_test.go` attribution paths и generic fallback; endpoint URLs в App/README. Настройка клиента не требует fork; actual versions E2E — отдельный manual gate. |
+| E02-AC13..15 | 3 | `internal/gateway/transparency_test.go`, `telemetry_test.go`, `internal/telemetry/agent_test.go`: HTTP/SSE streaming order, fragmented tools, cancellation и byte relay. |
+| E03-AC01..13 | 13 | `internal/state/live_test.go`, `internal/domain/live.go`, native stage fixtures, App.svelte/Metric.svelte: single stage, elapsed, guarded ETA/progress, typed terminal/cancel/error, quality labels. |
+| E04-AC01..12 | 12 | `internal/telemetry/{session,native}_test.go`, `internal/state/correlation_test.go`, RequestDetail.svelte и analytics: tokens/context breakdown, adjacent delta, times/speeds, cold/warm; unknown fields unavailable, reasoning content отсутствует. |
+| E05-AC01..08 | 8 | `internal/state/operations_test.go`, `internal/gateway/telemetry_test.go`, `internal/history/detail_test.go`, Operation.svelte: exact IDs/sequence, ordered tool counts/status/qualified duration, concurrency/ambiguous isolation. |
+| E06-AC01..08 | 8 | `internal/resources/{probe_windows,project,monitor,pipeline}_test.go`, gateway/resources_test.go, Resources.svelte и History: actual/synthetic native sources, strict PID/start/path, timestamp+stage, fresh traffic и remote unavailable. |
+| E07-AC01..12 | 12 | `internal/diagnostics/rules_test.go`: versioned thresholds, fact/hypothesis/insufficient, false-positive boundaries и explicit stall signal. Engine integration проверяет request-scoped historical GPU sample; UI показывает capture time/evidence. |
+| E07-AC13..16 | 4 | `internal/gateway/errors_test.go`, history/{error_mapping,analytics}_test.go, Analytics.svelte: typed origins, exact correlation, recurring minimum 2 и period frequency denominator. |
+| E08-AC01..05 | 5 | `internal/history/{store,detail}_test.go`, desktop/facade_test.go, History.svelte/Operation.svelte: persisted request/session/operation, все filters и operation resource timeline. |
+| E08-AC06..15 | 10 | `internal/history/analytics_test.go` и Analytics.svelte: trends, mean/median/nearest-rank P95, minimum 3, два filtered cohorts, baseline degradation. |
+| E08-AC16..18 | 3 | `internal/history/detail_test.go`, desktop/facade_test.go, Settings.svelte: 7/30/90/indefinite, startup/settings cleanup, exact transactional preview/hash, newer children не удаляются каскадно. |
+| E09-AC01..06 | 6 | `internal/artifact/snapshot_test.go`, telemetry/agent_test.go, history/recovery_test.go: synthetic private corpus не попадает в DB/WAL/export; schema-only technical tables, bounded parser и закрытые DTO. |
+| E09-AC07..12 | 6 | `internal/gateway/{gateway,transparency,remote}_test.go`, main_windows.go/CSP: loopback/default-local, no external telemetry, no redirects/environment proxy, exact HTTP/SSE/tool payload pass-through. |
+| E09-AC13..14 | 2 | Settings.svelte явно перечисляет technical categories, отдельное хранение settings/DPAPI/cache и retention истории; actual value берётся через facade GetRetention, применение проверяется facade/retention tests. |
+| E10-AC01..08 | 8 | `internal/background/{tray_windows,autostart_windows,notifications,settings}_test.go`, resources/pipeline_test.go, host before-close/tray wiring: hidden pipeline, native message loop, exact registration/rollback, четыре события/silent/dedup. Shell notification API в tray tests заменён; manual tray/autostart walkthrough ещё не выполнен. |
+| E11-AC01..10 | 10 | `internal/artifact/{snapshot,bounds,environment}_test.go`, desktop/facade_test.go и ArtifactDialog/History: local exact preview/save, interval/operation selection, version ambiguity → unavailable, allowlist/privacy negative corpus. |
+| E12-AC07..11 | 5 | `internal/resources/monitor_test.go`, gateway/resources_test.go, desktop/engine_test.go и history/recovery_test.go: collector/storage failure isolation, normal/process-kill WAL recovery, post-restart append. |
+| E12-AC12..13 | 2 | desktop/engine_test.go `TestRuntimeFactsReachUIHistoryAndSnapshotWithoutInventedVersions`, artifact/environment_test.go, history/analytics_test.go: request-scoped versions/config ID, mixed facts и insufficient correlation. |
+| B01-AC01..05 | 5 | `internal/lifecycle/{adapters,manager,runtime_windows}_test.go`, Backends.svelte/facade: typed native process/CLI, job ownership, busy/confirmation gates, exact loaded model and atomic parameters. Реальные версии отдельных runtime требуют manual compatibility. |
+| B02-AC03, B02-AC06..09 | 5 | `internal/gateway/remote_probe_test.go`, remote_test.go, `internal/remote/*_test.go`, Settings.svelte: separate availability/DNS+TCP metric, default-off/DPAPI/revoke, no direct public bind и no fabricated local resources. Не подтверждает фактический two-host flow. |
+| B05-AC01..03 | 3 | `internal/resources/project_test.go`, monitor_test.go и Resources.svelte: multiple distinct supported devices, separate selection/metrics, unavailable workload attribution. |
+| B06-AC01..03 | 3 | `internal/artifact/{snapshot,bounds}_test.go`, desktop/facade_test.go, History/ArtifactDialog: selected complete range, aggregates, same negative privacy corpus, exact saved preview. |
+
+Core delivery Evidence: PR #34 / main CI `33948852046`; #35 / `33950314660`; #36 / `33952214437`; #37 / `33954426102`; #38 / `33958021155` — SUCCESS. Это evidence соответствующих increments, не будущего cutover PR. Final local checks: 149 internal test functions + fuzz seed corpus, root host 2 tests, frontend format/Svelte/TypeScript/3 Node tests, native Windows smoke и release payload/tamper suite. Детальные source/artifact IDs — в delivery checkpoint; CI final revision пока ожидается.
+
+### Audit quality review
+
+- **HIGH:** scope/denominator, parser/proxy byte/privacy contracts, SQL migration compatibility, typed process ownership и confirmation, bounded queues, local artifact allowlist — concrete source + positive/negative/boundary tests.
+- **MEDIUM:** desktop integration/UX и native OS behavior — actual WebView2 five-screen smoke, bridge/history/custom-profile checks и synthetic Windows fixtures; не все controls/DPI/accessibility/tray/real-client flows пройдены человеком.
+- **LOW / не подтверждено:** performance budgets, Windows Home clean-machine matrix, real encrypted two-host flow, compatibility всех runtime/client versions. Для этих gates нет readiness кредита или LIVE claim.
+- Возможные false positives: факт threshold не доказывает первопричину, CPU offload остаётся hypothesis; соседство по времени не correlation. Возможные false negatives: bounded telemetry drops, unknown provider fields и отсутствующий driver/source дают unavailable; это может скрыть реальную проблему, но не разрешает fabricated telemetry.
+- Coverage gaps: нет локального race detector (C compiler отсутствует), длительного fuzz/soak, visual regression/DPI matrix, полноценного frontend interaction suite всех actions и физического multi-GPU/remote verification. Число Go tests нельзя сравнивать 1:1 со старым C# test count.
+- Generated assets/bindings/node_modules/exe не source и не orphan code; vendored production code не добавлен. Legacy C#/.NET production/test scaffolding удалён, 14 protocol fixtures перенесены intact, reference SQL/matrix закреплён hashes. Устаревшая C# architecture/quickstart заменена actual Go map; archive не участвует в оценке.
+- Scope не расширен: E01-AC04 уточнён только по explicit owner approval, остальные 168 AC идентичны согласованным. Contract stack/command edits в AGENTS/CI profile не меняют safety rules, permissions, final release gates или disabled CD.
+
+Рост относительно промежуточного verified minimum `4/143` и `4/168` превышает 10 п.п., потому что ранее был проверен только первый UI surface; теперь independently сверены все AC и final wiring. Это не перенос исторического C# credit. Разница с историческим C# процентом также объясняется четырьмя новыми stack/UX AC и консервативным отказом от B02 multi-host credit без фактического LIVE.
 
 ## 8. Resolved decisions и external gates
 
@@ -502,10 +543,10 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-05`, Go tranche-4 pre-PR review; denominator и completed AC не изменились: final desktop wiring отсутствует.
+- Recalculation: `2026-09-05`, final local Go AC-by-AC review; exact build/commit/time — delivery-plan.
 - Repository: `https://github.com/Just9120/llm-inspector`.
-- Verified migration base: `c611856c81b1dc7dc239805a095d054249b3043d`, main CI `33864679915` success (C# reference).
-- Active approved Goal: `GOAL-006`, `IN_PROGRESS`; exact checkpoint и pipeline — `docs/delivery-plan.md`.
-- Initial release: `0/143 = 0%`; full agreed roadmap: `0/168 = 0%`. Go product AC не получают credit за C# реализацию.
-- История предыдущих Goals/PR/runtime validation находится в `docs/delivery-plan-archive.md` и Git revision выше; не используется как current Go Evidence.
-- DEPLOY — N/A для Windows desktop без server CD. Manual Windows/performance/compatibility и B02 two-host LIVE не входят в implementation Goal и остаются отдельными gates.
+- Cutover base: `ee32a97fd63110abe7688b48994579d97f8fdb05`, core main CI `33958021155` SUCCESS.
+- Active approved Goal: `GOAL-006`; pre-merge checkpoint `IN_PROGRESS`, terminal Evidence — в том же PR по owner-approved path. Snapshot не является обещанием будущего CI/merge.
+- Initial `136/143 = 95.1%`; full `152/168 = 90.5%`. Полный ledger и 16 отсутствующих AC — §7. Product readiness не равна Goal DoD или готовности публичного release.
+- Historical C# Evidence находится в delivery archive/Git, не подтверждает Go artifact.
+- DEPLOY N/A; no release/tag/WinGet. Manual Windows/performance/compatibility и encrypted two-host LIVE — отдельные gates.
