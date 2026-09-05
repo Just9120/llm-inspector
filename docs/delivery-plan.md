@@ -36,11 +36,11 @@
 | Updated UTC | 2026-09-05T05:57:27Z |
 | Base branch / SHA | main / `1ffb485277a7b12ad54657119de4dc268dfa997a` |
 | Working branch | `codex/goal-006-go-telemetry` |
-| Last verified revision | `1ffb485277a7b12ad54657119de4dc268dfa997a`; exact-main CI `33948852046` SUCCESS (windows-go + windows-dotnet) |
+| Last verified revision | `8fa2243b200c92bd2b0d48a365947f25ebc1fdac` — live/correlation/tools local tests PASS; base exact-main CI `33948852046` SUCCESS |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranche 1 merged. Tranche 2: bounded live state/ETA, exact adjacent context delta, streaming tool-name/count projection without content decode, bounded operation graphs, typed HTTP/transport errors and gateway integration pass local regression tests. Wails v2.15.0 CLI installed; doctor confirms WebView2 152.0.4191.62 and Windows prerequisites |
 | Current step | Tranche 2 — live telemetry, context correlation, agent operations/tools и diagnostics |
-| Next exact action | Implement Russian explainable diagnostics with versioned thresholds and evidence-boundary tests; then validate complete tranche before its single initial push |
+| Next exact action | Complete tranche-2 robustness review/fuzz and full local validation, then initial push and PR |
 | Validation / Evidence | Go formatting/mod verify/vet/build and regression tests plus fuzz seeds PASS; parser statement coverage 90.4% (not product readiness). Fuzz 803686 executions / 10s PASS; restart/concurrency regression 25 repeats PASS. Reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. No Go desktop runtime/LIVE claim |
 | PR / CI | PR #34 MERGED; PR CI `33948720562` and exact-main CI `33948852046` SUCCESS. Initial push once; no reruns; merged local/remote branch safely deleted. Tranche-2 PR not opened until local validation |
 | Deployment / release | N/A; no publication authorized |

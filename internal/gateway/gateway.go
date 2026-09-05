@@ -247,7 +247,14 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				obs.ErrorType = "timeout"
 			}
 		}
-		safeResponse(w, 502, "backend_unavailable")
+		status := 502
+		if obs.ErrorType == "timeout" {
+			status = 504
+		}
+		if obs.Outcome != "client_cancelled" {
+			obs.HTTPStatus = &status
+		}
+		safeResponse(w, status, "backend_unavailable")
 		return
 	}
 	defer resp.Body.Close()
