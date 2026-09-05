@@ -38,15 +38,15 @@ Goal — не новая реализация после cutover. G06-03..08 и�
 | Field | Verified state |
 |---|---|
 | Updated UTC | 2026-09-05T12:00:04Z — clean build completion; последующая pre-PR документационная сверка |
-| Base branch / SHA | main / `ee32a97fd63110abe7688b48994579d97f8fdb05` |
-| Working branch | `codex/goal-006-go-desktop` |
+| Base branch / SHA | main / `238d3ba5f7d607fa6768a6092f9cd3f2ce36f3fd` — PR #39 merged |
+| Working branch | `codex/goal-006-checkout-fix` — narrow post-merge completion-review correction |
 | Last verified revision | `7e93c159d9ce238e4b2ec7c378c24beee7af93f8` — final clean-source build/smoke/release validation |
 | Worktree state | Clean at start; только GOAL-006 code/docs. Собственные detached verification worktrees под artifacts ожидают safe cleanup |
 | Completed work | Tranches 1–5 merged и CI verified; tranche 6 полностью реализован и локально проверен: composition/facade, русский UI, Windows host, resource/runtime evidence, locked CI/release cutover, legacy removal и documentation |
 | Current step | Final local validation и independent 168-AC review завершены; подготовка initial push/PR |
-| Next exact action | Один initial push `codex/goal-006-go-desktop` и final cutover PR после commit/validation документации; дождаться CI, merge и exact-main CI |
+| Next exact action | Restore shared .gitattributes policies lost during cutover, regression/clean-build validation, один grouped correction PR в той же Goal; затем final main CI и cleanup |
 | PR locator | [Финальный PR по exact head branch](https://github.com/Just9120/llm-inspector/pulls?q=is%3Apr+head%3Acodex%2Fgoal-006-go-desktop); number/URL появится при создании, не придуман заранее |
-| CI | Core PR #38 / `33957842755`, exact-main `33958021155` SUCCESS. Cutover `windows-go` ещё не запускался |
+| CI | Cutover PR #39 / `33965234911` SUCCESS; merged `238d3ba`, applicable main run `33975166335`. Correction PR/CI ещё не запускались |
 | Local executable | `build/bin/LlmInspector.exe`, SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; exact clean checkout hash совпадает |
 | Deployment / release | DEPLOY/LIVE N/A для Goal; no tag/release/WinGet, CD disabled |
 | Blockers / external gates | Для implementation blocker нет. Final PR/main CI ещё pending; manual Windows/E12/B02 LIVE вынесены за scope Goal |
@@ -54,6 +54,10 @@ Goal — не новая реализация после cutover. G06-03..08 и�
 | Terminal recovery | Owner-approved terminal comment в этом же PR содержит exact final SHA/checks/merge/cleanup/DONE. После закрытия не создавать metadata-only PR, не переходить к следующей Goal |
 
 ### Validation и ограничения
+
+Post-merge completion review: исходный `.gitattributes` существовал, но был ошибочно заменён при добавлении frontend LF rules. Narrow correction восстанавливает прежние общие text/JSON/YAML/Markdown/PowerShell policies и toolchain pin files, сохраняя новые Go/frontend/frozen/embedded LF rules; obsolete C# extensions не возвращаются. Это исправление реального config regression в GOAL-006, не metadata-only PR и не следующая Goal. Readiness denominator/AC не изменились. Шесть собственных clean verification worktrees уже удалены после проверки чистоты и merged ancestry; product data не затронуты.
+
+PR #39 hosted artifact SHA-256 `87af704dfb9600a99af501c9a78beb30f9c0129c5862b11ac16c17fec37ba151` отличается от локального; cross-host bit identity не доказана. До release никакое manual Evidence не переносится между разными hashes; exact candidate identity остаётся обязательным отдельным gate. CI/native smoke и local two-checkout reproduction не подменяют этот gate.
 
 - `scripts/build-windows.ps1` PASS из root и нового detached checkout без old assets/bindings/node_modules; exact Go/Node/npm pins, Go formatting/mod verify/vet/tests/build, locked npm install, Wails bindings/assets, Svelte/TS/Prettier/Node tests, root host vet/tests.
 - 149 internal Go test functions + fuzz seed corpus, root 2 tests, frontend 3 Node tests. Финальный `go test ./... -json` дал 201 pass events (включая subtests/seeds), 0 fail и 0 skip; frontend 3/3 PASS, Svelte/TypeScript 0 errors / 0 warnings. Это не 1:1 эквивалент прежних 260 C# cases и не readiness denominator.

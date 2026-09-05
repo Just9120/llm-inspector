@@ -78,6 +78,11 @@ func TestReleasePreservesTrustedFinalTagAndSplitPermissions(t *testing.T) {
 }
 
 func TestBuildRetainsLockedChecksAndPortableVersionContract(t *testing.T) {
+	for _, rule := range []string{"* text=auto", ".go-version text eol=lf", "*.json text eol=lf", "*.yml text eol=lf", "*.yaml text eol=lf", "*.md text eol=lf", "*.ps1 text eol=crlf"} {
+		if !strings.Contains(repositoryText(t, ".gitattributes"), rule+"\n") {
+			t.Fatalf("shared checkout policy must survive stack cutover: %s", rule)
+		}
+	}
 	if !strings.Contains(repositoryText(t, ".gitattributes"), "frontend/** text=auto eol=lf") {
 		t.Fatal("frontend checkout must preserve formatter line endings")
 	}
