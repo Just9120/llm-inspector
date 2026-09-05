@@ -454,17 +454,17 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | Epic | Status | Completed / total | Readiness | SPEC | CODE | TEST | CI | DEPLOY | LIVE |
 |---|---|---:|---:|---|---|---|---|---|---|
 | EPIC-01 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-02 | 🟦 IN PROGRESS | 0/15 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-03 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
+| EPIC-04 | 🟦 IN PROGRESS | 0/12 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| EPIC-05 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-06 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-07 | 🟦 IN PROGRESS | 0/16 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
 | EPIC-08 | 🟦 IN PROGRESS | 0/18 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-09 | 🟦 IN PROGRESS | 0/14 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-10 | 🟦 IN PROGRESS | 0/8 | 0% | ✅ | — | — | — | N/A | N/A |
 | EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | — | — | — | N/A | N/A |
-| EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | — | — | — | N/A | N/A |
+| EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
 | BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | — | — | — | N/A | — |
@@ -473,6 +473,8 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-06 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | **Full agreed roadmap total** | **🟦 IN PROGRESS** | **0/168** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **—** |
+
+Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS); live/correlation/tools и diagnostic rules локально проверены в GOAL-006 tranche 2. CODE/TEST/CI отмечены partial там, где core уже существует, но конечный desktop/runtime path ещё не собран. Product AC credit не выдаётся за изолированную library без её предусмотренной product surface.
 
 Для B02 фактический encrypted two-host LIVE обязателен до product READY и остаётся вне implementation Goal.
 
@@ -496,7 +498,7 @@ Versioned diagnostic thresholds, minimum sample size и notification anti-spam p
 
 Этот блок можно обновлять по фактам без изменения durable product scope.
 
-- Last recalculation: `2026-09-05`, Go migration baseline.
+- Last recalculation: `2026-09-05`, Go tranche-2 pre-PR review; denominator и completed AC не изменились.
 - Repository: `https://github.com/Just9120/llm-inspector`.
 - Verified migration base: `c611856c81b1dc7dc239805a095d054249b3043d`, main CI `33864679915` success (C# reference).
 - Active approved Goal: `GOAL-006`, `IN_PROGRESS`; exact checkpoint и pipeline — `docs/delivery-plan.md`.

@@ -105,6 +105,15 @@ func FuzzProjectionNeverPublishesInvalidMetrics(f *testing.F) {
 				s.Observe(body[i:min(i+chunk, len(body))])
 			}
 			got := s.Complete()
+			agent := s.AgentResponse()
+			if len(agent.Tools) > MaxToolsPerTurn || agent.InvokedTools.Validate() != nil {
+				t.Fatal("invalid agent metadata escaped parser")
+			}
+			for _, tool := range agent.Tools {
+				if domain.TechnicalIdentifier(tool.Name) != tool.Name || tool.Sequence < 0 || tool.Sequence >= MaxToolsPerTurn {
+					t.Fatal("invalid tool metadata escaped parser")
+				}
+			}
 			for _, metric := range []domain.Metric{got.PromptTokens, got.CompletionTokens, got.TotalTokens, got.CachedTokens, got.ReasoningTokens, got.ContextUsage} {
 				if err := metric.Validate(); err != nil {
 					t.Fatal("invalid metric escaped parser")
