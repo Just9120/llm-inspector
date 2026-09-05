@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `IN_PROGRESS`
-> Updated UTC: `2026-09-05T20:58:00Z`
+> Updated UTC: `2026-09-05T21:00:00Z`
 
 ## Current Goal
 
@@ -15,7 +15,7 @@
 - **Required Evidence:** SPEC/CODE/TEST/CI для изменений; actual exact-artifact Windows matrix для E01, controlled hardware measurements для E12, actual encrypted two-host LIVE для B02. DEPLOY N/A; LIVE обязательно для B02 и этой части Goal.
 - **Known blockers/dependencies:** Windows Home / second PC/VPS access ещё не предоставлены; Tailscale отсутствует в PATH и standard install location. B04 protocol/client не выбран. Runtime reference amendment согласован. Другие запущенные apps создают потенциальную foreign load; не останавливать их и не исключать contaminated runs постфактум без predefined signals.
 - **Stop condition:** все применимые Goal AC и product gates реально подтверждены, PR/CI/merge/metadata/cleanup завершены → DONE; либо исчерпана независимая работа и требуется конкретное owner decision/resource → BLOCKED / PENDING_EXTERNAL_GATE. Не переходить к следующей Goal.
-- **Delivery:** узкие локальные commits; initial push/PR после полной локальной validation законченного bounded implementation increment. Failed CI/review исправляется grouped batch в той же Goal; gates не обходятся. GOAL-006 terminal comment path был разовым разрешением для предыдущей Goal, не blanket direct-write permission. Post-merge metadata этой Goal требует предусмотренного contract пути либо отдельного решения owner.
+- **Delivery:** узкие локальные commits; initial push/PR после полной локальной validation законченного bounded implementation increment. Failed CI/review исправляется grouped batch в той же Goal; gates не обходятся. Owner explicit approval `2026-09-05`: для GOAL-007 в main остаётся датированный pre-merge checkpoint, итоговые CI/merge SHA и cleanup Evidence фиксируются в комментарии соответствующего PR без metadata-only follow-up PR. Это Goal-scoped exception, не direct-push permission и не изменение CI/CD safety rules.
 
 ### Goal acceptance criteria
 
@@ -35,20 +35,20 @@ Goal AC не добавляются в product denominator. Полный roadmap
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T20:58:00Z — local full-build/review checkpoint |
+| Updated UTC | 2026-09-05T21:00:00Z — final local validation / pre-push checkpoint; subsequent delivery facts читать в terminal comment соответствующего PR |
 | Base branch / SHA | main / `88cbe291309105c495da5f488d23d48f8c74b007`; local main = origin/main = GitHub main, fetch/readback verified |
 | Working branch | `codex/goal-007-validation` |
-| Last verified revision | `2b83f99fc96fe10412d87d470177c10c718992fc` — clean detached checkout: full canonical build/native smoke/release tools PASS. Snapshot PID-reuse hardening separately passed 3 repeated focused tests; final full validation next |
+| Last verified revision | `b07999c56f7603cd959f61d7d7b48c2a28dd98e5` — full canonical Go/frontend build/tests/native smoke/release tools PASS; snapshot PID-reuse regression отдельно 3 repeated focused PASS. Containing documentation checkpoint не меняет этот проверенный код |
 | Worktree | Clean at branch creation, no pre-existing user changes. Own detached validation checkout `artifacts/goal007-build`; root running candidate/user state preserved |
 | Recovery | GOAL-006 DONE 9/9 по [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062); stale pre-merge dashboard не является новой authorization. Closed Goal перенесена в archive |
 | Completed work | Approved Ollama reference/corpus v2 committed; v1 сохранён byte-for-byte. Read-only exact-PID process capture, error/privacy/exclusive-output/cancellation/descendant tests и windows-validation runbook готовы. Focused Go tests PASS: validation 85.1%, CLI 73.6%, performance 100% statement coverage (не product readiness) |
-| Current step | Code review: добавлена проверка creation time против snapshot start, исключающая stale PID parentage. Product AC не изменены; новых credits нет. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
-| Next exact action | Повторить full local validation final code в own isolated checkout, затем initial push/PR законченного capture increment; не возобновлять Computer Use без сигнала пользователя |
+| Current step | Законченный capture/reference increment локально проверен и готов к initial PR. Creation-time/PID-reuse, wrong identity, descendants, output readback/no overwrite, cancellation, sanitized errors проверены. Product AC не изменены; новых credits нет. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
+| Next exact action | Initial push/PR capture increment → required CI/review/merge → terminal delivery Evidence; дальнейшие UI/controlled hardware/two-host gates не считать выполненными и не возобновлять Computer Use без сигнала пользователя |
 | Environment | Windows Pro 25H2 x64 26200.9168, Ryzen 7 9800X3D 8C/16T, RTX 5060 Ti 16311 MiB / driver 610.74. Ollama API 0.33.3, reference model digest installed, 0 loaded models на preflight |
 | Existing state preserved | Ollama user process уже запущен; не owned Inspector, не останавливать. Existing Inspector DB присутствует; settings/token files отсутствовали. Не очищать историю и не изменять remote/privacy settings скрыто |
 | Artifact | Existing local `build/bin/LlmInspector.exe` SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; new clean local build 2b83f99 дал тот же hash. Supporting candidate, не public release. Prior hosted hash отличается; cross-host identity не доказана |
 | Pilot | Actual read-only capture `2026-09-05T20:47:45Z`–`20:48:15Z`, 31 samples / 30.006883 measured seconds, 7 observed processes. Private bytes P95 249102336 (~237.56 MiB), growth 16384 bytes, observed CPU delta and generic I/O-write delta 0. Profile balanced только declared; не verified UI state. Report SHA-256 `cda5f3cc5c1899464185a6c1b2fc79493e9a9c0461af276d9bcc73cf5f27d4b4`, local ignored `artifacts/goal007-validation/process-pilot-88cbe29.json`; pre-commit tool schema. Supporting pilot, **не E12 PASS** |
-| PR / CI | GOAL-007 PR ещё нет; новый CI ещё не запускался |
+| PR / CI | Pre-push: GOAL-007 PR ещё нет, CI не запускался; [поиск PR этой ветки](https://github.com/Just9120/llm-inspector/pulls?q=head%3Acodex%2Fgoal-007-validation). Repo public, ADMIN, rulesets пусты / main protection 404; project check windows-go обязателен независимо от enforcement. Exact IDs/results — terminal comment после delivery |
 | Deployment / LIVE | CD disabled / DEPLOY N/A; B02 LIVE отсутствует, не считать local fixture подтверждением |
 | Blockers / unverified | Windows Home, second host/Tailscale, exact other backend/client versions, B04 decision, controlled resource/wakeup source и stable candidate identity |
 
