@@ -39,6 +39,22 @@ func NewBuffered(s *Store) *Buffered {
 	return b
 }
 func (b *Buffered) Observations() chan<- domain.Observation { return b.observations }
+
+// OfferResourceTimeline bridges the monitor's bounded per-request timeline to
+// fixed-size writer batches without waiting for SQLite on a producer goroutine.
+func (b *Buffered) OfferResourceTimeline(samples []domain.ResourceSample) bool {
+	if len(samples) > MaxResources {
+		b.dropped.Add(uint64(len(samples)))
+		return false
+	}
+	accepted := true
+	for start := 0; start < len(samples); start += 256 {
+		if !b.OfferResources(samples[start:min(start+256, len(samples))]) {
+			accepted = false
+		}
+	}
+	return accepted
+}
 func (b *Buffered) OfferResources(samples []domain.ResourceSample) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()

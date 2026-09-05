@@ -22,6 +22,39 @@ func resource(n int, at time.Time) domain.ResourceSample {
 	return r
 }
 
+func TestBoundedResourceTimelineSplitsIntoWriterBatches(t *testing.T) {
+	s := testStore(t)
+	b := NewBuffered(s)
+	o := observation(1)
+	b.Observations() <- o
+	samples := make([]domain.ResourceSample, 2048)
+	for i := range samples {
+		samples[i] = resource(i, o.StartedAt)
+		samples[i].RequestID = o.RequestID
+	}
+	if !b.OfferResourceTimeline(samples) {
+		t.Fatal("bounded timeline rejected")
+	}
+	if err := b.Close(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if h := b.Health(); h.Failed != 0 || h.Dropped != 0 || h.Written != 2049 {
+		t.Fatal(h)
+	}
+	slice, err := s.Slice(t.Context(), Filter{})
+	if err != nil || len(slice.Resources) != 2048 {
+		t.Fatal("timeline lost", err)
+	}
+	for _, r := range slice.Resources {
+		if r.RequestID != o.RequestID {
+			t.Fatal("timeline correlation lost")
+		}
+	}
+	if b.OfferResourceTimeline(make([]domain.ResourceSample, MaxResources+1)) || b.Health().Dropped != MaxResources+1 {
+		t.Fatal("unbounded input accepted")
+	}
+}
+
 func TestOperationResourceRoundTripAndAtomicity(t *testing.T) {
 	s := testStore(t)
 	o := observation(1)

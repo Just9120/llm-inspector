@@ -34,6 +34,7 @@ type Gateway struct {
 	live        *state.Live
 	correlation *state.Correlation
 	operations  *state.Operations
+	monitor     atomic.Pointer[monitorHolder]
 }
 
 func New(c Config, sink chan<- domain.Observation) (*Gateway, error) {
@@ -192,7 +193,16 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	obs := domain.Observation{RequestID: hex.EncodeToString(id), StartedAt: start.UTC(), Outcome: "completed", ErrorType: "none", ErrorOrigin: "not_applicable", Client: client, Telemetry: domain.MissingTelemetry(g.config.Backend), TTFT: domain.Missing(domain.Milliseconds, "inspector", "streaming-ttft-v1"), ContextChange: domain.Missing(domain.TokenDelta, "inspector", "correlation-v1"), Correlation: readCorrelation(r.Header), Agent: domain.MissingAgentTurn()}
+	var resources domain.ResourceSession
 	if isChat {
+		operationID := ""
+		if obs.Correlation != nil {
+			operationID = obs.Correlation.OperationID
+		}
+		resources = g.startResources(domain.RequestResourceContext{RequestID: obs.RequestID, OperationID: operationID, BackendURL: g.config.BackendURL})
+		if resources != nil {
+			resourceCall(func() { resources.StageChanged(state.ProtocolStage(domain.PromptProcessing)) })
+		}
 		g.active.Add(1)
 		g.live.Start(obs.RequestID, client, start)
 		g.live.Stage(obs.RequestID, state.ProtocolStage(domain.PromptProcessing))
@@ -207,6 +217,16 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case g.sink <- obs:
 			default:
 				g.dropped.Add(1)
+			}
+			if resources != nil {
+				stage := domain.Completed
+				if obs.Outcome == "client_cancelled" {
+					stage = domain.Cancelled
+				} else if obs.Outcome != "completed" || obs.ErrorType != "none" {
+					stage = domain.Failed
+				}
+				resourceCall(func() { resources.StageChanged(state.ProtocolStage(stage)) })
+				resourceCall(resources.Complete)
 			}
 		}()
 	}
@@ -223,8 +243,11 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		out.Header["User-Agent"] = nil
 	}
 	out.GetBody = nil
+	if resources != nil && out.Body != nil {
+		out.Body = &resourceBody{ReadCloser: out.Body, session: resources}
+	}
 	if path == "/v1/chat/completions" && r.Header.Get("Content-Encoding") == "" && r.Body != nil {
-		capture := &requestCapture{inner: r.Body, session: telemetry.NewRequestSession(), expected: r.ContentLength}
+		capture := &requestCapture{inner: out.Body, session: telemetry.NewRequestSession(), expected: r.ContentLength}
 		out.Body = capture
 		defer func() { obs.Agent.AvailableTools, obs.Agent.ToolResults = capture.Result() }()
 	}
@@ -285,6 +308,9 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if n > 0 {
 			if isChat && resp.StatusCode < 400 {
 				g.live.Stage(obs.RequestID, state.ProtocolStage(domain.Generating))
+				if resources != nil {
+					resourceCall(func() { resources.StageChanged(state.ProtocolStage(domain.Generating)) })
+				}
 			}
 			if parseError {
 				errorParser.Observe(buffer[:n])
@@ -293,12 +319,19 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				parser.Observe(buffer[:n])
 				if stage := parser.Stage(); stage != nil {
 					g.live.Stage(obs.RequestID, *stage)
+					if resources != nil {
+						resourceCall(func() { resources.StageChanged(*stage) })
+					}
 				}
 				if obs.TTFT.Value == nil && parser.HasOutput() {
-					obs.TTFT = domain.Measured(float64(time.Since(start))/float64(time.Millisecond), domain.Milliseconds, "inspector", "streaming-ttft-v1")
+					obs.TTFT = domain.Derived(float64(time.Since(start))/float64(time.Millisecond), domain.Milliseconds, domain.Calculated, "streaming-ttft-v1", "first-output-monotonic-v1")
 				}
 			}
-			if _, writeErr := w.Write(buffer[:n]); writeErr != nil {
+			written, writeErr := w.Write(buffer[:n])
+			if resources != nil && written > 0 {
+				resourceCall(func() { resources.AddReceived(written) })
+			}
+			if writeErr != nil {
 				obs.Outcome = "client_cancelled"
 				obs.ErrorType = "client_cancellation"
 				obs.ErrorOrigin = "client"
