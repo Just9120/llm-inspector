@@ -2,6 +2,10 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-006 — CLOSED / terminal delivery
+
+**DONE 9/9**, verified 2026-09-05T16:37:08Z: [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062). Docs [PR #41](https://github.com/Just9120/llm-inspector/pull/41) merged as `88cbe291309105c495da5f488d23d48f8c74b007`; PR CI `33977859567` / main CI `33978125113` SUCCESS без required skips. Только local/GitHub main, clean worktree; все собственные merged branches и семь verification worktrees удалены. DEPLOY/LIVE N/A для migration Goal, no release/tag/WinGet. Manual Windows/E12/B02 gates не были закрыты этой Goal. Полный archived pre-merge Goal contract/checkpoint доступен в [exact revision](https://github.com/Just9120/llm-inspector/blob/88cbe291309105c495da5f488d23d48f8c74b007/docs/delivery-plan.md), не current execution source.
+
 ## GOAL-006 — completed cutover/config delivery, 2026-09-05
 
 Это завершённая code-delivery history; Goal оставалась активной только ради явно запрошенного следующего docs PR и safe cleanup. Исторические checkpoints не являются текущим status.
