@@ -6,7 +6,9 @@
 
 LLM Inspector управляет только backend process, который сам запустил после явного подтверждения exact executable path, version и literal-loopback endpoint. Если порт уже занят, Inspector показывает PID владельца и ничего не изменяет. Перед force stop повторно сверяются PID, process start time и полный executable path; PID-only ownership запрещён.
 
-Команды выполняются через typed `ProcessStartInfo.ArgumentList` с `UseShellExecute=false`. UI не принимает arbitrary arguments/environment, public bind, CORS flags, service commands, install/update/download operations или credentials. Stop, restart и model switch блокируются, пока есть active Inspector requests, и показывают их количество. После crash автоматического recovery нет.
+Команды выполняются через typed argv без shell (`ProcessStartInfo.ArgumentList` в C# reference, direct process/argv в Go migration). UI не принимает arbitrary arguments/environment, public bind, CORS flags, service commands, install/update/download operations или credentials. Stop, restart и model switch блокируются, пока есть active Inspector requests, и показывают их количество. После crash автоматического recovery нет.
+
+Go lifecycle core в GOAL-006 проверен на synthetic processes; final desktop wiring выполняется отдельно в этой же Goal. В Go detached LM Studio listener должен принадлежать Job Object, созданному Inspector до запуска CLI. Уже работающий GUI/daemon остаётся внешним; его нужно самостоятельно закрыть перед managed start. Wildcard listener не принимается как подтверждённый loopback target. Закрытие Inspector не останавливает backend; после нового запуска он считается внешним.
 
 ## Первый запуск
 
@@ -20,9 +22,9 @@ LLM Inspector управляет только backend process, который с
 
 ## Model load
 
-- Ollama: укажите exact installed model ID. Inspector инициирует native `POST /api/generate` без prompt и подтверждает ID через `/api/tags`.
+- Ollama: укажите exact installed model ID. Go Inspector проверяет его наличие через `/api/tags`, инициирует native `POST /api/generate` с пустым prompt и подтверждает фактический loaded ID через `/api/ps`. `/api/tags` сам по себе подтверждает только установку, не загрузку.
 - llama.cpp: выберите существующий `.gguf` по полному пути. Model switch выполняется безопасным restart того же confirmed executable с последней valid typed configuration и подтверждается через `/v1/models`.
-- LM Studio: укажите model key из `lms ls`. Inspector вызывает official `lms load` и подтверждает exact identity через `lms ps`.
+- LM Studio: выберите model key из `lms ls --json`. Inspector вызывает official `lms load` и подтверждает exact identity через `lms ps --json`, не совпадение подстроки. GPU `auto` использует native default (флаг `--gpu` не передаётся).
 
 Загрузка/установка/обновление model не выполняется. Неуспешное или неоднозначное подтверждение model identity не считается успешным load.
 

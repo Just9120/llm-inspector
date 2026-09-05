@@ -77,6 +77,9 @@ func TestTCPTableBoundsAddressAndAmbiguousOwners(t *testing.T) {
 	if ownerFromTable(table(row(42, "0.0.0.0"), row(43, "127.0.0.1")), loop, int(port)) != 0 {
 		t.Fatal("ambiguous owners accepted")
 	}
+	if ownerFromTable(table(row(42, "0.0.0.0")), loop, int(port), true) != 0 || ownerFromTable(table(row(42, "127.0.0.1")), loop, int(port), true) != 42 {
+		t.Fatal("managed listener must bind exact loopback, not wildcard")
+	}
 	if ownerFromTable([]byte{255, 255, 255, 255}, loop, int(port)) != 0 {
 		t.Fatal("unbounded row count")
 	}

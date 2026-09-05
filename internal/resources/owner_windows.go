@@ -20,6 +20,15 @@ var tcpTable = windows.NewLazySystemDLL("iphlpapi.dll").NewProc("GetExtendedTcpT
 type WindowsResolver struct{}
 
 func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
+	return resolveListener(endpoint, false)
+}
+
+// ResolveExactLoopback is the stricter lifecycle ownership surface: a wildcard
+// listener must never be adopted as an approved loopback-only managed backend.
+func (WindowsResolver) ResolveExactLoopback(endpoint string) *domain.ProcessAssociation {
+	return resolveListener(endpoint, true)
+}
+func resolveListener(endpoint string, exact bool) *domain.ProcessAssociation {
 	u, err := url.Parse(endpoint)
 	if err != nil || u.User != nil || (u.Scheme != "http" && u.Scheme != "https") {
 		return nil
@@ -45,7 +54,7 @@ func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
 	if port < 1 || port > 65535 {
 		return nil
 	}
-	pid := listenerOwner(ip, port)
+	pid := listenerOwner(ip, port, exact)
 	if pid == 0 {
 		return nil
 	}
@@ -57,13 +66,13 @@ func (WindowsResolver) Resolve(endpoint string) *domain.ProcessAssociation {
 	identity, err := winhost.IdentityForHandle(h, pid)
 	// Keep the handle alive across revalidation: an exited process cannot have
 	// its PID reused under us. A changed/disappeared listener is unavailable.
-	if err != nil || listenerOwner(ip, port) != pid {
+	if err != nil || listenerOwner(ip, port, exact) != pid {
 		return nil
 	}
 	return identity.Association()
 }
 
-func listenerOwner(ip net.IP, port int) uint32 {
+func listenerOwner(ip net.IP, port int, exact ...bool) uint32 {
 	family := uintptr(2)
 	if ip.To4() == nil {
 		family = 23
@@ -86,12 +95,12 @@ func listenerOwner(ip net.IP, port int) uint32 {
 		if code != 0 || int(size) > len(buf) {
 			return 0
 		}
-		return ownerFromTable(buf[:size], ip, port)
+		return ownerFromTable(buf[:size], ip, port, exact...)
 	}
 	return 0
 }
 
-func ownerFromTable(data []byte, ip net.IP, port int) uint32 {
+func ownerFromTable(data []byte, ip net.IP, port int, exact ...bool) uint32 {
 	if len(data) < 4 {
 		return 0
 	}
@@ -110,6 +119,9 @@ func ownerFromTable(data []byte, ip net.IP, port int) uint32 {
 			continue
 		}
 		address := net.IP(row[addrOffset : addrOffset+addrSize])
+		if len(exact) > 0 && exact[0] && address.IsUnspecified() {
+			return 0
+		}
 		if !address.IsUnspecified() && !address.Equal(ip) {
 			continue
 		}

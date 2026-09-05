@@ -24,7 +24,7 @@
 | G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | IN PROGRESS — core validated in PR #35; final storage/UI integration remains |
 | G06-04 | Go SQLite/history/analytics/retention/snapshot/export сохраняют ранее committed data и content allowlist | IN PROGRESS — core/migrations/recovery/analytics/export validated; final desktop wiring remains |
 | G06-05 | Windows resource/GPU collectors, tray/background/autostart/notifications, performance profiles перенесены | IN PROGRESS — native probes/monitor, settings/profiles/notifications and tray validated; final Wails wiring remains |
-| G06-06 | B01 lifecycle и B02 secure remote перенесены с прежними ownership/confirmation/DPAPI/loopback boundaries | IN PROGRESS — remote credentials/DPAPI, private-Serve authorizer and separate DNS+TCP probe validated; lifecycle/final UI remain |
+| G06-06 | B01 lifecycle и B02 secure remote перенесены с прежними ownership/confirmation/DPAPI/loopback boundaries | IN PROGRESS — remote/DPAPI/ingress/probe and typed lifecycle/native ownership core validated; final desktop wiring remains |
 | G06-07 | Русский Wails v2/Svelte-TypeScript UI предоставляет все функции через понятную навигацию и progressive disclosure | PENDING |
 | G06-08 | Windows executable воспроизводимо собирается, проходит smoke/regression; final runtime path свободен от C#/.NET/Avalonia | PENDING |
 | G06-09 | Increments проходят local checks, PR CI, merge и main CI; документация соответствует результату, temporary branches убраны | PENDING |
@@ -33,15 +33,15 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T08:21:33Z |
+| Updated UTC | 2026-09-05T09:11:59Z |
 | Base branch / SHA | main / `976a8214d2ca3b3f0e9da02522eeef913122065f` |
 | Working branch | `codex/goal-006-go-connectivity` |
-| Last verified revision | `3f5af3f3977309cdff1edd4f5523b0ec088edffe` — remote credential manager/store committed and validated; ingress/probe working increment locally validated |
+| Last verified revision | `439659188dfb8a8d85747e8eda42e24bf3f751db` — remote credentials/ingress/probe committed and validated; lifecycle working increment locally validated |
 | Worktree state | Clean at start; only GOAL-006 changes |
-| Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded compatible remote-access.json, native DPAPI CurrentUser interoperability, explicit opt-in/rotation/revocation, loopback/private-Serve/identity/token ingress guards, secret-header scrubbing and separate bounded DNS+TCP probe |
-| Current step | Tranche 5 — lifecycle capability/parameter adapters and exact owned-process runtime |
-| Next exact action | Implement typed lifecycle profiles/adapters and manager tests against canonical ownership/confirmation/active-request gates; no real backend mutation |
-| Validation / Evidence | Go formatting/mod verify/vet/build and 112 test functions + fuzz seeds PASS; remote coverage 93.2%, gateway 87.7% (not readiness). Actual synthetic .NET DPAPI ciphertext decrypted in Go; tamper/schema/wrong-user fixture/save-failure/rotation/revocation tests PASS. Remote ingress/header/privacy/probe tests: 20 repeats PASS; authorization/rotation concurrency: 20 repeats PASS. Prior Windows native/background, SQLite and full .NET reference 260 tests/publish/smoke PASS. No local race detector (no C compiler), no real remote credentials/settings/Tailscale touched, no two-host LIVE claim |
+| Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded DPAPI store/token lifecycle, private ingress and network probe; typed lifecycle profiles/manager/adapters, exact model confirmation, native suspended start/job ownership, bounded CLI/HTTP, exact-process cleanup and safe external-process refusal |
+| Current step | Tranche 5 — lifecycle commit and complete pre-PR validation |
+| Next exact action | Commit locally validated lifecycle increment, verify staged diff and exact branch; perform one initial push and create tranche-5 PR, then wait for both CI jobs |
+| Validation / Evidence | Go formatting/mod verify/vet/build and 131 test functions + fuzz seeds PASS; lifecycle statement coverage 81.9%, remote 93.2%, gateway 87.7% (not readiness). Native attached/detached synthetic listener ownership/cleanup, bounded command output/HTTP, model identity/active-count/confirmation/concurrency tests PASS; full lifecycle suite 3 repeats PASS. Actual synthetic .NET DPAPI interoperability and previous 20-repeat remote tests PASS. .NET locked restore/format/build/260 tests/RID publish/smoke PASS (0 warnings/errors). No local race detector (no C compiler), no installed backend/model or real credentials/settings/Tailscale changed, no two-host LIVE claim |
 | PR / CI | PR #37 PR CI `33954262844` and main CI `33954426102`: windows-go/windows-dotnet SUCCESS. Main synced at `976a821`; local/remote Windows branches safely removed. Connectivity tranche local only; no PR yet |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
