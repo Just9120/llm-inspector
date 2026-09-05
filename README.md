@@ -4,6 +4,8 @@ LLM Inspector — локальное Windows-приложение для мон�
 
 Версия — **1.0** (в файлах сборки `1.0.0`). Финальный релиз ещё не опубликован: ручные Windows, performance и encrypted two-host проверки выполняются отдельной Goal. Старые `v1.0.0-rc.*` — исторические C#-сборки, не текущая Go-версия. Точное состояние, readiness и Evidence: [delivery-plan.md](docs/delivery-plan.md), [project-spec.md](docs/project-spec.md).
 
+Переход на Go доставлен через [PR #39](https://github.com/Just9120/llm-inspector/pull/39) и [исправление checkout policy #40](https://github.com/Just9120/llm-inspector/pull/40); [CI проверенного main](https://github.com/Just9120/llm-inspector/actions/runs/33975817279) прошёл build/tests/native smoke. Это подтверждение реализации, не разрешение финальной публикации и не ручная проверка всех Windows-сценариев.
+
 ## Возможности
 
 - Прозрачный local HTTP/SSE proxy для Ollama, llama.cpp и LM Studio: OpenAI-compatible `GET /v1/models`, `POST /v1/chat/completions`; для LM Studio также native `POST /api/v1/chat`.

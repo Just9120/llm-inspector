@@ -2,6 +2,21 @@
 
 Этот файл не является current source of truth, implementation authorization или входом для текущего расчёта readiness. Текущее состояние находится в [`delivery-plan.md`](delivery-plan.md).
 
+## GOAL-006 — completed cutover/config delivery, 2026-09-05
+
+Это завершённая code-delivery history; Goal оставалась активной только ради явно запрошенного следующего docs PR и safe cleanup. Исторические checkpoints не являются текущим status.
+
+| PR | Head SHA | Merge SHA / merged UTC | PR CI / exact-main CI |
+|---|---|---|---|
+| [#39](https://github.com/Just9120/llm-inspector/pull/39) — Go desktop cutover | `a26dc1d5bebe5c5f24b69fa3281af60f2870958e` | `238d3ba5f7d607fa6768a6092f9cd3f2ce36f3fd` / 2026-09-05T15:33:29Z | `33965234911` / `33975166335`, SUCCESS |
+| [#40](https://github.com/Just9120/llm-inspector/pull/40) — checkout policy regression | `7500afdb77fd0abece11fffd073076ded5df68d5` | `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7` / 2026-09-05T15:46:27Z | `33975525588` / `33975817279`, SUCCESS |
+
+Все required steps завершились SUCCESS без skips; final main CI завершён 2026-09-05T15:50:33Z. Code source до cutover: `ee32a97fd63110abe7688b48994579d97f8fdb05`. Pre-merge [комментарий #39](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5552855206) ещё не был terminal DONE.
+
+Post-merge review обнаружил реальный regression: существующий `.gitattributes` ошибочно заменили при Go cutover. PR #40 восстановил прежние общие text/JSON/YAML/Markdown/PowerShell policies и toolchain pins, сохранил новые Go/frontend/frozen/embedded LF rules, добавил regression assertion. Full root/independent clean build, native smoke и release-tools PASS; code scope/168 AC не менялись. Это config hotfix, не новая Goal. Шесть собственных verification worktrees safely удалены после проверки чистоты и merged ancestry; седьмой policy-clean checkout оставался до final cleanup. User data не затронуты.
+
+Более ранний snapshot до full AC review: initial `4/143 = 2.8%`, full `4/168 = 2.4%`. После завершения desktop/storage/resource/control integration и независимой сверки всех AC: `136/143 = 95.1%` и `152/168 = 90.5%`. Рост >10 п.п. вызван подтверждённым final wiring, не переносом старых C# процентов. Denominator после четырёх approved stack/UX AC не изменился; B02 multi-host credit без actual LIVE не присвоен. В current dashboard хранятся только последний и предыдущий snapshots.
+
 ## GOAL-006 — superseded desktop/cutover checkpoints, 2026-09-05
 
 До final AC review сохранялась нижняя граница 4/143 и 4/168 (E01-AC02/03/07/08), предыдущий migration-start snapshot — 0/143 и 0/168. Только current/previous snapshots остаются в active plan; эти оценки не используются как основание нового расчёта.
