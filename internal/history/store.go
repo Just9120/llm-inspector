@@ -162,6 +162,22 @@ func nullableTime(t *time.Time) any {
 	return dbTime(*t)
 }
 
+// A bounded collector can drop an earlier record. Do not fabricate its parent
+// or lose a later valid sample/turn solely because that earlier write is absent.
+func existingID(ctx context.Context, tx *sql.Tx, table, column, value string) (any, error) {
+	if value == "" {
+		return nil, nil
+	}
+	var present int
+	if err := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM "+table+" WHERE "+column+"=?)", id(value)).Scan(&present); err != nil {
+		return nil, err
+	}
+	if present == 0 {
+		return nil, nil
+	}
+	return id(value), nil
+}
+
 func insert(ctx context.Context, tx *sql.Tx, table string, columns []string, args []any, suffix string) error {
 	// Only package-owned constant identifiers reach this helper; values are bound.
 	marks := strings.TrimSuffix(strings.Repeat("?,", len(args)), ",")

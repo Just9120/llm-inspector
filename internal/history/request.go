@@ -73,7 +73,7 @@ func recordRequest(ctx context.Context, tx *sql.Tx, o *domain.Observation) error
 			return err
 		}
 	}
-	duration := domain.Measured(o.DurationMS, domain.Milliseconds, "inspector", "proxy-duration-v1")
+	duration := domain.Derived(o.DurationMS, domain.Milliseconds, domain.Calculated, "proxy-duration-v1", "monotonic-wall-duration-v1")
 	return putMetric(ctx, tx, "request_metrics", "request_id", id(o.RequestID), "total_duration_ms", duration, domain.Milliseconds)
 }
 

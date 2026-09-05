@@ -39,8 +39,16 @@ func (s *Store) RecordResources(ctx context.Context, samples []domain.ResourceSa
 }
 
 func recordResource(ctx context.Context, tx *sql.Tx, r *domain.ResourceSample) error {
+	requestID, err := existingID(ctx, tx, "requests", "request_id", r.RequestID)
+	if err != nil {
+		return err
+	}
+	operationID, err := existingID(ctx, tx, "operations", "operation_id", r.OperationID)
+	if err != nil {
+		return err
+	}
 	cols := []string{"sample_id", "operation_id", "request_id", "captured_at_utc", "gpu_device_id", "dropped_sample_count"}
-	args := []any{id(r.ID), nullable(id(r.OperationID)), nullable(id(r.RequestID)), dbTime(r.CapturedAt), nullable(r.GPUDeviceID), r.DroppedSamples}
+	args := []any{id(r.ID), operationID, requestID, dbTime(r.CapturedAt), nullable(r.GPUDeviceID), r.DroppedSamples}
 	for _, pair := range []struct {
 		key string
 		m   domain.Metric

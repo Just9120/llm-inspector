@@ -36,12 +36,12 @@
 | Updated UTC | 2026-09-05T06:47:47Z |
 | Base branch / SHA | main / `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87` |
 | Working branch | `codex/goal-006-go-storage` |
-| Last verified revision | `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87` — exact main CI PASS; storage foundation working changes validated locally |
+| Last verified revision | `7a3f7ae02a5f2a683e5348d6e48f161a3f9baae5` — committed storage foundation; history/analytics/artifact working increment validated locally |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranche 1 merged. Tranche 2: bounded live state/ETA, exact adjacent context delta, streaming tool-name/count projection without content decode, bounded operation graphs, typed HTTP/transport errors and gateway integration pass local regression tests. Wails v2.15.0 CLI installed; doctor confirms WebView2 152.0.4191.62 and Windows prerequisites |
-| Current step | Tranche 3 — SQLite/history compatibility; modernc.org/sqlite v1.58.0 locked, unchanged legacy v1–v5 SQL, single writer/WAL/read-only query pool, technical allowlist validation |
-| Next exact action | Commit validated storage foundation, then implement operation/resource reads, retention, analytics and snapshot/export |
-| Validation / Evidence | Go formatting/mod verify/vet/build, 41 tests + fuzz seeds PASS; diagnostics statement coverage 97.1%, state 91.1%, parser 90.3% (not product readiness). Fuzz 641236 executions / 10s PASS; gateway/state 20 repeats PASS. Full reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. Local race detector not run (no C compiler); concurrency tested deterministically. No Go desktop runtime/LIVE claim |
+| Current step | Tranche 3 — completed SQLite/history/analytics/artifact implementation; final local review before initial push |
+| Next exact action | Commit history/analytics/export increment, complete final validation, then open storage PR |
+| Validation / Evidence | Go formatting/mod verify/vet/build and 61 test functions + fuzz seeds PASS; history statement coverage 83.8%, artifact 76.6% (not product readiness). Concurrent writer, bounded flush and process-kill recovery: 10 repeats PASS. Actual .NET CrashWriterWorker WAL fixture read by Go; Go appended/read new record without losing legacy row. Full reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. Local race detector not run (no C compiler). No Go desktop runtime/LIVE claim |
 | PR / CI | PR #35 merged at `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87`; PR CI `33949980492` and main CI `33950314660`: windows-go/windows-dotnet SUCCESS. Local/remote merged branches removed. Storage: no push/PR yet. No speculative reruns |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |

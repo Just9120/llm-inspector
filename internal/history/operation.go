@@ -31,7 +31,7 @@ func validateGraph(g *domain.OperationGraph) error {
 	ids = map[string]bool{}
 	for _, t := range g.Tools {
 		key := [2]int{t.TurnSequence, t.Sequence}
-		if id(t.ID) == "" || t.Sequence < 0 || !turns[t.TurnSequence] || tools[key] || ids[id(t.ID)] || domain.TechnicalIdentifier(t.Name) == "" || t.StartedAt.IsZero() || code(toolStatus, t.Status) < 0 || code(errorsList, t.ErrorType) < 0 {
+		if id(t.ID) == "" || t.Sequence < 0 || t.TurnSequence < 0 || (!turns[t.TurnSequence] && !g.Truncated) || tools[key] || ids[id(t.ID)] || domain.TechnicalIdentifier(t.Name) == "" || t.StartedAt.IsZero() || code(toolStatus, t.Status) < 0 || code(errorsList, t.ErrorType) < 0 {
 			return ErrInvalid
 		}
 		tools[key] = true
@@ -60,8 +60,12 @@ func recordGraph(ctx context.Context, tx *sql.Tx, g *domain.OperationGraph) erro
 		return err
 	}
 	for _, t := range g.Turns {
+		requestID, err := existingID(ctx, tx, "requests", "request_id", t.RequestID)
+		if err != nil {
+			return err
+		}
 		cols := []string{"turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type"}
-		args := []any{id(t.TurnID), id(g.ID), t.Sequence, nullable(id(t.RequestID)), dbTime(t.StartedAt), t.DurationMS, code(outcomes, t.Outcome), code(errorsList, t.ErrorType)}
+		args := []any{id(t.TurnID), id(g.ID), t.Sequence, requestID, dbTime(t.StartedAt), t.DurationMS, code(outcomes, t.Outcome), code(errorsList, t.ErrorType)}
 		for _, pair := range []struct {
 			key string
 			m   domain.Metric

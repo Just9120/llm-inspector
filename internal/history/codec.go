@@ -38,7 +38,7 @@ func id(s string) string {
 		}
 		s = strings.ReplaceAll(s, "-", "")
 	}
-	if len(s) != 32 {
+	if len(s) != 32 || s == strings.Repeat("0", 32) {
 		return ""
 	}
 	if _, err := hex.DecodeString(s); err != nil {
@@ -48,7 +48,9 @@ func id(s string) string {
 }
 func validOptionalID(s string) bool         { return s == "" || id(s) != "" }
 func validOptionalIdentifier(s string) bool { return s == "" || domain.TechnicalIdentifier(s) != "" }
-func finiteDuration(v float64) bool         { return v >= 0 && !math.IsInf(v, 0) && !math.IsNaN(v) }
+func finiteDuration(v float64) bool {
+	return v >= 0 && v <= float64(math.MaxInt64)/1e6 && !math.IsInf(v, 0) && !math.IsNaN(v)
+}
 
 func metricArgs(m domain.Metric, unit domain.Unit) ([]any, error) {
 	if m.Unit != unit || m.Validate() != nil || code(sources, m.Source) < 0 || domain.TechnicalIdentifier(m.SourceVersion) == "" || !validOptionalIdentifier(m.DerivationVersion) {
