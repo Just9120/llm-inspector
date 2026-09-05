@@ -1,3 +1,7 @@
 # Source formatting is LF regardless of the caller's core.autocrlf setting.
 *.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
 frontend/** text=auto eol=lf
+benchmarks/fixtures/** text=auto eol=lf
+internal/telemetry/testdata/** text=auto eol=lf
