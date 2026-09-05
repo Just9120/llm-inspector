@@ -13,7 +13,7 @@ func (s *Session) nativeScalar(v scalar) {
 		switch v.path {
 		case "/type":
 			switch v.text {
-			case "chat.end", "model_load.start", "model_load.end", "message.delta":
+			case "chat.end", "model_load.start", "model_load.end", "message.delta", "prompt_processing.start", "reasoning.start", "tool_call.start":
 				s.current.eventType = v.text
 			}
 		case "/model_instance_id", "/result/model_instance_id":
@@ -45,6 +45,10 @@ func (s *Session) nativeScalar(v scalar) {
 }
 
 func (s *Session) mergeNative() {
+	stage := map[string]domain.Stage{"model_load.start": domain.ModelLoading, "prompt_processing.start": domain.PromptProcessing, "reasoning.start": domain.Generating, "message.delta": domain.Generating, "tool_call.start": domain.ToolWait}[s.current.eventType]
+	if stage != "" {
+		s.stage = &domain.StageValue{Stage: stage, Evidence: "backend_reported", SourceVersion: "lm-studio-native-v1"}
+	}
 	if s.current.model != "" {
 		s.accepted.model = s.current.model
 	}

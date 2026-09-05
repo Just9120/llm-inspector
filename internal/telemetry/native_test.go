@@ -76,3 +76,23 @@ func TestSSELineEndingsAndMultilineData(t *testing.T) {
 		}
 	}
 }
+
+func TestNativeStagesRequireCompleteValidEvents(t *testing.T) {
+	s := NewNativeSession("text/event-stream")
+	s.Observe([]byte("data: {\"type\":\"model_load.start\""))
+	if s.Stage() != nil {
+		t.Fatal("partial stage was trusted")
+	}
+	s.Observe([]byte("}\n\n"))
+	if s.Stage() == nil || s.Stage().Stage != "model_loading" || s.Stage().Evidence != "backend_reported" {
+		t.Fatal("native stage missing")
+	}
+	s.Observe([]byte("data: {\"type\":\"tool_call.start\",}\n\n"))
+	if s.Stage().Stage != "model_loading" {
+		t.Fatal("malformed stage accepted")
+	}
+	s.Observe([]byte("data: {\"type\":\"tool_call.start\"}\n\n"))
+	if s.Stage().Stage != "tool_wait" {
+		t.Fatal("typed tool wait missing")
+	}
+}

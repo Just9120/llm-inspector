@@ -13,15 +13,15 @@
 - **Non-goals:** final tag/release/WinGet, manual Windows Home/Pro walkthrough, controlled performance measurements, two-host LIVE, Linux/macOS, новые LLM protocols и функции за пределами согласованного scope. Существующие manual gates остаются отдельными.
 - **Required Evidence:** SPEC/CODE/TEST/CI подтверждены для доставленных increments; локальная Windows build/smoke и regression parity для конечного artifact. DEPLOY/LIVE — N/A для Goal; product B02 LIVE по-прежнему обязателен до READY.
 - **Stop condition:** все Goal AC выполнены и merged branches safely removed (`DONE`); либо конкретный неустранимый scope blocker/external gate после завершения независимой работы.
-- **Safety:** CI/CD safety contract, permissions, trusted release trigger и production operations не ослабляются. Архитектурные поля старого CI/CD profile требуют отдельной reconciliation перед окончательным cutover; contract самостоятельно не изменяется.
+- **Safety:** CI/CD safety contract, permissions, trusted release trigger и production operations не ослабляются. Owner от `2026-09-05` явно разрешил обновить **только стек и команды** в `AGENTS.md` и Project CI/CD profile при cutover; safety rules, permissions, release gates и disabled CD остаются неизменными.
 
 ### Goal acceptance criteria
 
 | ID | Требование | State |
 |---|---|---|
 | G06-01 | Canonical spec содержит 4 согласованных stack/UX AC; Goal, migration boundaries и denominator явны | DONE |
-| G06-02 | Go proxy/adapters сохраняют HTTP/SSE bytes/order, cancellation, quality/provenance и privacy по regression corpus | PENDING |
-| G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | PENDING |
+| G06-02 | Go proxy/adapters сохраняют HTTP/SSE bytes/order, cancellation, quality/provenance и privacy по regression corpus | DONE — PR #34, PR/main CI PASS |
+| G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | IN PROGRESS — live/correlation/tools implemented; diagnostics next |
 | G06-04 | Go SQLite/history/analytics/retention/snapshot/export сохраняют ранее committed data и content allowlist | PENDING |
 | G06-05 | Windows resource/GPU collectors, tray/background/autostart/notifications, performance profiles перенесены | PENDING |
 | G06-06 | B01 lifecycle и B02 secure remote перенесены с прежними ownership/confirmation/DPAPI/loopback boundaries | PENDING |
@@ -34,17 +34,17 @@
 | Field | Verified state |
 |---|---|
 | Updated UTC | 2026-09-05T05:57:27Z |
-| Base branch / SHA | main / `c611856c81b1dc7dc239805a095d054249b3043d` |
-| Working branch | `codex/goal-006-go-foundation` |
-| Last verified revision | `111f2cf6dde0ecf9e78c7eebee60429c0f3b7d0e` — Go foundation commit; prior main CI `33864679915` success |
+| Base branch / SHA | main / `1ffb485277a7b12ad54657119de4dc268dfa997a` |
+| Working branch | `codex/goal-006-go-telemetry` |
+| Last verified revision | `a1ea68d176d57efe1fb9d4cb4b7238077f083a9b` — live/correlation/tools + Russian diagnostics local tests PASS; base exact-main CI `33948852046` SUCCESS |
 | Worktree state | Clean at start; only GOAL-006 changes |
-| Completed work | Canonical stack/UX ratification committed; Go domain, bounded JSON/SSE parser (OpenAI-compatible + LM Studio native), loopback relay/config/cancellation, pinned read-only Go CI added. Go 1.27.1 downloaded from go.dev with SHA-256 verification |
-| Current step | Tranche 1 — Go foundation: domain, bounded telemetry parser, loopback proxy/adapters regression |
-| Next exact action | Commit validated foundation, initial push and open tranche-1 PR; wait for both Go and C# reference checks |
-| Validation / Evidence | Go formatting/mod verify/vet/build and regression tests plus fuzz seeds PASS; parser statement coverage 90.4% (not product readiness). Fuzz 803686 executions / 10s PASS; restart/concurrency regression 25 repeats PASS. Reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. No Go desktop runtime/LIVE claim |
-| PR / CI | No GOAL-006 PR yet; initial push after tranche local validation |
+| Completed work | Tranche 1 merged. Tranche 2: bounded live state/ETA, exact adjacent context delta, streaming tool-name/count projection without content decode, bounded operation graphs, typed HTTP/transport errors and gateway integration pass local regression tests. Wails v2.15.0 CLI installed; doctor confirms WebView2 152.0.4191.62 and Windows prerequisites |
+| Current step | Tranche 2 — live telemetry, context correlation, agent operations/tools и diagnostics |
+| Next exact action | Complete tranche-2 robustness review/fuzz and full local validation, then initial push and PR |
+| Validation / Evidence | Go formatting/mod verify/vet/build, 41 tests + fuzz seeds PASS; diagnostics statement coverage 97.1%, state 91.1%, parser 90.3% (not product readiness). Fuzz 641236 executions / 10s PASS; gateway/state 20 repeats PASS. Full reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. Local race detector not run (no C compiler); concurrency tested deterministically. No Go desktop runtime/LIVE claim |
+| PR / CI | PR #34 MERGED; PR CI `33948720562` and exact-main CI `33948852046` SUCCESS. Initial push once; no reruns; merged local/remote branch safely deleted. Tranche-2 PR not opened until local validation |
 | Deployment / release | N/A; no publication authorized |
-| Blockers / external gates | Go final cutover needs CI/CD architecture-profile reconciliation; existing manual performance/Windows/two-host gates remain separate |
+| Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
 | Preserved pre-existing changes | None |
 
 ## Project readiness snapshots

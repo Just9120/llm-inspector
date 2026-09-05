@@ -91,4 +91,7 @@ type Observation struct {
 	Correlation   *Correlation `json:"correlation,omitempty"`
 	ContextChange Metric       `json:"context_change"`
 	Agent         AgentTurn    `json:"agent"`
+	// A consumer persists the graph separately; do not recursively duplicate it
+	// in every request JSON/export record.
+	Operation *OperationGraph `json:"-"`
 }
