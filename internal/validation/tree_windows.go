@@ -145,6 +145,10 @@ func (t *ProcessTree) Read() (Counters, error) {
 }
 
 func (t *ProcessTree) discover() error {
+	// A PID from the snapshot may exit and be reused before OpenProcess. Reject
+	// a handle whose process was born after snapshot collection began; otherwise
+	// stale parentage could attribute an unrelated process to the observed tree.
+	snapshotStarted := time.Now()
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return errors.New("process_snapshot_unavailable")
@@ -178,7 +182,7 @@ func (t *ProcessTree) discover() error {
 			if err != nil {
 				return errors.New("descendant_unavailable")
 			}
-			if !validChild(p.identity.StartedAt, child.identity.StartedAt) {
+			if !validSnapshotChild(p.identity.StartedAt, child.identity.StartedAt, snapshotStarted) {
 				windows.CloseHandle(child.handle)
 				return errors.New("descendant_identity_ambiguous")
 			}
@@ -194,6 +198,10 @@ func (t *ProcessTree) discover() error {
 
 func validChild(parentStart, childStart time.Time) bool {
 	return !parentStart.IsZero() && !childStart.IsZero() && !childStart.Before(parentStart)
+}
+
+func validSnapshotChild(parentStart, childStart, snapshotStarted time.Time) bool {
+	return validChild(parentStart, childStart) && !snapshotStarted.IsZero() && !childStart.After(snapshotStarted)
 }
 
 func (t *ProcessTree) Close() {

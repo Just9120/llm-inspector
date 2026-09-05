@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `IN_PROGRESS`
-> Updated UTC: `2026-09-05T20:56:00Z`
+> Updated UTC: `2026-09-05T20:58:00Z`
 
 ## Current Goal
 
@@ -35,18 +35,18 @@ Goal AC не добавляются в product denominator. Полный roadmap
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T20:56:00Z — local capture implementation/test checkpoint |
+| Updated UTC | 2026-09-05T20:58:00Z — local full-build/review checkpoint |
 | Base branch / SHA | main / `88cbe291309105c495da5f488d23d48f8c74b007`; local main = origin/main = GitHub main, fetch/readback verified |
 | Working branch | `codex/goal-007-validation` |
-| Last verified revision | `81ce04019eb10550e3a2cb599e24777c975efca8` — approved reference/Goal docs; new capture work locally tested, full validation next. Prior main CI `33978125113` SUCCESS |
-| Worktree | Clean at branch creation, no pre-existing user changes; only Goal-owned capture code/tests/runbook/navigation/checkpoint changes |
+| Last verified revision | `2b83f99fc96fe10412d87d470177c10c718992fc` — clean detached checkout: full canonical build/native smoke/release tools PASS. Snapshot PID-reuse hardening separately passed 3 repeated focused tests; final full validation next |
+| Worktree | Clean at branch creation, no pre-existing user changes. Own detached validation checkout `artifacts/goal007-build`; root running candidate/user state preserved |
 | Recovery | GOAL-006 DONE 9/9 по [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062); stale pre-merge dashboard не является новой authorization. Closed Goal перенесена в archive |
 | Completed work | Approved Ollama reference/corpus v2 committed; v1 сохранён byte-for-byte. Read-only exact-PID process capture, error/privacy/exclusive-output/cancellation/descendant tests и windows-validation runbook готовы. Focused Go tests PASS: validation 85.1%, CLI 73.6%, performance 100% statement coverage (не product readiness) |
-| Current step | Законченный bounded validation-tool increment проходит full local validation. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
-| Next exact action | Commit capture increment и выполнить canonical build/release-tool checks в собственном isolated checkout; не возобновлять Computer Use без сигнала пользователя |
+| Current step | Code review: добавлена проверка creation time против snapshot start, исключающая stale PID parentage. Product AC не изменены; новых credits нет. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
+| Next exact action | Повторить full local validation final code в own isolated checkout, затем initial push/PR законченного capture increment; не возобновлять Computer Use без сигнала пользователя |
 | Environment | Windows Pro 25H2 x64 26200.9168, Ryzen 7 9800X3D 8C/16T, RTX 5060 Ti 16311 MiB / driver 610.74. Ollama API 0.33.3, reference model digest installed, 0 loaded models на preflight |
 | Existing state preserved | Ollama user process уже запущен; не owned Inspector, не останавливать. Existing Inspector DB присутствует; settings/token files отсутствовали. Не очищать историю и не изменять remote/privacy settings скрыто |
-| Artifact | Existing local `build/bin/LlmInspector.exe` SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; supporting candidate, не public release. Prior hosted hash отличается; cross-host identity не доказана |
+| Artifact | Existing local `build/bin/LlmInspector.exe` SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; new clean local build 2b83f99 дал тот же hash. Supporting candidate, не public release. Prior hosted hash отличается; cross-host identity не доказана |
 | Pilot | Actual read-only capture `2026-09-05T20:47:45Z`–`20:48:15Z`, 31 samples / 30.006883 measured seconds, 7 observed processes. Private bytes P95 249102336 (~237.56 MiB), growth 16384 bytes, observed CPU delta and generic I/O-write delta 0. Profile balanced только declared; не verified UI state. Report SHA-256 `cda5f3cc5c1899464185a6c1b2fc79493e9a9c0461af276d9bcc73cf5f27d4b4`, local ignored `artifacts/goal007-validation/process-pilot-88cbe29.json`; pre-commit tool schema. Supporting pilot, **не E12 PASS** |
 | PR / CI | GOAL-007 PR ещё нет; новый CI ещё не запускался |
 | Deployment / LIVE | CD disabled / DEPLOY N/A; B02 LIVE отсутствует, не считать local fixture подтверждением |
@@ -56,10 +56,10 @@ Goal AC не добавляются в product denominator. Полный roadmap
 
 | Snapshot | Initial release | Full roadmap | Basis |
 |---|---:|---:|---|
-| Current — baseline при старте GOAL-007 | 136/143 = 95.1% | 152/168 = 90.5% | Последний independently verified ledger GOAL-006; новые runtime checks ещё не добавили credit |
+| Current — GOAL-007 pre-PR scope/credit review | 136/143 = 95.1% | 152/168 = 90.5% | Независимый пересчёт 143/168 unique canonical AC; все AC byte-equivalent baseline. 7 initial / 16 full missing остаются без credit; process pilot не подтверждает их gates |
 | Previous — GOAL-006 final review | 136/143 = 95.1% | 152/168 = 90.5% | Exact main 88cbe29 / CI 33978125113; 16 missing AC перечислены в project-spec §7 |
 
-Это baseline, не новый полный audit. Изменение 0 п.п.; отказ от Linux/macOS в текущей Goal не уменьшает full denominator. После фактических failures пересчитывать затронутые AC вниз так же, как после PASS — вверх.
+Это scope/credit review изменённого workstream, не новый полный manual audit. Изменение 0 п.п.; отказ от Linux/macOS в текущей Goal не уменьшает full denominator. Новые code/tests не меняют production binary или existing credited behavior. После фактических failures пересчитывать затронутые AC вниз так же, как после PASS — вверх.
 
 ## Pipeline / next items
 

@@ -118,4 +118,7 @@ func TestWindowsCaptureRejectsWrongIdentityAndParentAge(t *testing.T) {
 	if validChild(now, now.Add(-time.Second)) || validChild(time.Time{}, now) || validChild(now, time.Time{}) || !validChild(now, now.Add(time.Second)) {
 		t.Fatal("PID reuse/parent-age guard")
 	}
+	if validSnapshotChild(now, now.Add(time.Second), now) || validSnapshotChild(now, now, time.Time{}) || !validSnapshotChild(now, now.Add(time.Second), now.Add(2*time.Second)) {
+		t.Fatal("PID reused after snapshot accepted")
+	}
 }
