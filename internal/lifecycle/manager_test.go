@@ -344,6 +344,23 @@ func TestConcurrentMutationsSerialize(t *testing.T) {
 	wg.Wait()
 }
 
+func TestRefreshDoesNotBlockBehindLongLifecycleOperation(t *testing.T) {
+	m, _, _ := fakeFor(t, Ollama)
+	confirm(t, m)
+	m.op.Lock()
+	defer m.op.Unlock()
+	done := make(chan Snapshot, 1)
+	go func() { done <- m.Refresh() }()
+	select {
+	case snapshot := <-done:
+		if !snapshot.Confirmed {
+			t.Fatal("lost current state")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("UI refresh blocked behind operation")
+	}
+}
+
 func TestInvalidDiscoveryAndUnknownRuntimeFailClosed(t *testing.T) {
 	for _, version := range []string{"", strings.Repeat("x", 513), "bad\x00version", "0.33.20", "0.33.2.1", "unknown 99.0"} {
 		t.Run(version[:min(len(version), 20)], func(t *testing.T) {

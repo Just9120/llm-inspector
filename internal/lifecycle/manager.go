@@ -390,7 +390,10 @@ func (m *Manager) LoadModel(ctx context.Context, model string) error {
 	return nil
 }
 func (m *Manager) Refresh() Snapshot {
-	m.op.Lock()
+	// UI refresh must remain readable while a long model load is serialized.
+	if !m.op.TryLock() {
+		return m.Snapshot()
+	}
 	defer m.op.Unlock()
 	s := m.Snapshot()
 	if s.State == Running && s.Owned != nil && !m.runtime.Alive(*s.Owned) {
