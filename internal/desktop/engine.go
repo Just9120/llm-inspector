@@ -7,6 +7,7 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -125,7 +126,7 @@ func Start(config gateway.Config, d Dependencies) (*Engine, error) {
 			}
 		}
 	}
-	fingerprint := sha256.Sum256([]byte(string(config.Backend) + "\x00" + config.BackendURL + "\x00" + Version + "\x00" + runtime.Version()))
+	fingerprint := sha256.Sum256([]byte(string(config.Backend) + "\x00" + config.BackendURL + "\x00" + strconv.Itoa(config.Port) + "\x00" + strconv.FormatBool(config.Remote) + "\x00backend-telemetry-v1"))
 	e.facts = domain.RuntimeFacts{ConfigurationID: hex.EncodeToString(fingerprint[:]), InspectorVersion: Version, FrameworkVersion: runtime.Version(), OSVersion: domain.TechnicalIdentifier(d.OSVersion), TelemetryVersion: "backend-telemetry-v1"}
 	e.hub = NewHub(e.buffer, e.notifications, e.facts)
 	e.monitor = resources.NewMonitor(d.Probe, d.Resolver, func(samples []domain.ResourceSample) { e.hub.OfferResources(samples) })
@@ -138,6 +139,10 @@ func Start(config gateway.Config, d Dependencies) (*Engine, error) {
 		return nil, err
 	}
 	e.Gateway = proxy
+	if err = proxy.SetRuntimeFacts(e.facts); err != nil {
+		_ = e.Close(context.Background())
+		return nil, err
+	}
 	if err = proxy.SetResourceMonitor(e.monitor); err != nil {
 		_ = e.Close(context.Background())
 		return nil, err

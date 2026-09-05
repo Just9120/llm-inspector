@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Just9120/llm-inspector/internal/artifact"
 	"github.com/Just9120/llm-inspector/internal/background"
 	"github.com/Just9120/llm-inspector/internal/domain"
 	"github.com/Just9120/llm-inspector/internal/gateway"
@@ -41,6 +42,75 @@ func (unavailableProbe) Capture(context.Context, *domain.ProcessAssociation) (re
 }
 
 type noResolver struct{}
+
+type driverProbe struct {
+	ready chan struct{}
+	once  sync.Once
+}
+
+func (p *driverProbe) Capture(context.Context, *domain.ProcessAssociation) (resources.Snapshot, error) {
+	p.once.Do(func() { close(p.ready) })
+	return resources.Snapshot{CapturedAt: time.Now(), GPUs: []resources.GPU{{ID: "gpu-0", Driver: "590.41"}}}, nil
+}
+
+func TestRuntimeFactsReachUIHistoryAndSnapshotWithoutInventedVersions(t *testing.T) {
+	p := &driverProbe{ready: make(chan struct{})}
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"model":"model-v1","choices":[],"usage":{"prompt_tokens":1}}`)
+	}))
+	defer server.Close()
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	}()
+	d := dependencies(t)
+	d.Probe = p
+	e := startEngine(t, freeConfig(t, server.URL), d)
+	done := make(chan error, 1)
+	go func() {
+		response, err := http.Post(e.Snapshot().Status.Listener+"/v1/chat/completions", "application/json", strings.NewReader(`{}`))
+		if err == nil {
+			_, err = io.Copy(io.Discard, response.Body)
+			response.Body.Close()
+		}
+		done <- err
+	}()
+	select {
+	case <-p.ready:
+	case <-time.After(5 * time.Second):
+		close(release)
+		t.Fatal("collector not entered")
+	}
+	// Wait for the already asynchronous collector to publish, never in relay.
+	await(t, func() bool { return len(e.monitor.Latest()) > 0 })
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	await(t, func() bool { return e.Snapshot().Writer.Written >= 2 })
+	facts := e.Snapshot().Latest.Runtime
+	if facts == nil || facts.GPUDriverVersion != "590.41" || facts.ModelVersion != "model-v1" || facts.BackendVersion != "" || facts.ClientVersion != "" {
+		t.Fatal(facts)
+	}
+	if err := e.Gateway.SetRuntimeFacts(*facts); err == nil {
+		t.Fatal("changed running facts")
+	}
+	f := NewFacade(func() *Engine { return e }, Dialogs{})
+	preview, err := f.PreviewSnapshot(artifact.TimeRange(time.Now().Add(-time.Minute), time.Now().Add(time.Minute)))
+	if err != nil || !strings.Contains(preview.JSON, "590.41") {
+		t.Fatal("driver missing in final snapshot", err)
+	}
+}
 
 func (noResolver) Resolve(string) *domain.ProcessAssociation { return nil }
 

@@ -171,6 +171,7 @@ func CreateSnapshot(ctx context.Context, store *history.Store, selection Selecti
 	if err != nil {
 		return Artifact{}, err
 	}
+	environment = withRecordedVersions(environment, slice)
 	requests, resources, err := project(slice)
 	if err != nil {
 		return Artifact{}, err

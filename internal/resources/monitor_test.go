@@ -18,6 +18,32 @@ func (f probeFunc) Capture(c context.Context, p *domain.ProcessAssociation) (Sna
 
 type resolverFunc func(string) *domain.ProcessAssociation
 
+func TestDriverEvidenceIsRequestScopedAndNeverProbesOnRead(t *testing.T) {
+	calls := 0
+	driver := "590.41"
+	m := NewMonitor(probeFunc(func(context.Context, *domain.ProcessAssociation) (Snapshot, error) {
+		calls++
+		return Snapshot{CapturedAt: time.Now(), GPUs: []GPU{{ID: "gpu-0", Driver: driver}}}, nil
+	}), nil, nil)
+	s := &session{owner: m, ctx: context.Background(), local: true}
+	if s.GPUDriverVersion() != "" || calls != 0 {
+		t.Fatal("getter probed or fabricated data")
+	}
+	s.capture()
+	if s.GPUDriverVersion() != driver || calls != 1 {
+		t.Fatal("captured driver missing")
+	}
+	driver = "591.1"
+	s.capture()
+	if s.GPUDriverVersion() != "" {
+		t.Fatal("mixed drivers reported as one version")
+	}
+	other := &session{owner: m, ctx: context.Background()}
+	if other.GPUDriverVersion() != "" {
+		t.Fatal("driver leaked across requests")
+	}
+}
+
 func (f resolverFunc) Resolve(s string) *domain.ProcessAssociation { return f(s) }
 func closeMonitor(t *testing.T, m *Monitor) {
 	t.Helper()

@@ -10,6 +10,12 @@ type ResourceSession interface {
 	AddReceived(int)
 	Complete()
 }
+
+// ResourceRuntimeEvidence returns already captured request-scoped metadata.
+// It must not probe, wait for a capture or expose paths/host identifiers.
+type ResourceRuntimeEvidence interface {
+	GPUDriverVersion() string
+}
 type ResourceMonitor interface {
 	Start(RequestResourceContext) ResourceSession
 }

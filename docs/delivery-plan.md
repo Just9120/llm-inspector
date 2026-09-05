@@ -33,14 +33,14 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T10:47:36Z |
+| Updated UTC | 2026-09-05T11:07:24Z |
 | Base branch / SHA | main / `ee32a97fd63110abe7688b48994579d97f8fdb05` |
 | Working branch | `codex/goal-006-go-desktop` |
-| Last verified revision | `54709f897954e7fc5891803f4af4eec8ae32f0fa` — facade/composition local tests PASS; последующие host/UI изменения проверены в worktree |
+| Last verified revision | `a83ad3fb809a0384de588a4b58dc5ad310780545` — local Go/Wails desktop/smoke increment; subsequent runtime-evidence fixes validated locally |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded DPAPI store/token lifecycle, private ingress and network probe; typed lifecycle profiles/manager/adapters, exact model confirmation, native suspended start/job ownership, bounded CLI/HTTP, exact-process cleanup and safe external-process refusal |
 | Current step | Tranche 6 — Go/Wails executable и русский Svelte UI locally validated |
-| Next exact action | Commit validated UI; final parity review (runtime facts/artifact environment/operation resources), packaging/release/CI cutover и clean-build validation; .NET reference пока сохранён |
+| Next exact action | Packaging/release/CI cutover, preserve frozen reference fixtures, затем clean-build и полный AC-by-AC review |
 | Validation / Evidence | Go formatting/mod verify/vet/build and 131 test functions + fuzz seeds PASS; lifecycle statement coverage 81.9%, remote 93.2%, gateway 87.7% (not readiness). Native attached/detached synthetic listener ownership/cleanup, bounded command output/HTTP, model identity/active-count/confirmation/concurrency tests PASS; full lifecycle suite 3 repeats PASS. Actual synthetic .NET DPAPI interoperability and previous 20-repeat remote tests PASS. .NET locked restore/format/build/260 tests/RID publish/smoke PASS (0 warnings/errors). No local race detector (no C compiler), no installed backend/model or real credentials/settings/Tailscale changed, no two-host LIVE claim |
 | PR / CI | PR #38 and exact-main CI `33958021155` SUCCESS (both jobs). Local main/origin/main synced at `ee32a97`; merged connectivity branches safely removed. Desktop branch local only; no PR yet |
 | Deployment / release | N/A; no publication authorized |
@@ -61,6 +61,8 @@ Tranche-6 local validation: Go internal format/mod verify/vet/build и 143 test 
 Это промежуточная нижняя граница проверенных AC, не оценка объёма кода. E01 вырос с 0/8 до 4/8 (50%) благодаря working Go desktop/Russian UI; denominator прежний. До PR каждый AC будет проверен отдельно. Исторический C# snapshot перенесён в archive.
 
 ## Execution pipeline
+
+Final wiring review: request-scoped already-captured GPU driver и model identifier доходят до UI/history/runtime correlation, remote не получает local driver attribution. Snapshot обогащает missing environment facts только exact selected history, mixed versions остаются unavailable. History показывает ресурсы всей операции отдельно от запроса; compatibility/elapsed-time labels уточнены по-русски. 146 internal Go test functions + fuzz seeds PASS, touched suites 3 repeats PASS; frontend format/check/3 tests PASS. Readiness snapshot пока тот же verified minimum; full AC review после cutover.
 
 | Tranche / PR | Содержание | Required local Evidence |
 |---|---|---|

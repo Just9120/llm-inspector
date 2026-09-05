@@ -105,7 +105,7 @@
       <p><code>{snapshot.target.executable}</code></p>
       <p>
         Версия: {snapshot.target.version}<br />Endpoint: <code>{snapshot.target.endpoint}</code><br
-        />Совместимость: {snapshot.target.compatibility.status}
+        />Совместимость: {label(snapshot.target.compatibility.status)}
       </p>
       {#if !snapshot.confirmed}<button
           class="secondary"

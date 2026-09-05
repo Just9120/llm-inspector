@@ -24,6 +24,8 @@
     selected = $state<history.Request | null>(null),
     samples = $state<domain.ResourceSample[]>([]),
     operation = $state<domain.OperationGraph | null>(null);
+  let operationSamples = $state<domain.ResourceSample[]>([]),
+    operationTruncated = $state(false);
   let busy = $state(false),
     error = $state(''),
     truncated = $state(false),
@@ -58,6 +60,8 @@
     await perform(async () => {
       selected = request;
       operation = null;
+      operationSamples = [];
+      operationTruncated = false;
       samples = [];
       const begin = Date.parse(String(request.started_at));
       const detail = await api.GetHistoryDetails(
@@ -71,6 +75,8 @@
       if (request.operation_id) {
         const graph = await api.GetOperation(request.operation_id);
         operation = graph?.graph ?? null;
+        operationSamples = graph?.resources ?? [];
+        operationTruncated = graph?.resources_truncated ?? false;
       }
     });
   }
@@ -183,6 +189,13 @@
     </details>
   </section>{/if}
 {#if operation}<section class="panel">
+    <details>
+      <summary>Нагрузка за всю операцию</summary>
+      {#if operationTruncated}<p class="notice warning">
+          Временная шкала операции неполна: достигнут лимит samples.
+        </p>{/if}
+      <Resources samples={operationSamples} timeline />
+    </details>
     <Operation graph={operation} /><button
       class="secondary"
       disabled={busy}

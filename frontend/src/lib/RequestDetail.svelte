@@ -29,8 +29,9 @@
   <span class="badge">{label(request.outcome)}</span>
 </div>
 <p>
-  Длительность: {number(request.duration_ms)} мс · {label(request.telemetry.model_load)} · HTTP {request.http_status ??
-    '—'}
+  Длительность: {number(request.duration_ms)} мс (вычислено Inspector по elapsed time) · {label(
+    request.telemetry.model_load,
+  )} · HTTP {request.http_status ?? '—'}
 </p>
 {#if request.error_type !== 'none'}<p class="notice warning">
     {label(request.error_type)} · Источник: {label(request.error_origin)}
