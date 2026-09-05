@@ -14,6 +14,7 @@ type projection struct {
 	output    bool
 	eventType string
 	stats     bool
+	agent     agentFragment
 }
 
 // Session holds only a fixed set of numeric metrics and a validated model name.
@@ -34,6 +35,10 @@ type Session struct {
 	terminalStats    bool
 	modelLoadStarted bool
 	previousCR       bool
+	agent            agentAccumulator
+	eventPrefix      [32]byte
+	eventBytes       int
+	stage            *domain.StageValue
 }
 
 var numericPaths = map[string]string{
@@ -67,11 +72,19 @@ func NewNativeSession(contentType string) *Session {
 
 func (s *Session) resetParser() {
 	s.current = projection{values: map[string]float64{}}
+	s.eventBytes = 0
 	s.parser = jsonProjection{onScalar: s.scalar, allowText: func(path string) bool {
-		return path == "/model" || (s.native && (path == "/type" || path == "/model_instance_id" || path == "/result/model_instance_id"))
+		return (!s.native && (path == "/model" || agentTextPath(path))) || (s.native && (path == "/type" || path == "/model_instance_id" || path == "/result/model_instance_id"))
 	}, onObjectEnd: func(path string) {
+		if !s.native {
+			s.current.agent.objectEnd(path)
+		}
 		if path == "/stats" || path == "/result/stats" {
 			s.current.stats = true
+		}
+	}, onArrayEnd: func(path string, count int) {
+		if !s.native {
+			s.current.agent.arrayEnd(path, count)
 		}
 	}}
 }
@@ -81,6 +94,7 @@ func (s *Session) scalar(v scalar) {
 		s.nativeScalar(v)
 		return
 	}
+	s.current.agent.scalar(v)
 	if v.path == "/model" && v.kind == 's' {
 		s.current.model = domain.TechnicalIdentifier(v.text)
 	}
@@ -114,6 +128,7 @@ func (s *Session) merge() {
 			s.resetParser()
 			return
 		}
+		s.agent.merge(s.current.agent)
 		for k, v := range s.current.values {
 			s.accepted.values[k] = v
 		}
@@ -121,6 +136,8 @@ func (s *Session) merge() {
 			s.accepted.model = s.current.model
 		}
 		s.accepted.output = s.accepted.output || s.current.output
+	} else if !s.native && !(s.eventBytes <= len(s.eventPrefix) && strings.TrimSpace(string(s.eventPrefix[:min(s.eventBytes, len(s.eventPrefix))])) == "[DONE]") {
+		s.agent.corrupt = true
 	}
 	s.resetParser()
 }
@@ -149,7 +166,7 @@ func (s *Session) Observe(data []byte) {
 					s.eventData = false
 				}
 			} else if s.dataLine {
-				s.parser.byte('\n')
+				s.feedByte('\n')
 				s.eventData = true
 			}
 			s.lineLength = 0
@@ -179,12 +196,30 @@ func (s *Session) Observe(data []byte) {
 				continue
 			}
 		}
-		s.parser.byte(b)
+		s.feedByte(b)
 	}
+}
+
+func (s *Session) feedByte(b byte) {
+	if s.eventBytes < len(s.eventPrefix) {
+		s.eventPrefix[s.eventBytes] = b
+	}
+	if s.eventBytes <= len(s.eventPrefix) {
+		s.eventBytes++
+	}
+	s.parser.byte(b)
 }
 
 func (s *Session) HasOutput() bool {
 	return s.sse && (s.accepted.output || (!s.native && !s.parser.invalid && s.current.output))
+}
+
+func (s *Session) Stage() *domain.StageValue {
+	if s.stage == nil {
+		return nil
+	}
+	stage := *s.stage
+	return &stage
 }
 
 func (s *Session) Complete() domain.Telemetry {

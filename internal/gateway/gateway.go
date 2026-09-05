@@ -17,18 +17,23 @@ import (
 	"time"
 
 	"github.com/Just9120/llm-inspector/internal/domain"
+	"github.com/Just9120/llm-inspector/internal/state"
 	"github.com/Just9120/llm-inspector/internal/telemetry"
 )
 
 type Gateway struct {
-	config    Config
-	target    *url.URL
-	transport *http.Transport
-	sink      chan<- domain.Observation
-	mu        sync.Mutex
-	server    *http.Server
-	listener  net.Listener
-	dropped   atomic.Uint64
+	config      Config
+	target      *url.URL
+	transport   *http.Transport
+	sink        chan<- domain.Observation
+	mu          sync.Mutex
+	server      *http.Server
+	listener    net.Listener
+	dropped     atomic.Uint64
+	active      atomic.Int64
+	live        *state.Live
+	correlation *state.Correlation
+	operations  *state.Operations
 }
 
 func New(c Config, sink chan<- domain.Observation) (*Gateway, error) {
@@ -42,7 +47,7 @@ func newGateway(c Config, sink chan<- domain.Observation, test bool) (*Gateway, 
 	}
 	// No environment proxy, decompression, redirects, cookies or automatic retries.
 	tr := &http.Transport{Proxy: nil, DisableCompression: true, DisableKeepAlives: true, ForceAttemptHTTP2: false, DialContext: (&net.Dialer{Timeout: 10 * time.Second}).DialContext, TLSHandshakeTimeout: 10 * time.Second, MaxResponseHeaderBytes: 1 << 20}
-	return &Gateway{config: c, target: target, transport: tr, sink: sink}, nil
+	return &Gateway{config: c, target: target, transport: tr, sink: sink, live: state.NewLive(nil), correlation: state.NewCorrelation(), operations: state.NewOperations()}, nil
 }
 
 func (g *Gateway) Start() (string, error) {
@@ -78,7 +83,9 @@ func (g *Gateway) Stop(ctx context.Context) error {
 	return err
 }
 
-func (g *Gateway) Dropped() uint64 { return g.dropped.Load() }
+func (g *Gateway) Dropped() uint64                   { return g.dropped.Load() }
+func (g *Gateway) LiveSnapshot() domain.LiveSnapshot { return g.live.Snapshot() }
+func (g *Gateway) ActiveCount() int64                { return g.active.Load() }
 
 func route(path, method string, backend domain.Backend) (string, domain.Client, bool) {
 	client := domain.Generic
@@ -186,8 +193,16 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	obs := domain.Observation{RequestID: hex.EncodeToString(id), StartedAt: start.UTC(), Outcome: "completed", ErrorType: "none", ErrorOrigin: "not_applicable", Client: client, Telemetry: domain.MissingTelemetry(g.config.Backend), TTFT: domain.Missing(domain.Milliseconds, "inspector", "streaming-ttft-v1"), ContextChange: domain.Missing(domain.TokenDelta, "inspector", "correlation-v1"), Correlation: readCorrelation(r.Header), Agent: domain.MissingAgentTurn()}
 	if isChat {
+		g.active.Add(1)
+		g.live.Start(obs.RequestID, client, start)
+		g.live.Stage(obs.RequestID, state.ProtocolStage(domain.PromptProcessing))
 		defer func() {
+			g.active.Add(-1)
+			obs.ErrorOrigin = errorOrigin(obs.ErrorType)
+			g.live.Finish(obs.RequestID, obs.Outcome, obs.ErrorType)
+			obs.ContextChange = g.correlation.Observe(obs.Correlation, obs.Client, obs.Telemetry.Backend, obs.Telemetry.ContextUsage)
 			obs.DurationMS = float64(time.Since(start)) / float64(time.Millisecond)
+			obs.Operation = g.operations.Observe(obs)
 			select {
 			case g.sink <- obs:
 			default:
@@ -208,6 +223,11 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		out.Header["User-Agent"] = nil
 	}
 	out.GetBody = nil
+	if path == "/v1/chat/completions" && r.Header.Get("Content-Encoding") == "" && r.Body != nil {
+		capture := &requestCapture{inner: r.Body, session: telemetry.NewRequestSession(), expected: r.ContentLength}
+		out.Body = capture
+		defer func() { obs.Agent.AvailableTools, obs.Agent.ToolResults = capture.Result() }()
+	}
 	scrubHopHeaders(out.Header)
 	for _, k := range append(append([]string{}, identityHeaders...), correlationHeaders...) {
 		out.Header.Del(k)
@@ -215,7 +235,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp, err := g.transport.RoundTrip(out)
 	if err != nil {
 		obs.Outcome = "backend_unavailable"
-		obs.ErrorType = "connection_refused"
+		obs.ErrorType = transportError(err, false)
 		obs.ErrorOrigin = "backend"
 		if r.Context().Err() != nil {
 			obs.Outcome = "client_cancelled"
@@ -233,11 +253,8 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 	obs.HTTPStatus = &resp.StatusCode
 	if resp.StatusCode >= 400 {
-		obs.ErrorType = "http_api_error"
+		obs.ErrorType = httpError(resp.StatusCode, false)
 		obs.ErrorOrigin = "backend"
-		if resp.StatusCode == 503 {
-			obs.ErrorType = "model_loading"
-		}
 	}
 	scrubHopHeaders(resp.Header)
 	for k, v := range resp.Header {
@@ -252,13 +269,24 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		parser = telemetry.NewNativeSession(resp.Header.Get("Content-Type"))
 	}
 	parse := isChat && resp.StatusCode < 400 && resp.Header.Get("Content-Encoding") == ""
+	errorParser := telemetry.NewErrorSession()
+	parseError := isChat && resp.StatusCode >= 400 && resp.Header.Get("Content-Encoding") == ""
 	buffer := make([]byte, 32*1024)
 	controller := http.NewResponseController(w)
 	for {
 		n, readErr := resp.Body.Read(buffer)
 		if n > 0 {
+			if isChat && resp.StatusCode < 400 {
+				g.live.Stage(obs.RequestID, state.ProtocolStage(domain.Generating))
+			}
+			if parseError {
+				errorParser.Observe(buffer[:n])
+			}
 			if parse {
 				parser.Observe(buffer[:n])
+				if stage := parser.Stage(); stage != nil {
+					g.live.Stage(obs.RequestID, *stage)
+				}
 				if obs.TTFT.Value == nil && parser.HasOutput() {
 					obs.TTFT = domain.Measured(float64(time.Since(start))/float64(time.Millisecond), domain.Milliseconds, "inspector", "streaming-ttft-v1")
 				}
@@ -277,6 +305,10 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			if parse {
 				obs.Telemetry = parser.Complete()
+				obs.Agent = parser.AgentResponse()
+			}
+			if parseError {
+				obs.ErrorType = httpError(resp.StatusCode, errorParser.ContextOverflow())
 			}
 			break
 		}
