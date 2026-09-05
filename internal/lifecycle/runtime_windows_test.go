@@ -265,7 +265,10 @@ func TestNativeDiscoveryRejectsUnsafeTargets(t *testing.T) {
 	}
 	command := helperCommand(t, "version")
 	resolved, err := r.Resolve(context.Background(), Ollama, command.Executable)
-	if err != nil || !strings.EqualFold(resolved, command.Executable) {
+	// Hosted Windows runners use redirected/junction-backed temp roots. Resolve
+	// intentionally returns the canonical path shown in the confirmation UI.
+	expected, canonicalErr := filepath.EvalSymlinks(command.Executable)
+	if err != nil || canonicalErr != nil || !strings.EqualFold(resolved, filepath.Clean(expected)) {
 		t.Fatal(resolved, err)
 	}
 	if occupied, err := imagesRunning([]string{filepath.Base(command.Executable)}); err != nil || !occupied {

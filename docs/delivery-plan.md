@@ -33,19 +33,21 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T09:11:59Z |
+| Updated UTC | 2026-09-05T09:22:10Z |
 | Base branch / SHA | main / `976a8214d2ca3b3f0e9da02522eeef913122065f` |
 | Working branch | `codex/goal-006-go-connectivity` |
-| Last verified revision | `439659188dfb8a8d85747e8eda42e24bf3f751db` — remote credentials/ingress/probe committed and validated; lifecycle working increment locally validated |
+| Last verified revision | `6473ed5656a6fcf47713b09aef0e2806c8149a5d` — complete tranche-5 scope locally validated and pushed once |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded DPAPI store/token lifecycle, private ingress and network probe; typed lifecycle profiles/manager/adapters, exact model confirmation, native suspended start/job ownership, bounded CLI/HTTP, exact-process cleanup and safe external-process refusal |
-| Current step | Tranche 5 — lifecycle commit and complete pre-PR validation |
-| Next exact action | Commit locally validated lifecycle increment, verify staged diff and exact branch; perform one initial push and create tranche-5 PR, then wait for both CI jobs |
+| Current step | Tranche 5 — one grouped correction after confirmed PR #38 Go test failure |
+| Next exact action | Commit the two locally validated CI-fixture corrections and send one grouped push to PR #38, then require both CI jobs |
 | Validation / Evidence | Go formatting/mod verify/vet/build and 131 test functions + fuzz seeds PASS; lifecycle statement coverage 81.9%, remote 93.2%, gateway 87.7% (not readiness). Native attached/detached synthetic listener ownership/cleanup, bounded command output/HTTP, model identity/active-count/confirmation/concurrency tests PASS; full lifecycle suite 3 repeats PASS. Actual synthetic .NET DPAPI interoperability and previous 20-repeat remote tests PASS. .NET locked restore/format/build/260 tests/RID publish/smoke PASS (0 warnings/errors). No local race detector (no C compiler), no installed backend/model or real credentials/settings/Tailscale changed, no two-host LIVE claim |
-| PR / CI | PR #37 PR CI `33954262844` and main CI `33954426102`: windows-go/windows-dotnet SUCCESS. Main synced at `976a821`; local/remote Windows branches safely removed. Connectivity tranche local only; no PR yet |
+| PR / CI | PR #38 head `6473ed5`, CI `33957494031`: windows-dotnet SUCCESS, windows-go FAILURE. Go failures: fixture compared canonical path with uncanonicalized runner temp path; synthetic legacy DPAPI fixture ended at its 10-second PowerShell startup timeout. Production ownership/crypto contracts unchanged; no rerun, merge or extra push yet |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
 | Preserved pre-existing changes | None |
+
+CI correction validation: full Go CI-equivalent PASS; canonical-path/legacy-DPAPI tests each 3 repeats PASS. A separate local artifact-test `TempDir RemoveAll: directory not empty` failure occurred once; readback found the directory empty, focused test 10 repeats and subsequent full suite PASS. Cause remains unconfirmed (possible Windows filesystem transient); no production storage change or suppressed test. CI corrections affect test expectations/startup budget only; production ownership, crypto rules and all release gates unchanged.
 
 ## Project readiness snapshots
 

@@ -6,13 +6,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"golang.org/x/sys/windows"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/windows"
 )
 
 func TestWindowsDPAPIRoundTripAndTampering(t *testing.T) {
@@ -56,7 +57,9 @@ func TestDPAPILegacyDotnetCurrentUserInteroperability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	// Cold Windows PowerShell/.NET initialization on an ephemeral runner can
+	// exceed 10 seconds. This bounds fixture startup only, not product timeouts.
+	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
 	defer cancel()
 	// Fixed synthetic bytes only; no existing user credential is read and no
 	// plaintext/token is written to tool output. .NET uses the legacy API model.
@@ -66,7 +69,7 @@ func TestDPAPILegacyDotnetCurrentUserInteroperability(t *testing.T) {
 	cmd.WaitDelay = time.Second
 	data, err := cmd.Output()
 	if err != nil {
-		t.Fatal("legacy DPAPI fixture generation failed")
+		t.Fatalf("legacy DPAPI fixture generation failed (context: %v, process: %v)", ctx.Err(), err)
 	}
 	cipher, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(data)))
 	if err != nil {
