@@ -1,8 +1,24 @@
 # Architecture baseline
 
-> Status: `DECIDED — GOAL-005 DONE; MANUAL VALIDATION SEPARATE; E01/E12/B02 EVIDENCE PENDING`
-> Decision scope: `GOAL-002`; implementation scopes: `GOAL-003`, `GOAL-004`, `GOAL-005`
-> Evidence reviewed: `2026-09-04`
+> Status: `GOAL-006 IN_PROGRESS — GO MIGRATION; C# REFERENCE RETAINED UNTIL CUTOVER`
+> Decision scope: `GOAL-002`, user-approved `GOAL-006`; implementation scopes: `GOAL-003`–`GOAL-006`
+> Evidence reviewed: `2026-09-05`
+
+## 0. Go migration boundary
+
+Новый production target: Go core + stable Wails v2 desktop shell + Svelte/TypeScript, русский UI с progressive disclosure. Это approved GOAL-006, а не альтернативный продукт. Существующие contracts поведения, privacy, SQLite/settings, loopback/remote security и process ownership сохраняются.
+
+Первый increment добавляет изолированный Go core без подключения к пользовательской БД или реальному LLM runtime:
+
+| Package | Ownership / boundary |
+|---|---|
+| `internal/domain` | Content-free records, metric quality/units/provenance invariants |
+| `internal/telemetry` | Bounded incremental JSON/SSE projection: 256-byte token window, depth 64, максимум 64 keys/object; oversized/ambiguous metadata даёт unavailable, relay не изменяется. Values private categories не декодируются; output presence — только boolean |
+| `internal/gateway` | Loopback `127.0.0.1`, allowlisted routes, transparent byte relay, cancellation; без environment proxy, decompression, redirects, automatic retry или raw logging. Nonblocking completion channel отделяет forwarding от consumers |
+
+LM Studio native `/api/v1/chat` имеет отдельный parser mode: только terminal stats подтверждают cold/warm; OpenAI-compatible flow не получает guessed native metrics. Correlation headers валидируются и удаляются до backend; grouping и persisted history переносятся отдельно.
+
+Toolchain pinned в `.go-version`/`go.mod`, проверка — `scripts/validate-go.ps1`, CI — `windows-go` плюс прежний `windows-dotnet`. Ниже до cutover сохранена C# architecture/reference, а не утверждение о готовом Go runtime. Исторические C# test/release percentages не переносятся в Go readiness. CI/CD safety contract не изменён; его прежний .NET architecture profile требует explicit reconciliation перед окончательным удалением .NET release path.
 
 ## 1. Evidence boundary
 

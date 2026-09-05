@@ -35,6 +35,18 @@ Verified product base `main` — `74f710ab1f7a9457377045191b0f62a472e8f40c`: ini
 
 ## Быстрый старт
 
+### Go migration — GOAL-006
+
+Go foundation находится в `internal/domain`, `internal/telemetry` и `internal/gateway`. Exact toolchain — Go `1.27.1` из `.go-version`; проверка из repository root:
+
+```powershell
+./scripts/validate-go.ps1
+```
+
+Скрипт проверяет version pin, formatting, module integrity, vet, unit/integration tests и build. Дополнительный CI check — `windows-go`; прежний `windows-dotnet` остаётся обязательным reference gate до cutover. Foundation пока не является готовым Go desktop executable: UI, persistent storage, Windows integration и managed connectivity переносятся следующими increments той же Goal. Проверки parser используют existing synthetic fixtures без реальных prompt/response data.
+
+### C# reference application — до Go cutover
+
 Prerequisite: Windows x64 и exact [.NET SDK `10.0.400`](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). `global.json` запрещает автоматический roll-forward на другой SDK.
 
 Проверить SDK и восстановить dependency graph:
