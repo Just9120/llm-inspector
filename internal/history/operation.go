@@ -9,13 +9,13 @@ import (
 )
 
 func validateGraph(g *domain.OperationGraph) error {
-	if id(g.ID) == "" || !validOptionalID(g.SessionID) || g.StartedAt.IsZero() || (g.EndedAt != nil && g.EndedAt.Before(g.StartedAt)) || code(clients, g.Client) < 0 || code(backends, g.Backend) < 0 || !validOptionalIdentifier(g.Model) || code(operationStatus, g.Status) < 0 || code(errorsList, g.ErrorType) < 0 || len(g.Turns) > 1024 || len(g.Tools) > 4096 {
+	if id(g.ID) == "" || !validOptionalID(g.SessionID) || g.StartedAt.IsZero() || (g.EndedAt != nil && g.EndedAt.Before(g.StartedAt)) || code(clients, g.Client) < 0 || code(backends, g.Backend) < 0 || !validOptionalIdentifier(g.Model) || code(operationStatus, g.Status) < 0 || errorCode(g.ErrorType) < 0 || len(g.Turns) > 1024 || len(g.Tools) > 4096 {
 		return ErrInvalid
 	}
 	turns := map[int]bool{}
 	ids := map[string]bool{}
 	for _, t := range g.Turns {
-		if id(t.TurnID) == "" || !validOptionalID(t.RequestID) || t.Sequence < 0 || turns[t.Sequence] || ids[id(t.TurnID)] || t.StartedAt.IsZero() || !finiteDuration(t.DurationMS) || code(outcomes, t.Outcome) < 0 || code(errorsList, t.ErrorType) < 0 {
+		if id(t.TurnID) == "" || !validOptionalID(t.RequestID) || t.Sequence < 0 || turns[t.Sequence] || ids[id(t.TurnID)] || t.StartedAt.IsZero() || !finiteDuration(t.DurationMS) || code(outcomes, t.Outcome) < 0 || errorCode(t.ErrorType) < 0 {
 			return ErrInvalid
 		}
 		turns[t.Sequence] = true
@@ -31,7 +31,7 @@ func validateGraph(g *domain.OperationGraph) error {
 	ids = map[string]bool{}
 	for _, t := range g.Tools {
 		key := [2]int{t.TurnSequence, t.Sequence}
-		if id(t.ID) == "" || t.Sequence < 0 || t.TurnSequence < 0 || (!turns[t.TurnSequence] && !g.Truncated) || tools[key] || ids[id(t.ID)] || domain.TechnicalIdentifier(t.Name) == "" || t.StartedAt.IsZero() || code(toolStatus, t.Status) < 0 || code(errorsList, t.ErrorType) < 0 {
+		if id(t.ID) == "" || t.Sequence < 0 || t.TurnSequence < 0 || (!turns[t.TurnSequence] && !g.Truncated) || tools[key] || ids[id(t.ID)] || domain.TechnicalIdentifier(t.Name) == "" || t.StartedAt.IsZero() || code(toolStatus, t.Status) < 0 || errorCode(t.ErrorType) < 0 {
 			return ErrInvalid
 		}
 		tools[key] = true
@@ -51,21 +51,38 @@ func (s *Store) RecordOperation(ctx context.Context, g domain.OperationGraph) er
 }
 
 func recordGraph(ctx context.Context, tx *sql.Tx, g *domain.OperationGraph) error {
+	var oldSession *string
+	var oldClient, oldBackend int
+	err := tx.QueryRowContext(ctx, "SELECT session_id,client,backend FROM operations WHERE operation_id=?", id(g.ID)).Scan(&oldSession, &oldClient, &oldBackend)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if err == nil && (deref(oldSession) != id(g.SessionID) || oldClient != code(clients, g.Client) || oldBackend != code(backends, g.Backend)) {
+		return ErrInvalid
+	}
 	if g.SessionID != "" {
 		if err := upsertSession(ctx, tx, g.SessionID, g.StartedAt, g.EndedAt, g.Client, g.Backend, g.Model); err != nil {
 			return err
 		}
 	}
-	if err := insert(ctx, tx, "operations", []string{"operation_id", "session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model", "status", "error_type"}, []any{id(g.ID), nullable(id(g.SessionID)), dbTime(g.StartedAt), nullableTime(g.EndedAt), code(clients, g.Client), code(backends, g.Backend), nullable(g.Model), code(operationStatus, g.Status), code(errorsList, g.ErrorType)}, "ON CONFLICT(operation_id) DO UPDATE SET ended_at_utc=excluded.ended_at_utc,status=excluded.status,error_type=excluded.error_type"); err != nil {
+	if err := insert(ctx, tx, "operations", []string{"operation_id", "session_id", "started_at_utc", "ended_at_utc", "client", "backend", "model", "status", "error_type"}, []any{id(g.ID), nullable(id(g.SessionID)), dbTime(g.StartedAt), nullableTime(g.EndedAt), code(clients, g.Client), code(backends, g.Backend), nullable(g.Model), code(operationStatus, g.Status), errorCode(g.ErrorType)}, "ON CONFLICT(operation_id) DO UPDATE SET ended_at_utc=excluded.ended_at_utc,status=excluded.status,error_type=excluded.error_type"); err != nil {
 		return err
 	}
 	for _, t := range g.Turns {
+		var previousOperation string
+		err := tx.QueryRowContext(ctx, "SELECT operation_id FROM turns WHERE turn_id=?", id(t.TurnID)).Scan(&previousOperation)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if err == nil && previousOperation != id(g.ID) {
+			return ErrInvalid
+		}
 		requestID, err := existingID(ctx, tx, "requests", "request_id", t.RequestID)
 		if err != nil {
 			return err
 		}
 		cols := []string{"turn_id", "operation_id", "sequence", "request_id", "started_at_utc", "duration_ms", "outcome", "error_type"}
-		args := []any{id(t.TurnID), id(g.ID), t.Sequence, requestID, dbTime(t.StartedAt), t.DurationMS, code(outcomes, t.Outcome), code(errorsList, t.ErrorType)}
+		args := []any{id(t.TurnID), id(g.ID), t.Sequence, requestID, dbTime(t.StartedAt), t.DurationMS, code(outcomes, t.Outcome), errorCode(t.ErrorType)}
 		for _, pair := range []struct {
 			key string
 			m   domain.Metric
@@ -88,7 +105,7 @@ func recordGraph(ctx context.Context, tx *sql.Tx, g *domain.OperationGraph) erro
 			duration = *t.Duration.Value
 		}
 		cols := []string{"tool_event_id", "operation_id", "turn_sequence", "sequence", "tool_name", "started_at_utc", "duration_ms", "status", "error_type", "duration_quality", "duration_source", "duration_source_version", "duration_derivation_version"}
-		args := []any{id(t.ID), id(g.ID), t.TurnSequence, t.Sequence, t.Name, dbTime(t.StartedAt), duration, code(toolStatus, t.Status), code(errorsList, t.ErrorType), code(qualities, t.Duration.Quality), code(sources, t.Duration.Source), t.Duration.SourceVersion, nullable(t.Duration.DerivationVersion)}
+		args := []any{id(t.ID), id(g.ID), t.TurnSequence, t.Sequence, t.Name, dbTime(t.StartedAt), duration, code(toolStatus, t.Status), errorCode(t.ErrorType), code(qualities, t.Duration.Quality), code(sources, t.Duration.Source), t.Duration.SourceVersion, nullable(t.Duration.DerivationVersion)}
 		var updates []string
 		for _, c := range cols[6:] {
 			updates = append(updates, c+"=excluded."+c)

@@ -195,7 +195,7 @@ func (s *Store) ApplyRetention(ctx context.Context, r Retention, now time.Time) 
 		return 0, nil
 	}
 	days := []int{7, 30, 90}[n]
-	cutoff := now.UTC().Add(-time.Duration(days) * 24 * time.Hour).Truncate(100 * time.Nanosecond).Add(-100 * time.Nanosecond)
+	cutoff := now.UTC().Add(-time.Duration(days) * 24 * time.Hour).Add(-time.Nanosecond).Truncate(100 * time.Nanosecond)
 	scope := ClearScope{To: &cutoff}
 	total := 0
 	for _, table := range deletionTables {

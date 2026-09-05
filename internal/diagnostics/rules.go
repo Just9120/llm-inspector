@@ -206,8 +206,10 @@ var errorExplanations = map[string]string{
 	"timeout":             "Зафиксирован typed timeout подключения или ответа backend.",
 	"context_overflow":    "Backend вернул HTTP 413 либо allowlisted context-overflow code.",
 	"client_cancellation": "Клиент отменил запрос; это не считается сбоем backend или Inspector.",
+	"client_cancelled":    "Клиент отменил запрос; это не считается сбоем backend или Inspector.",
 	"backend_crash":       "Соединение backend оборвалось после начала ответа; падение процесса без process evidence не утверждается.",
 	"backend_unavailable": "Backend недоступен; данных для более точной категории недостаточно.",
 	"relay_failure":       "Передача ответа прервана; источник сбоя не доказан.",
+	"relay_failed":        "Передача ответа прервана; категория ошибки сама по себе не доказывает источник сбоя.",
 	"inspector_failure":   "Typed internal source сообщил ошибку Inspector.",
 }

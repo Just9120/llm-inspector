@@ -24,6 +24,18 @@ var stageEvidence = []string{"protocol_observed", "backend_reported"}
 var operationStatus = []string{"running", "completed", "cancelled", "error"}
 var toolStatus = []string{"started", "completed", "error"}
 
+// ProxyErrorType and HistoryErrorType had distinct .NET enums. Preserve their
+// reviewed mapping instead of rejecting cancellation/relay observations.
+func errorCode(value string) int {
+	switch value {
+	case "client_cancellation":
+		return 2
+	case "relay_failure", "inspector_failure":
+		return 3
+	}
+	return code(errorsList, value)
+}
+
 func code[T ~string](values []string, v T) int { return slices.Index(values, string(v)) }
 func decode(values []string, n int) (string, error) {
 	if n < 0 || n >= len(values) {
@@ -49,7 +61,7 @@ func id(s string) string {
 func validOptionalID(s string) bool         { return s == "" || id(s) != "" }
 func validOptionalIdentifier(s string) bool { return s == "" || domain.TechnicalIdentifier(s) != "" }
 func finiteDuration(v float64) bool {
-	return v >= 0 && v <= float64(math.MaxInt64)/1e6 && !math.IsInf(v, 0) && !math.IsNaN(v)
+	return v >= 0 && v < float64(math.MaxInt64)/1e6 && !math.IsInf(v, 0) && !math.IsNaN(v)
 }
 
 func metricArgs(m domain.Metric, unit domain.Unit) ([]any, error) {

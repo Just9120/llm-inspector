@@ -194,3 +194,31 @@ func TestClearRequiresExactPreviewAndScope(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCorrelationIdentityCannotBeReassignedAcrossClients(t *testing.T) {
+	s := testStore(t)
+	o := observation(1)
+	g := graph(o)
+	o.Operation = &g
+	if err := s.Record(t.Context(), o); err != nil {
+		t.Fatal(err)
+	}
+	other := g
+	other.Client = domain.Hermes
+	if err := s.RecordOperation(t.Context(), other); !errors.Is(err, ErrInvalid) {
+		t.Fatal("operation identity reused", err)
+	}
+	other.ID = "abcdefabcdefabcdefabcdefabcdefab"
+	if err := s.RecordOperation(t.Context(), other); !errors.Is(err, ErrInvalid) {
+		t.Fatal("session identity reused", err)
+	}
+	other.Client = g.Client
+	other.SessionID = ""
+	if err := s.RecordOperation(t.Context(), other); !errors.Is(err, ErrInvalid) {
+		t.Fatal("turn identity reused", err)
+	}
+	d, err := s.Operation(t.Context(), g.ID)
+	if err != nil || d.Graph.Client != domain.Generic {
+		t.Fatal("original graph altered", err)
+	}
+}
