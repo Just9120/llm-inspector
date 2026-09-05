@@ -21,8 +21,8 @@
 |---|---|---|
 | G06-01 | Canonical spec содержит 4 согласованных stack/UX AC; Goal, migration boundaries и denominator явны | DONE |
 | G06-02 | Go proxy/adapters сохраняют HTTP/SSE bytes/order, cancellation, quality/provenance и privacy по regression corpus | DONE — PR #34, PR/main CI PASS |
-| G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | IN PROGRESS — live/correlation/tools implemented; diagnostics next |
-| G06-04 | Go SQLite/history/analytics/retention/snapshot/export сохраняют ранее committed data и content allowlist | PENDING |
+| G06-03 | Go live state, tokens/context/timings, operations/tools и diagnostics имеют parity с реализованными contracts | IN PROGRESS — core validated in PR #35; final storage/UI integration remains |
+| G06-04 | Go SQLite/history/analytics/retention/snapshot/export сохраняют ранее committed data и content allowlist | IN PROGRESS — schema v1–v5 migration, restart and query tests PASS; analytics/export remain |
 | G06-05 | Windows resource/GPU collectors, tray/background/autostart/notifications, performance profiles перенесены | PENDING |
 | G06-06 | B01 lifecycle и B02 secure remote перенесены с прежними ownership/confirmation/DPAPI/loopback boundaries | PENDING |
 | G06-07 | Русский Wails v2/Svelte-TypeScript UI предоставляет все функции через понятную навигацию и progressive disclosure | PENDING |
@@ -33,16 +33,16 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T05:57:27Z |
-| Base branch / SHA | main / `1ffb485277a7b12ad54657119de4dc268dfa997a` |
-| Working branch | `codex/goal-006-go-telemetry` |
-| Last verified revision | `a1ea68d176d57efe1fb9d4cb4b7238077f083a9b` — live/correlation/tools + Russian diagnostics local tests PASS; base exact-main CI `33948852046` SUCCESS |
+| Updated UTC | 2026-09-05T06:47:47Z |
+| Base branch / SHA | main / `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87` |
+| Working branch | `codex/goal-006-go-storage` |
+| Last verified revision | `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87` — exact main CI PASS; storage foundation working changes validated locally |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranche 1 merged. Tranche 2: bounded live state/ETA, exact adjacent context delta, streaming tool-name/count projection without content decode, bounded operation graphs, typed HTTP/transport errors and gateway integration pass local regression tests. Wails v2.15.0 CLI installed; doctor confirms WebView2 152.0.4191.62 and Windows prerequisites |
-| Current step | Tranche 2 — live telemetry, context correlation, agent operations/tools и diagnostics |
-| Next exact action | Complete tranche-2 robustness review/fuzz and full local validation, then initial push and PR |
+| Current step | Tranche 3 — SQLite/history compatibility; modernc.org/sqlite v1.58.0 locked, unchanged legacy v1–v5 SQL, single writer/WAL/read-only query pool, technical allowlist validation |
+| Next exact action | Commit validated storage foundation, then implement operation/resource reads, retention, analytics and snapshot/export |
 | Validation / Evidence | Go formatting/mod verify/vet/build, 41 tests + fuzz seeds PASS; diagnostics statement coverage 97.1%, state 91.1%, parser 90.3% (not product readiness). Fuzz 641236 executions / 10s PASS; gateway/state 20 repeats PASS. Full reference .NET locked restore/format/build/260 tests/RID publish/smoke PASS. Local race detector not run (no C compiler); concurrency tested deterministically. No Go desktop runtime/LIVE claim |
-| PR / CI | PR #34 MERGED; PR CI `33948720562` and exact-main CI `33948852046` SUCCESS. Initial push once; no reruns; merged local/remote branch safely deleted. Tranche-2 PR not opened until local validation |
+| PR / CI | PR #35 merged at `62a7a319f2cb0a9f51becffa13ae1cc5e2386d87`; PR CI `33949980492` and main CI `33950314660`: windows-go/windows-dotnet SUCCESS. Local/remote merged branches removed. Storage: no push/PR yet. No speculative reruns |
 | Deployment / release | N/A; no publication authorized |
 | Blockers / external gates | CI/CD stack/commands reconciliation explicitly authorized; no implementation blocker. Existing manual performance/Windows/two-host gates remain separate |
 | Preserved pre-existing changes | None |

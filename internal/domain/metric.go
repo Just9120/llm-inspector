@@ -17,6 +17,7 @@ const (
 	Unavailable     Quality = "unavailable"
 	Tokens          Unit    = "tokens"
 	TokenDelta      Unit    = "token_delta"
+	Nanoseconds     Unit    = "nanoseconds"
 	Milliseconds    Unit    = "milliseconds"
 	TokensPerSecond Unit    = "tokens_per_second"
 	Percent         Unit    = "percent"
@@ -62,7 +63,7 @@ func (m Metric) Validate() error {
 		return invalid
 	}
 	switch m.Unit {
-	case Tokens, TokenDelta, Milliseconds, TokensPerSecond, Percent, Count, Bytes, Celsius, Watts:
+	case Tokens, TokenDelta, Nanoseconds, Milliseconds, TokensPerSecond, Percent, Count, Bytes, Celsius, Watts:
 	default:
 		return invalid
 	}
