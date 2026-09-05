@@ -18,6 +18,11 @@
 - Windows PR [#37](https://github.com/Just9120/llm-inspector/pull/37): head `e0945e08357c7a9f38ff66634548a222bdd5a312`, merge `976a8214d2ca3b3f0e9da02522eeef913122065f` at `2026-09-05T08:07:54Z`; PR CI `33954262844`, main CI `33954426102`: windows-go/windows-dotnet SUCCESS. One initial push; no CI failure batch or speculative rerun.
 - Local: 98 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, native probes/hidden HWND tests, 50 background repeats and 10 resource/background pipeline repeats passed. Settings/autostart fixtures did not modify user registration. No real tray notification or manual Windows/performance Evidence claimed. Local/remote `codex/goal-006-go-windows` safely removed; main synced to merge revision.
 
+## GOAL-006 — completed increment 5 (Goal remains active)
+
+- Connectivity/lifecycle PR [#38](https://github.com/Just9120/llm-inspector/pull/38): head `f9e0ccdfc55b527d8ba5ab84daff3a842fcd21a5`, merge `ee32a97fd63110abe7688b48994579d97f8fdb05` at `2026-09-05T09:27:11Z`; PR CI `33957842755`, main CI `33958021155`: windows-go/windows-dotnet SUCCESS. One initial push and one grouped test-fixture correction after confirmed initial CI `33957494031` failure; no speculative rerun.
+- Local: 131 Go test functions + fuzz seeds, full .NET 260-test reference publish/smoke, native synthetic attached/detached process ownership/cleanup, exact model identity, DPAPI interoperability and bounded authenticated ingress/probe tests PASS. Full lifecycle suite 3 repeats; corrected fixtures 3 repeats; artifact truncation test 10 repeats after one unconfirmed local Windows TempDir-cleanup transient. Installed backends/models/user credentials/settings unchanged. Local/remote `codex/goal-006-go-connectivity` safely removed after main synchronization; no release/CD or Goal closure.
+
 ## Release strategy correction — single `main`, final-only publication
 
 - **Authorization:** explicit user decision от `2026-09-04`: версия остаётся `1.0` до полного тестирования и финальной публикации; отдельная `release/v1.0` line не нужна.

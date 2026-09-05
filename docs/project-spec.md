@@ -466,8 +466,8 @@ Migration checkpoint `GOAL-006`, base `c611856`: текущая оценивае
 | EPIC-11 | 🟦 IN PROGRESS | 0/10 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | EPIC-12 | 🟦 IN PROGRESS | 0/13 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
 | **Initial release total** | **🟦 IN PROGRESS** | **0/143** | **0%** | **✅** | **—** | **—** | **—** | **N/A** | **N/A** |
-| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | ◐ | ◐ | — | N/A | N/A |
-| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | ◐ | ◐ | — | N/A | — |
+| BACKLOG-01 | 🟦 IN PROGRESS | 0/5 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
+| BACKLOG-02 | 🟦 IN PROGRESS | 0/9 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | — |
 | BACKLOG-03 | ⬜ BACKLOG | 0/3 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-04 | ⬜ BACKLOG | 0/2 | 0% | ✅ | — | — | — | N/A | N/A |
 | BACKLOG-05 | 🟦 IN PROGRESS | 0/3 | 0% | ✅ | ◐ | ◐ | ◐ | N/A | N/A |
@@ -481,6 +481,8 @@ Go core Evidence: foundation PR #34 (`1ffb485`, exact-main CI `33948852046` PASS
 Последующие operational Evidence: Windows PR #37 (`976a821`, PR CI `33954262844`, main CI `33954426102`: оба jobs SUCCESS). Tranche-5 remote credentials/ingress/probe локально проверены: native DPAPI и synthetic .NET interoperability, one-time rotation/revocation, default deny, private-Serve/token guards, secret scrubbing и отдельная calculated DNS+TCP latency. Реального two-host LIVE нет; final Wails product surface ещё не подключён.
 
 Tranche-5 lifecycle core локально проверен: target/parameter confirmation, serialized/idempotent operations, uncapped active-request gate, exact installed/loaded model identities, partial-start cleanup, PID/start/path + Job Object ownership, attached/detached synthetic Windows listeners, capture-time output bounds и no-redirect local HTTP. Установленные backend processes/модели не запускались и не изменялись. Readiness остаётся 0/143 и 0/168 до final product wiring; CODE/TEST B01 — partial, а не READY.
+
+Tranche-5 terminal CI Evidence: PR #38 merge `ee32a97`, PR CI `33957842755`, exact-main CI `33958021155`: windows-go/windows-dotnet SUCCESS. B01/B02 CI — partial для core; desktop wiring и внешние manual/LIVE gates не заменяются CI.
 
 ## 8. Resolved decisions и external gates
 
