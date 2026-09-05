@@ -56,6 +56,7 @@ type ViewState struct {
 	Operation           *domain.OperationGraph        `json:"operation"`
 	Resources           []domain.ResourceSample       `json:"resources"`
 	Diagnostics         []diagnostics.Conclusion      `json:"diagnostics"`
+	DiagnosticResource  *domain.ResourceSample        `json:"diagnostic_resource"`
 	Hub                 HubHealth                     `json:"hub_health"`
 	Writer              history.BufferHealth          `json:"writer_health"`
 	Collectors          resources.Health              `json:"collector_health"`
@@ -211,14 +212,10 @@ func (e *Engine) Snapshot() ViewState {
 		value := e.RemoteBackend.Snapshot()
 		s.RemoteBackend = &value
 	}
-	var resource *domain.ResourceSample
-	for i := range s.Resources {
-		if s.Latest != nil && s.Resources[i].RequestID == s.Latest.RequestID {
-			resource = &s.Resources[i]
-			break
-		}
+	if s.Latest != nil && e.hub != nil {
+		s.DiagnosticResource = e.hub.DiagnosticResource(s.Latest.RequestID)
 	}
-	s.Diagnostics = diagnostics.Default().Evaluate(diagnostics.Input{Latest: s.Latest, Resource: resource, Live: s.Live, CapturedAt: s.CapturedAt})
+	s.Diagnostics = diagnostics.Default().Evaluate(diagnostics.Input{Latest: s.Latest, Resource: s.DiagnosticResource, Live: s.Live, CapturedAt: s.CapturedAt})
 	return s
 }
 

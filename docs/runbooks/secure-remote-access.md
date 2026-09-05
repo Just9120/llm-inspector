@@ -6,7 +6,7 @@
 
 ## 1. Что реализовано
 
-LLM Inspector никогда не открывает LAN/public listener: Kestrel продолжает слушать один literal-loopback endpoint `127.0.0.1`. Private ingress создаётся только отдельной явной командой пользователя через Tailscale Serve. Inspector не устанавливает Tailscale, не выполняет login, не меняет tailnet ACL и не запускает/останавливает Serve.
+LLM Inspector никогда не открывает LAN/public listener: Go HTTP gateway продолжает слушать один literal-loopback endpoint `127.0.0.1`. Private ingress создаётся только отдельной явной командой пользователя через Tailscale Serve. Inspector не устанавливает Tailscale, не выполняет login, не меняет tailnet ACL и не запускает/останавливает Serve.
 
 У ingress два независимых authentication factors:
 
@@ -29,7 +29,7 @@ Remote backend задаётся только explicit option `--remote-backend-u
 ## 3. Включение Inspector ingress
 
 1. Запустите Inspector локально и проверьте в UI exact loopback listener/port.
-2. В разделе «Защищённый remote access» подтвердите все четыре условия: private HTTPS Serve, user identity, intended ACL, Funnel выключен.
+2. В разделе «Настройки → Защищённый удалённый доступ» подтвердите все четыре условия: private HTTPS Serve, user identity, intended ACL, Funnel выключен.
 3. Нажмите «Создать token и включить».
 4. Скопируйте показанный token непосредственно в secret storage клиента. После скрытия token Inspector его повторно не показывает; при потере выполните rotation.
 5. В отдельном PowerShell пользователя, управляющего Tailscale, выполните для default port:
@@ -84,13 +84,13 @@ tailscale funnel status
 На Inspector PC запустите exact executable с explicit remote target:
 
 ```powershell
-.\LlmInspector.App.exe --backend=ollama --remote-backend-url=https://<backend-node>.<tailnet>.ts.net/
+.\LlmInspector.exe --backend=ollama --remote-backend-url=https://<backend-node>.<tailnet>.ts.net/
 ```
 
 Для development run:
 
 ```powershell
-dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore -- --backend=ollama --remote-backend-url=https://<backend-node>.<tailnet>.ts.net/
+.\build\bin\LlmInspector.exe --backend=ollama --remote-backend-url=https://<backend-node>.<tailnet>.ts.net/
 ```
 
 UI отдельно показывает:
@@ -128,7 +128,7 @@ tailscale serve status
 
 | Threat | Control | Residual / gate |
 |---|---|---|
-| LAN/public доступ к Inspector | Единственный Kestrel bind — `127.0.0.1`; generic ASP.NET URL config игнорируется | Local same-user/process threats вне network boundary |
+| LAN/public доступ к Inspector | Единственный Go HTTP bind — `127.0.0.1`; environment URL/bind overrides не применяются | Local same-user/process threats вне network boundary |
 | Funnel/public proxy | Non-loopback Host без Tailscale user identity получает `403`; runbook требует отдельную проверку Funnel status | Пользователь всё ещё может вручную настроить запрещённый Funnel; это не действие Inspector |
 | Tailnet participant без разрешения | Tailnet ACL + Serve user identity + separate bearer token | Tagged devices без user identity отклоняются в first profile |
 | Stolen/replayed application token | 256-bit random token, constant-time compare, immediate rotation/revocation | Bearer token остаётся replayable до rotation; клиент обязан защищать secret |

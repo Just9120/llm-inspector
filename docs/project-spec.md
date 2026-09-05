@@ -121,7 +121,7 @@ Acceptance criteria:
 - `E01-AC01`: Application распространяется и запускается как desktop application на каждой Windows version из утверждённой support matrix. [source: `UP-C01-01`]
 - `E01-AC02`: Desktop UI содержит доступные пользователю monitoring, analytics и diagnostics surfaces. [source: `UP-C01-01`, `UP-C01-02`]
 - `E01-AC03`: Initial release подключается к LLM backends на том же Windows PC. [source: `UP-C01-04`]
-- `E01-AC04`: Initial release не содержит команд запуска, остановки, restart, загрузки моделей или изменения backend runtime parameters. [source: `UP-C01-03`]
+- `E01-AC04`: Наблюдение работает без управления lifecycle backend. Команды запуска, остановки, restart, загрузки моделей и изменения allowlisted runtime parameters доступны отдельно в BACKLOG-01 только после явного подтверждения точного runtime; наблюдение их не выполняет автоматически. [source: `UP-C01-03`, explicit owner reconciliation `2026-09-05`]
 
 - `E01-AC05`: Production core и final Windows executable используют Go, без зависимости production/release path от C#/.NET/Avalonia. [source: user-approved `GOAL-006`, upstream stack amendment]
 - `E01-AC06`: Desktop shell использует stable Wails v2, frontend — Svelte/TypeScript; dependency graph воспроизводимо зафиксирован. [source: user-approved `GOAL-006`, upstream stack amendment]

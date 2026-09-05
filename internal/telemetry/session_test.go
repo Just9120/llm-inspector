@@ -11,7 +11,7 @@ import (
 )
 
 func TestExistingBackendFixturesEveryChunkBoundary(t *testing.T) {
-	root := "../../tests/LlmInspector.ContractTests/Fixtures/epic02/v1"
+	root := "testdata/epic02/v1"
 	for _, backend := range []domain.Backend{domain.Ollama, domain.LlamaCpp, domain.LMStudio} {
 		for _, kind := range []string{"nonstreaming.json", "streaming.sse"} {
 			name := string(backend) + "-" + kind
@@ -48,7 +48,7 @@ func TestExistingBackendFixturesEveryChunkBoundary(t *testing.T) {
 }
 
 func TestUsageDetailsAndProvenance(t *testing.T) {
-	data, err := os.ReadFile("../../tests/LlmInspector.ContractTests/Fixtures/openai-chat/v2/usage-details.json")
+	data, err := os.ReadFile("testdata/openai-chat/v2/usage-details.json")
 	if err != nil {
 		t.Fatal(err)
 	}

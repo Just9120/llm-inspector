@@ -23,9 +23,8 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       source-created-at: ${{ steps.release.outputs.source-created-at }}
     env:
-      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-      DOTNET_NOLOGO: "1"
-      NUGET_XMLDOC_MODE: skip
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
     steps:
       - name: Checkout exact tagged revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,37 +61,34 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "source-created-at=$created" >> $env:GITHUB_OUTPUT
 
-      - name: Install pinned .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - name: Install pinned Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          global-json-file: global.json
+          go-version-file: .go-version
+          cache: false
 
-      - name: Record toolchain
-        run: dotnet --info
+      - name: Install pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
 
-      - name: Restore locked dependency graph
-        run: dotnet restore LlmInspector.slnx --locked-mode
+      - name: Install pinned npm on ephemeral runner
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath .npm-version -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid npm pin.' }
+          npm install --global "npm@$version" --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Verify formatting
-        run: dotnet format LlmInspector.slnx --verify-no-changes --no-restore
-
-      - name: Build release configuration
-        run: dotnet build LlmInspector.slnx -c Release --no-restore
-
-      - name: Run tests
-        run: dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"
-
-      - name: Restore locked win-x64 graph
-        run: dotnet restore src/LlmInspector.App/LlmInspector.App.csproj --locked-mode -r win-x64
-
-      - name: Publish exact portable executable once
+      - name: Validate and build exact Windows executable once
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
-        run: dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/publish -p:Version=$env:RELEASE_VERSION
-
-      - name: Verify single-file launch
-        run: .\artifacts\publish\LlmInspector.App.exe --smoke-test
+        run: |
+          $config = Get-Content -LiteralPath wails.json -Raw | ConvertFrom-Json
+          if ($config.info.productVersion -ne $env:RELEASE_VERSION) { throw 'Tag differs from reviewed product version.' }
+          ./scripts/build-windows.ps1
 
       - name: Create checksum, SBOM, manifest and release notes
         shell: pwsh
@@ -103,8 +99,7 @@ jobs:
           SOURCE_REPOSITORY: ${{ github.repository }}
         run: |
           .\eng\release\New-ReleasePayload.ps1 `
-            -PublishDirectory .\artifacts\publish `
-            -AssetsFile .\src\LlmInspector.App\obj\project.assets.json `
+            -PublishDirectory .\build\bin `
             -OutputDirectory .\artifacts\release-payload `
             -Version $env:RELEASE_VERSION `
             -SourceSha $env:SOURCE_SHA `

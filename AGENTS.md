@@ -187,21 +187,21 @@ Post-deploy metadata write без отдельного PR допустим то�
 
 Не меняй CI/CD safety contract, credential model, deployment topology или production operations без explicit scope. Failed, skipped, cancelled, timed-out, unavailable и not-run required checks не являются success.
 
-Команды ниже проверяются из repository root с exact SDK из `global.json`. `dotnet restore` должен оставаться в locked mode; изменение SDK/package versions требует reviewed lock-file update.
+Команды ниже выполняются из repository root в PowerShell 7 на Windows x64. Exact Go/Node/npm pins — `.go-version`, `.node-version`, `.npm-version`; Go dependencies — `go.mod`/`go.sum`, frontend — `frontend/package-lock.json`. `GOTOOLCHAIN=local`, `GOFLAGS=-mod=readonly`, `npm ci`; изменение toolchain/package versions требует reviewed lock-file update. Wails CLI `v2.15.0` устанавливается build script в `artifacts/tools`, не глобально. WebView2 Runtime должен быть установлен; Inspector не скачивает его автоматически. Первый full build генерирует ignored bindings/assets, необходимые для отдельных frontend/root checks.
 
 | Назначение | Команда |
 |---|---|
-| Install / restore | `dotnet restore LlmInspector.slnx --locked-mode` |
-| Format/lint | `dotnet format LlmInspector.slnx --verify-no-changes --no-restore` |
-| Typecheck | `dotnet build LlmInspector.slnx -c Release --no-restore` |
-| Focused tests | `dotnet test tests/LlmInspector.UnitTests/LlmInspector.UnitTests.csproj -c Release --no-build` |
-| Full tests | `dotnet test LlmInspector.slnx -c Release --no-build --logger "console;verbosity=minimal"` |
-| Build | `dotnet build LlmInspector.slnx -c Release --no-restore` |
-| Run locally | `dotnet run --project src/LlmInspector.App/LlmInspector.App.csproj --no-restore` |
-| RID restore | `dotnet restore src/LlmInspector.App/LlmInspector.App.csproj --locked-mode -r win-x64` |
-| Publish | `dotnet publish src/LlmInspector.App/LlmInspector.App.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/win-x64` |
-| Publish smoke | `.\artifacts\win-x64\LlmInspector.App.exe --smoke-test` |
-| CI-equivalent | Выполнить команды restore → format → build → full tests → RID restore → publish → publish smoke в указанном порядке; canonical automation — `.github/workflows/ci.yml` |
+| Install / restore | `go mod download`; `npm --prefix frontend ci --ignore-scripts --no-audit --no-fund` |
+| Format/lint | `./scripts/validate-go.ps1`; `npm --prefix frontend run check` |
+| Typecheck | `go vet ./...`; `npm --prefix frontend run check` |
+| Focused tests | `go test ./internal/<package> -count=1 -timeout 60s` |
+| Full tests | `go test ./... -count=1 -timeout 60s`; `npm --prefix frontend test` |
+| Build | `./scripts/build-windows.ps1` — locked dependencies, checks/tests, Wails build и native smoke |
+| Run locally | `./build/bin/LlmInspector.exe` |
+| Windows target | `windows/amd64`, portable `build/bin/LlmInspector.exe`, Go runtime/frontend embedded |
+| Release payload check | `./eng/release/Test-ReleaseTools.ps1` — локальная проверка без публикации |
+| Publish smoke | `./scripts/smoke-windows.ps1` — actual GUI process exit и WebView2/bridge/privacy completion marker |
+| CI-equivalent | `./scripts/build-windows.ps1` → `./eng/release/Test-ReleaseTools.ps1`; canonical automation — `.github/workflows/ci.yml` |
 
 Не добавляй heavy testing infrastructure только ради заполнения таблицы.
 

@@ -3,7 +3,7 @@
   "name": "LLM Inspector",
   "outputfilename": "LlmInspector.exe",
   "frontend:install": "npm ci --ignore-scripts --no-audit --no-fund",
-  "frontend:build": "npm run build",
+  "frontend:build": "npm run validate",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {"name": "Just9120"},

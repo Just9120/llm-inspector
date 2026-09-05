@@ -17,7 +17,7 @@ func TestNativeFixturesEveryChunkBoundary(t *testing.T) {
 		{"cold-streaming.sse", 329, 268, 3250, "cold"}, {"warm-streaming.sse", 350, 20, 0, "warm"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := os.ReadFile("../../tests/LlmInspector.ContractTests/Fixtures/epic04/lm-studio-native-v1/" + tc.name)
+			data, err := os.ReadFile("testdata/epic04/lm-studio-native-v1/" + tc.name)
 			if err != nil {
 				t.Fatal(err)
 			}

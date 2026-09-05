@@ -21,7 +21,7 @@ rules — в [`../ci-cd-rules.md`](../ci-cd-rules.md). Workflow: `.github/workfl
 ## Preconditions
 
 1. Release source merged в `main`; local `main`, `origin/main` и intended SHA совпадают.
-2. Exact-main `CI / windows-dotnet` на intended SHA завершён success без required skips.
+2. Exact-main `CI / windows-go` на intended SHA завершён success без required skips.
 3. Все согласованные обязательные automated, manual Windows и integration gates для публикации
    зафиксированы с exact source/artifact identity; unresolved required gate блокирует tag.
 4. Intended tag имеет exact final SemVer form `vMAJOR.MINOR.PATCH`, без prerelease suffix, и ещё не
@@ -64,7 +64,7 @@ patch/minor version только после повторной required validati
 
 1. Fail closed проверить exact final SemVer без prerelease suffix и достижимость tagged SHA из
    `origin/main`.
-2. На ephemeral `windows-2025` выполнить locked restore, format, Release build и полный test suite.
+2. На ephemeral `windows-2025` выполнить `scripts/build-windows.ps1`: exact Go/Node/npm pins, readonly Go modules, locked npm install, format/vet/Svelte checks, полный Go/Node test suite и native smoke.
 3. Один раз собрать single-file `LlmInspector-<version>-win-x64.exe` и smoke-test именно его.
 4. Сформировать SHA-256, `portable-release-v1` manifest, SPDX 2.3 SBOM и русскоязычное предупреждение
    об unsigned/SmartScreen/manual-update boundary.
@@ -98,7 +98,7 @@ attestation URLs/verification и terminal statuses.
 ## Manual Windows gate
 
 До final tag один exact candidate hash из intended `main` SHA отдельно проверяется на Windows 11
-`25H2` Home x64 и Pro x64: запуск без установленного .NET/runtime и admin rights, SmartScreen
+`25H2` Home x64 и Pro x64: запуск без Go/Node/.NET и admin rights, с установленным WebView2 Runtime (без автоматического скачивания), SmartScreen
 guidance, tray/background, local proxy, SQLite restart/recovery и critical supported backend/client
 flow. После публикации identity public artifact сверяется с pre-publication candidate. До полного
 Evidence `E01-AC01` не получает credit, а final release tag не создаётся.

@@ -116,10 +116,12 @@
             })}>Подтверждаю runtime и endpoint</button
         >{:else}<span class="badge success">Цель подтверждена</span>{/if}
       <details>
-        <summary>Evidence и ограничения версии</summary
-        >{#each snapshot.target.compatibility.limitations ?? [] as limitation}<p>
-            {limitation}
-          </p>{/each}
+        <summary>Evidence и ограничения версии</summary>
+        <p>
+          Матрица содержит исторические проверки точных версий. Совместимость текущей Go-сборки с
+          реальным runtime проверяется отдельно. Технический отчёт ниже сохраняет исходные
+          identifiers и ограничения.
+        </p>
         <pre>{JSON.stringify(snapshot.target.compatibility, null, 2)}</pre>
       </details>
     </div>

@@ -27,6 +27,7 @@ type Hub struct {
 	mu                                                         sync.RWMutex
 	latest                                                     *domain.Observation
 	operation                                                  *domain.OperationGraph
+	diagnosticResource                                         *domain.ResourceSample
 	observations                                               chan domain.Observation
 	resources                                                  chan []domain.ResourceSample
 	closed                                                     chan struct{}
@@ -70,6 +71,22 @@ func (h *Hub) OfferResources(samples []domain.ResourceSample) bool {
 }
 func (h *Hub) Health() HubHealth {
 	return HubHealth{h.count.Load(), h.historyDropped.Load(), h.resourceDropped.Load(), h.projectionFailures.Load()}
+}
+
+// Keep one actual nonterminal sample for the latest completed request. Terminal
+// samples deliberately have fresh traffic but missing CPU/GPU values; they must
+// not erase historical diagnostic evidence or masquerade as a fresh GPU probe.
+func (h *Hub) DiagnosticResource(requestID string) *domain.ResourceSample {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.diagnosticResource == nil || h.diagnosticResource.RequestID != requestID {
+		return nil
+	}
+	var result *domain.ResourceSample
+	if data, err := json.Marshal(h.diagnosticResource); err == nil {
+		_ = json.Unmarshal(data, &result)
+	}
+	return result
 }
 func (h *Hub) Latest() (*domain.Observation, *domain.OperationGraph) {
 	h.mu.RLock()
@@ -128,6 +145,7 @@ func (h *Hub) observe(o domain.Observation) {
 	h.mu.Lock()
 	h.latest = &projection
 	h.operation = operation
+	h.diagnosticResource = nil
 	h.mu.Unlock()
 	h.count.Add(1)
 	if h.history != nil {
@@ -142,6 +160,19 @@ func (h *Hub) observe(o domain.Observation) {
 	}
 }
 func (h *Hub) recordResources(samples []domain.ResourceSample) {
+	h.mu.Lock()
+	if h.latest != nil {
+		for i := range samples {
+			sample := &samples[i]
+			if sample.RequestID != h.latest.RequestID || sample.Stage == nil || sample.Stage.Terminal() {
+				continue
+			}
+			if h.diagnosticResource == nil || sample.CapturedAt.After(h.diagnosticResource.CapturedAt) {
+				h.diagnosticResource = sample
+			}
+		}
+	}
+	h.mu.Unlock()
 	if h.history != nil {
 		h.history.OfferResourceTimeline(samples)
 	}

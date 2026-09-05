@@ -14,6 +14,7 @@
 - **Required Evidence:** SPEC/CODE/TEST/CI подтверждены для доставленных increments; локальная Windows build/smoke и regression parity для конечного artifact. DEPLOY/LIVE — N/A для Goal; product B02 LIVE по-прежнему обязателен до READY.
 - **Stop condition:** все Goal AC выполнены и merged branches safely removed (`DONE`); либо конкретный неустранимый scope blocker/external gate после завершения независимой работы.
 - **Safety:** CI/CD safety contract, permissions, trusted release trigger и production operations не ослабляются. Owner от `2026-09-05` явно разрешил обновить **только стек и команды** в `AGENTS.md` и Project CI/CD profile при cutover; safety rules, permissions, release gates и disabled CD остаются неизменными.
+- **Точечное согласование:** owner `2026-09-05` разрешил уточнить только E01-AC04: наблюдение не выполняет lifecycle автоматически; отдельный B01 доступен после explicit exact-target confirmation. Другие product AC и denominator не изменены.
 
 ### Goal acceptance criteria
 
@@ -33,14 +34,14 @@
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T11:07:24Z |
+| Updated UTC | 2026-09-05T11:42:34Z |
 | Base branch / SHA | main / `ee32a97fd63110abe7688b48994579d97f8fdb05` |
 | Working branch | `codex/goal-006-go-desktop` |
-| Last verified revision | `a83ad3fb809a0384de588a4b58dc5ad310780545` — local Go/Wails desktop/smoke increment; subsequent runtime-evidence fixes validated locally |
+| Last verified revision | `5d144949d5a79cac4ea349982bce8e0732827db2` — runtime/version/operation wiring; subsequent final cutover worktree locally validated |
 | Worktree state | Clean at start; only GOAL-006 changes |
 | Completed work | Tranches 1–4 merged and verified (exact IDs in archive). Tranche 5: bounded DPAPI store/token lifecycle, private ingress and network probe; typed lifecycle profiles/manager/adapters, exact model confirmation, native suspended start/job ownership, bounded CLI/HTTP, exact-process cleanup and safe external-process refusal |
 | Current step | Tranche 6 — Go/Wails executable и русский Svelte UI locally validated |
-| Next exact action | Packaging/release/CI cutover, preserve frozen reference fixtures, затем clean-build и полный AC-by-AC review |
+| Next exact action | Commit validated cutover; clean-source Windows build без старых generated assets, затем полный AC-by-AC review перед initial push/PR |
 | Validation / Evidence | Go formatting/mod verify/vet/build and 131 test functions + fuzz seeds PASS; lifecycle statement coverage 81.9%, remote 93.2%, gateway 87.7% (not readiness). Native attached/detached synthetic listener ownership/cleanup, bounded command output/HTTP, model identity/active-count/confirmation/concurrency tests PASS; full lifecycle suite 3 repeats PASS. Actual synthetic .NET DPAPI interoperability and previous 20-repeat remote tests PASS. .NET locked restore/format/build/260 tests/RID publish/smoke PASS (0 warnings/errors). No local race detector (no C compiler), no installed backend/model or real credentials/settings/Tailscale changed, no two-host LIVE claim |
 | PR / CI | PR #38 and exact-main CI `33958021155` SUCCESS (both jobs). Local main/origin/main synced at `ee32a97`; merged connectivity branches safely removed. Desktop branch local only; no PR yet |
 | Deployment / release | N/A; no publication authorized |
@@ -50,6 +51,8 @@
 CI correction validation: full Go CI-equivalent PASS; canonical-path/legacy-DPAPI tests each 3 repeats PASS. A separate local artifact-test `TempDir RemoveAll: directory not empty` failure occurred once; readback found the directory empty, focused test 10 repeats and subsequent full suite PASS. Cause remains unconfirmed (possible Windows filesystem transient); no production storage change or suppressed test. CI corrections affect test expectations/startup budget only; production ownership, crypto rules and all release gates unchanged.
 
 ## Project readiness snapshots
+
+Cutover validation `2026-09-05T11:42Z`: 149 internal Go test functions + fuzz seeds, root 2 tests/vet, frontend Prettier/Svelte/TypeScript/3 Node tests/Vite, native WebView2 five-screen/bridge/proxy/history/privacy smoke PASS. Executable SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`. Local release tools PASS: 100 SBOM dependencies, exact payload identity, duplicate checksum/wrong SHA/tamper rejection; ничего не опубликовано. Request-scoped historical diagnostic resource fixes прошли 3 repeats. 154 legacy source/config files удалены, 14 protocol fixtures перемещены без изменения, SQL/matrix reference закреплён независимыми hashes. README/architecture/runbooks отражают Go runtime. Clean-source reproduction и финальная пересверка AC ещё ожидаются; прежние runtime/user data не затронуты.
 
 Tranche-6 local validation: Go internal format/mod verify/vet/build и 143 test functions + fuzz seeds PASS; root vet/2 tests PASS. Frontend locked install (48 packages), Prettier, Svelte/TS (0 errors/warnings), 3 Node tests и Vite build PASS. Go/Wails Windows executable SHA-256 `59c97e1a4936249e1a50fda74142a194aebe4a8f6f1967675142697c8b84aafa`: actual process exit `0` после WebView2/bridge/proxy/SQLite/privacy smoke. Проверены все пять разделов, synthetic request в истории и custom-profile reactivity; обзор визуально проверен. Это local worktree artifact, не CI/release и не manual Windows matrix. Zero-time collector failure закрыт regression test; npm file lock от собственного preview устранён его остановкой и явным locked reinstall. Final build должен явно выполнять npm ci, не доверять Wails checksum cache.
 

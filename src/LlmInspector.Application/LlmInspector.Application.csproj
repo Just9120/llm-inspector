@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="../LlmInspector.Domain/LlmInspector.Domain.csproj" />
-  </ItemGroup>
-</Project>

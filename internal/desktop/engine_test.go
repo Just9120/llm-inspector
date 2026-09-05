@@ -50,7 +50,8 @@ type driverProbe struct {
 
 func (p *driverProbe) Capture(context.Context, *domain.ProcessAssociation) (resources.Snapshot, error) {
 	p.once.Do(func() { close(p.ready) })
-	return resources.Snapshot{CapturedAt: time.Now(), GPUs: []resources.GPU{{ID: "gpu-0", Driver: "590.41"}}}, nil
+	used, total := 95.0, 100.0
+	return resources.Snapshot{CapturedAt: time.Now(), GPUs: []resources.GPU{{ID: "gpu-0", Driver: "590.41", UsedMiB: &used, TotalMiB: &total}}}, nil
 }
 
 func TestRuntimeFactsReachUIHistoryAndSnapshotWithoutInventedVersions(t *testing.T) {
@@ -99,6 +100,20 @@ func TestRuntimeFactsReachUIHistoryAndSnapshotWithoutInventedVersions(t *testing
 	}
 	await(t, func() bool { return e.Snapshot().Writer.Written >= 2 })
 	facts := e.Snapshot().Latest.Runtime
+	diagnostic := e.Snapshot()
+	pressure := false
+	for _, item := range diagnostic.Diagnostics {
+		if item.Rule == "vram_pressure" && item.Kind == "fact" {
+			pressure = true
+		}
+	}
+	if !pressure || diagnostic.DiagnosticResource == nil || diagnostic.DiagnosticResource.RequestID != diagnostic.Latest.RequestID {
+		t.Fatal("completed resource diagnostics disconnected")
+	}
+	*diagnostic.DiagnosticResource.GPUVRAMUsed.Value = 0
+	if *e.Snapshot().DiagnosticResource.GPUVRAMUsed.Value == 0 {
+		t.Fatal("mutable diagnostic projection")
+	}
 	if facts == nil || facts.GPUDriverVersion != "590.41" || facts.ModelVersion != "model-v1" || facts.BackendVersion != "" || facts.ClientVersion != "" {
 		t.Fatal(facts)
 	}

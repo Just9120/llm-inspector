@@ -241,6 +241,12 @@
         {#if !viewState?.diagnostics.length}<p class="empty compact-empty">
             Пока недостаточно наблюдений для диагностического вывода.
           </p>{/if}
+        {#if viewState?.diagnostic_resource}<p class="muted">
+            Resource evidence последнего завершённого запроса:
+            {dateText(viewState.diagnostic_resource.captured_at)} ·
+            <code>{viewState.diagnostic_resource.request_id}</code>. Это историческое измерение, не
+            текущая нагрузка.
+          </p>{/if}
         {#each viewState?.diagnostics ?? [] as conclusion}<article class="conclusion">
             <span class:warning={conclusion.kind === 'hypothesis'} class="badge"
               >{label(conclusion.kind)}</span

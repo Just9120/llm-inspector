@@ -37,12 +37,15 @@ if ($checksumLines.Count -ne 3) {
     throw 'SHA256SUMS.txt must identify exactly the executable, manifest and SBOM.'
 }
 
+$seenSubjects = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($line in $checksumLines) {
     if ($line -notmatch '^(?<hash>[0-9a-f]{64}) \*(?<name>[A-Za-z0-9_.-]+)$') {
         throw "Invalid checksum entry: $line"
     }
 
-    $subjectPath = Join-Path $assetsDirectory $Matches.name
+    $subjectName = $Matches.name
+    if (-not $seenSubjects.Add($subjectName) -or $subjectName -notin @($artifactName, $manifestName, $sbomName)) { throw 'Duplicate or unexpected checksum subject.' }
+    $subjectPath = Join-Path $assetsDirectory $subjectName
     if (-not (Test-Path -LiteralPath $subjectPath -PathType Leaf)) {
         throw "Checksum subject is missing: $($Matches.name)"
     }
@@ -68,6 +71,9 @@ $artifactHash = (Get-FileHash -LiteralPath (Join-Path $assetsDirectory $artifact
 if ($manifest.artifact.sha256 -ne $artifactHash) {
     throw 'Release manifest executable digest does not match the payload.'
 }
+if ($manifest.artifact.bytes -ne (Get-Item -LiteralPath (Join-Path $assetsDirectory $artifactName)).Length -or
+    $manifest.artifact.runtime_prerequisite -notmatch 'WebView2' -or
+    $manifest.frontend_lock_sha256 -notmatch '^[0-9a-f]{64}$') { throw 'Artifact size/runtime/lock identity is invalid.' }
 
 $sbom = Get-Content -LiteralPath (Join-Path $assetsDirectory $sbomName) -Raw | ConvertFrom-Json
 if ($sbom.spdxVersion -ne 'SPDX-2.3' -or
@@ -77,6 +83,8 @@ if ($sbom.spdxVersion -ne 'SPDX-2.3' -or
     @($sbom.files).Count -ne 1) {
     throw 'SPDX SBOM structure is incomplete.'
 }
+if ($sbom.files[0].checksums[0].checksumValue -ne $artifactHash -or
+    $sbom.files[0].fileName -ne "./$artifactName") { throw 'SBOM executable identity mismatch.' }
 
 $notes = Get-Content -LiteralPath $notesPath -Raw
 if ($notes -notmatch [Regex]::Escape($SourceSha.ToLowerInvariant()) -or

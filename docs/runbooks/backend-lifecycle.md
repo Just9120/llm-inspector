@@ -6,19 +6,19 @@
 
 LLM Inspector управляет только backend process, который сам запустил после явного подтверждения exact executable path, version и literal-loopback endpoint. Если порт уже занят, Inspector показывает PID владельца и ничего не изменяет. Перед force stop повторно сверяются PID, process start time и полный executable path; PID-only ownership запрещён.
 
-Команды выполняются через typed argv без shell (`ProcessStartInfo.ArgumentList` в C# reference, direct process/argv в Go migration). UI не принимает arbitrary arguments/environment, public bind, CORS flags, service commands, install/update/download operations или credentials. Stop, restart и model switch блокируются, пока есть active Inspector requests, и показывают их количество. После crash автоматического recovery нет.
+Команды выполняются через typed argv без shell (direct process/argv в Go). UI не принимает arbitrary arguments/environment, public bind, CORS flags, service commands, install/update/download operations или credentials. Stop, restart и model switch блокируются, пока есть active Inspector requests, и показывают их количество. После crash автоматического recovery нет.
 
-Go lifecycle core в GOAL-006 проверен на synthetic processes; final desktop wiring выполняется отдельно в этой же Goal. В Go detached LM Studio listener должен принадлежать Job Object, созданному Inspector до запуска CLI. Уже работающий GUI/daemon остаётся внешним; его нужно самостоятельно закрыть перед managed start. Wildcard listener не принимается как подтверждённый loopback target. Закрытие Inspector не останавливает backend; после нового запуска он считается внешним.
+Go lifecycle и desktop wiring проверены на synthetic processes; реальные runtime/version checks выполняются отдельно. В Go detached LM Studio listener должен принадлежать Job Object, созданному Inspector до запуска CLI. Уже работающий GUI/daemon остаётся внешним; его нужно самостоятельно закрыть перед managed start. Wildcard listener не принимается как подтверждённый loopback target. Закрытие Inspector не останавливает backend; после нового запуска он считается внешним.
 
 ## Первый запуск
 
-1. Откройте раздел «Управление локальным backend» и выберите `Ollama`, `llama.cpp` или `LM Studio`.
-2. Нажмите «Найти и проверить». Если runtime отсутствует в standard paths/PATH, укажите полный путь к его `.exe`.
+1. Откройте раздел «Backend» и выберите `Ollama`, `llama.cpp` или `LM Studio`.
+2. Нажмите «Найти runtime». Если runtime отсутствует в standard paths/PATH, укажите полный путь к его `.exe`.
 3. Проверьте показанные exact path, version, compatibility status и endpoint.
-4. Установите checkbox подтверждения. Любое изменение local port создаёт новый endpoint и требует повторного подтверждения.
+4. Нажмите «Подтверждаю runtime и endpoint». Любое изменение local port создаёт новый endpoint и требует повторного подтверждения.
 5. При необходимости настройте параметры и нажмите «Запустить».
 
-`Проверено` означает exact runtime/version с локальным Evidence в embedded matrix. `Совместимо` означает, что используется документированный capability contract, но exact runtime matrix ещё не воспроизведён. `Только наблюдение` не разрешает lifecycle. `Не поддерживается` блокирует lifecycle.
+`Проверено` означает exact runtime/version с Evidence указанной Inspector revision в embedded matrix. Историческая C# revision не подтверждает LIVE совместимость текущего Go executable; UI показывает эту оговорку. `Совместимо` означает, что используется документированный capability contract, но exact runtime matrix ещё не воспроизведён. `Только наблюдение` не разрешает lifecycle. `Не поддерживается` блокирует lifecycle.
 
 ## Model load
 
@@ -36,7 +36,7 @@ Go lifecycle core в GOAL-006 проверен на synthetic processes; final d
 | llama.cpp | local port, context, GPU layers `auto/off/all/N`, CPU threads, parallel slots |
 | LM Studio | local port, context, GPU offload `auto/off/max/0..1`, model TTL, model ID |
 
-Пустое значение возвращает native backend default; «Сбросить к defaults» сбрасывает весь профиль. Parameter validation происходит до создания process/command. Новая configuration применяется при следующей подходящей операции start/model load/restart; local port нельзя менять у работающего process.
+Пустое значение возвращает native backend default; «Вернуть штатные значения» сбрасывает весь профиль. Parameter validation происходит до создания process/command. Новая configuration применяется при следующей подходящей операции start/model load/restart; local port нельзя менять у работающего process.
 
 Lifecycle endpoint и gateway destination — разные explicit settings. Если вы меняете local port относительно launch configuration Inspector, при следующем запуске Inspector передайте совпадающий `--backend` и `--backend-url=http://127.0.0.1:<port>/`; Inspector не перенаправляет уже запущенный gateway скрыто.
 
@@ -50,4 +50,4 @@ Lifecycle endpoint и gateway destination — разные explicit settings. Е
 
 ## Compatibility Evidence
 
-Embedded `config/runtime-compatibility.json` содержит version match, capabilities, Windows matrix, verification date, exact Inspector evidence revision, sanitized evidence и limitations. Ollama `0.33.2` имеет status `verified`. llama.cpp `b10516` и LM Studio `lms 0.0.47+` остаются `compatible`/`PENDING_EXTERNAL_GATE` до actual Windows runs; это не блокирует safe code delivery и не выдаётся за verified compatibility.
+Embedded `internal/lifecycle/config/runtime-compatibility.json` содержит version match, capabilities, Windows matrix, verification date, exact Inspector evidence revision, sanitized evidence и limitations. Ollama `0.33.2` имеет исторический status `verified` для C# reference revision; Go walkthrough ещё не выполнен. llama.cpp `b10516` и LM Studio `lms 0.0.47+` остаются `compatible`/`PENDING_EXTERNAL_GATE` до actual Windows runs; это не блокирует safe code delivery и не выдаётся за verified compatibility.

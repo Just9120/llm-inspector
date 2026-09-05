@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="../LlmInspector.Application/LlmInspector.Application.csproj" />
-    <ProjectReference Include="../LlmInspector.Domain/LlmInspector.Domain.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="config/runtime-compatibility.json" />
-  </ItemGroup>
-</Project>

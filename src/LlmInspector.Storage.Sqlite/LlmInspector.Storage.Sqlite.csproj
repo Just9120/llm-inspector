@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../LlmInspector.Application/LlmInspector.Application.csproj" />
-    <ProjectReference Include="../LlmInspector.Domain/LlmInspector.Domain.csproj" />
-  </ItemGroup>
-</Project>

@@ -3,12 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "npm@12.0.2",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "check": "prettier --check . && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "format": "prettier --write .",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "validate": "npm run check && npm test && npm run build"
   },
   "engines": {
     "node": ">=22.12.0 <23"

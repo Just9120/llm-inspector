@@ -18,7 +18,9 @@
   </p>{/if}
 <ol class="operation-list">
   {#each graph.turns as turn}<li>
-      <h4>Turn {turn.sequence} · {label(turn.outcome)} · {number(turn.duration_ms)} мс</h4>
+      <h4>
+        Turn {turn.sequence} · {label(turn.outcome)} · {number(turn.duration_ms)} мс (вычислено)
+      </h4>
       <p>{dateText(turn.started_at)} · {label(turn.error_type)}</p>
       <div class="metrics-grid">
         <Metric title="Доступно tools" metric={turn.available_tools} compact /><Metric
