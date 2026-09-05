@@ -153,3 +153,26 @@ func TestCoreDoesNotDependOnDesktopUIAndNativeEffectsStayScoped(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestWindowsBuildPinsCgoBeforeValidationAndVerifiesArtifact(t *testing.T) {
+	script := repositoryText(t, "scripts/build-windows.ps1")
+	pin := strings.Index(script, "$env:CGO_ENABLED = '0'")
+	validation := strings.Index(script, "./scripts/validate-go.ps1")
+	if pin < 0 || validation < pin {
+		t.Fatal("build must pin CGO before tests/compiler selection")
+	}
+	for _, gate := range []string{
+		"$previousCgoEnabled = $env:CGO_ENABLED", "$env:CGO_ENABLED = $previousCgoEnabled",
+		"go version -m -json ./build/bin/LlmInspector.exe", "Where-Object Key -eq 'CGO_ENABLED'",
+		"$cgoSettings.Count -ne 1", "$cgoSettings[0].Value -ne '0'",
+		"throw 'Executable does not use the pinned CGO_ENABLED=0 build mode.'",
+	} {
+		if !strings.Contains(script, gate) {
+			t.Errorf("missing pinned artifact identity gate %s", gate)
+		}
+	}
+	_, finally, found := strings.Cut(script, "\nfinally {")
+	if !found || !strings.Contains(finally, "$env:CGO_ENABLED = $previousCgoEnabled") {
+		t.Fatal("caller CGO environment must be restored even on failure")
+	}
+}

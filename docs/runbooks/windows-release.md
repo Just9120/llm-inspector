@@ -103,9 +103,11 @@ guidance, tray/background, local proxy, SQLite restart/recovery и critical supp
 flow. После публикации identity public artifact сверяется с pre-publication candidate. До полного
 Evidence `E01-AC01` не получает credit, а final release tag не создаётся.
 
-### Ограничение текущего Go candidate
+### Воспроизводимость Go candidate
 
-На code SHA `49d1e9aaf48c8b6780803dcc115100e3a2a5b5f7` local root и independent clean checkout дали одинаковый executable SHA-256, но hosted CI — другой. Значения и exact run записаны в [delivery checkpoint](../delivery-plan.md). Cross-host byte identity не доказана; ни локальный smoke, ни hosted CI не являются pre-publication manual Evidence. До начала manual phase нужно выбрать exact source/artifact candidate; при последующем несовпадении hashes проверка не переносится. Это фиксация открытого gate, не изменение release policy.
+GOAL-007 установила причину исторического local/hosted mismatch: локальная среда выбирала `CGO_ENABLED=0`, hosted runner — `1`. Controlled local build с `1` воспроизвёл hosted hash `87af704dfb9600a99af501c9a78beb30f9c0129c5862b11ac16c17fec37ba151`; с `0` — `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`. Shared build script теперь фиксирует `0` и проверяет embedded build settings; CI и release вызывают этот же script. Exact runs/hashes и статус cross-host проверки — в [delivery checkpoint](../delivery-plan.md) и terminal PR Evidence. Это исправление воспроизводимости, не изменение safety/release gates.
+
+Совпадение hashes проверяется заново для exact candidate, а не предполагается по этому историческому примеру. Ни local smoke, ни hosted CI не заменяют pre-publication manual Evidence. До manual phase выбрать exact source/artifact; при последующем несовпадении hashes проверка не переносится. Публикация пока не авторизована.
 
 ## Failure policy
 

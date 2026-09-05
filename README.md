@@ -63,7 +63,7 @@ Remote ingress включается в настройках только пос�
 ./eng/release/Test-ReleaseTools.ps1
 ```
 
-Первый скрипт проверяет pins, Go formatting/module integrity/vet/tests/build, делает locked `npm ci`, устанавливает pinned Wails CLI `v2.15.0` в `artifacts/tools`, генерирует bindings/assets, проверяет frontend и собирает `build/bin/LlmInspector.exe`. Native smoke запускает **этот** GUI executable и требует actual exit 0 после WebView2/bridge/proxy/history/privacy проверок. Второй скрипт локально проверяет release manifest/SBOM/checksums и негативные tamper cases; ничего не публикует.
+Первый скрипт проверяет pins, Go formatting/module integrity/vet/tests/build, делает locked `npm ci`, устанавливает pinned Wails CLI `v2.15.0` в `artifacts/tools`, генерирует bindings/assets, проверяет frontend и собирает `build/bin/LlmInspector.exe`. Windows build фиксирует `CGO_ENABLED=0`, проверяет это в metadata готового executable и восстанавливает caller environment при выходе; наличие C compiler на runner не меняет режим сборки. Native smoke запускает **этот** GUI executable и требует actual exit 0 после WebView2/bridge/proxy/history/privacy проверок. Второй скрипт локально проверяет release manifest/SBOM/checksums и негативные tamper cases; ничего не публикует.
 
 После первого full build доступны focused checks:
 

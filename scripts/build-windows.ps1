@@ -7,7 +7,12 @@ $taskRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 if (-not $IsWindows) { throw 'This product build requires Windows x64.' }
 Push-Location -LiteralPath $taskRoot
 $previousGoBin = $env:GOBIN
+$previousCgoEnabled = $env:CGO_ENABLED
 try {
+    # Windows uses the pure-Go WebView2 loader/SQLite path. Do not inherit the
+    # runner's C compiler availability: even unused CGO changes embedded build
+    # settings and the artifact hash between local and hosted builds.
+    $env:CGO_ENABLED = '0'
     ./scripts/validate-go.ps1
     $nodeVersion = (Get-Content -LiteralPath .node-version -Raw).Trim()
     $npmVersion = (Get-Content -LiteralPath .npm-version -Raw).Trim()
@@ -24,6 +29,14 @@ try {
     # runs frontend check/test/build; generated JS is never committed.
     & (Join-Path $env:GOBIN 'wails.exe') build -webview2 error -platform windows/amd64 -o LlmInspector.exe -trimpath -nocolour
     if ($LASTEXITCODE -ne 0) { throw 'Windows executable build failed.' }
+    $buildInfoText = go version -m -json ./build/bin/LlmInspector.exe
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot verify executable build settings.' }
+    $buildInfo = ($buildInfoText -join "`n") | ConvertFrom-Json
+    $cgoSettings = @($buildInfo.Settings | Where-Object Key -eq 'CGO_ENABLED')
+    if ($cgoSettings.Count -ne 1 -or $cgoSettings[0].Value -ne '0') {
+        throw 'Executable does not use the pinned CGO_ENABLED=0 build mode.'
+    }
+    Write-Output 'Verified Windows build mode: CGO_ENABLED=0.'
     go mod verify
     if ($LASTEXITCODE -ne 0) { throw 'Module integrity failed after build.' }
     go vet .
@@ -35,5 +48,6 @@ try {
 }
 finally {
     $env:GOBIN = $previousGoBin
+    $env:CGO_ENABLED = $previousCgoEnabled
     Pop-Location
 }

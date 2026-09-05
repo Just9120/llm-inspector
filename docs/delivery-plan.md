@@ -1,7 +1,7 @@
 # Delivery plan
 
 > Dashboard status: `IN_PROGRESS`
-> Updated UTC: `2026-09-05T21:00:00Z`
+> Updated UTC: `2026-09-05T21:09:00Z`
 
 ## Current Goal
 
@@ -35,20 +35,20 @@ Goal AC не добавляются в product denominator. Полный roadmap
 
 | Field | Verified state |
 |---|---|
-| Updated UTC | 2026-09-05T21:00:00Z — final local validation / pre-push checkpoint; subsequent delivery facts читать в terminal comment соответствующего PR |
-| Base branch / SHA | main / `88cbe291309105c495da5f488d23d48f8c74b007`; local main = origin/main = GitHub main, fetch/readback verified |
-| Working branch | `codex/goal-007-validation` |
-| Last verified revision | `b07999c56f7603cd959f61d7d7b48c2a28dd98e5` — full canonical Go/frontend build/tests/native smoke/release tools PASS; snapshot PID-reuse regression отдельно 3 repeated focused PASS. Containing documentation checkpoint не меняет этот проверенный код |
+| Updated UTC | 2026-09-05T21:09:00Z — recovery после PR #42; same-Goal artifact-identity fix |
+| Base branch / SHA | main / `b9d49eea60962b9301f9329a3c4b913d6719c7de`; local main = origin/main = merge #42 SHA, fetch/readback verified |
+| Working branch | `codex/goal-007-build-identity` |
+| Last verified revision | `b9d49eea60962b9301f9329a3c4b913d6719c7de` — PR #42 exact-head CI `33991792442` SUCCESS; main CI `33992039896` ещё IN_PROGRESS. New build-mode fix прошёл focused policy test, full validation next |
 | Worktree | Clean at branch creation, no pre-existing user changes. Own detached validation checkout `artifacts/goal007-build`; root running candidate/user state preserved |
 | Recovery | GOAL-006 DONE 9/9 по [terminal Evidence](https://github.com/Just9120/llm-inspector/pull/39#issuecomment-5553245062); stale pre-merge dashboard не является новой authorization. Closed Goal перенесена в archive |
-| Completed work | Approved Ollama reference/corpus v2 committed; v1 сохранён byte-for-byte. Read-only exact-PID process capture, error/privacy/exclusive-output/cancellation/descendant tests и windows-validation runbook готовы. Focused Go tests PASS: validation 85.1%, CLI 73.6%, performance 100% statement coverage (не product readiness) |
-| Current step | Законченный capture/reference increment локально проверен и готов к initial PR. Creation-time/PID-reuse, wrong identity, descendants, output readback/no overwrite, cancellation, sanitized errors проверены. Product AC не изменены; новых credits нет. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
-| Next exact action | Initial push/PR capture increment → required CI/review/merge → terminal delivery Evidence; дальнейшие UI/controlled hardware/two-host gates не считать выполненными и не возобновлять Computer Use без сигнала пользователя |
+| Completed work | Reference/capture increment delivered PR #42; [delivery Evidence](https://github.com/Just9120/llm-inspector/pull/42#issuecomment-5554787705). Own merged branch удалена local/remote. Причина hash mismatch доказана controlled CGO 0/1 local builds; новое исправление фиксирует shared build mode 0 и проверяет embedded metadata, caller environment восстанавливается |
+| Current step | Узкий build identity fix + regression policy test; workflows, AGENTS, CI/CD safety, dependency pins не меняются. Product AC не изменены; новых credits нет. Computer Use остановлен Escape, UI Evidence не заявлено; существующий GUI/backend не закрывать |
+| Next exact action | Full local build с caller CGO_ENABLED=1: проверить artifact mode 0, прежний candidate hash и восстановление caller env; затем bounded PR/CI/hash comparison/merge |
 | Environment | Windows Pro 25H2 x64 26200.9168, Ryzen 7 9800X3D 8C/16T, RTX 5060 Ti 16311 MiB / driver 610.74. Ollama API 0.33.3, reference model digest installed, 0 loaded models на preflight |
 | Existing state preserved | Ollama user process уже запущен; не owned Inspector, не останавливать. Existing Inspector DB присутствует; settings/token files отсутствовали. Не очищать историю и не изменять remote/privacy settings скрыто |
-| Artifact | Existing local `build/bin/LlmInspector.exe` SHA-256 `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`; new clean local build 2b83f99 дал тот же hash. Supporting candidate, не public release. Prior hosted hash отличается; cross-host identity не доказана |
+| Artifact | Local mode 0: `9c327b2e3385b6ca3820e41cb7591301680dec303265954911b0ae2c256234ec`. Controlled local mode 1: `87af704dfb9600a99af501c9a78beb30f9c0129c5862b11ac16c17fec37ba151` — exact match prior hosted CI `33978125113`, где setup log CGO_ENABLED=1. Cause confirmed; fixed-script local/hosted comparison ещё требуется. Это supporting candidate, не public release |
 | Pilot | Actual read-only capture `2026-09-05T20:47:45Z`–`20:48:15Z`, 31 samples / 30.006883 measured seconds, 7 observed processes. Private bytes P95 249102336 (~237.56 MiB), growth 16384 bytes, observed CPU delta and generic I/O-write delta 0. Profile balanced только declared; не verified UI state. Report SHA-256 `cda5f3cc5c1899464185a6c1b2fc79493e9a9c0461af276d9bcc73cf5f27d4b4`, local ignored `artifacts/goal007-validation/process-pilot-88cbe29.json`; pre-commit tool schema. Supporting pilot, **не E12 PASS** |
-| PR / CI | Pre-push: GOAL-007 PR ещё нет, CI не запускался; [поиск PR этой ветки](https://github.com/Just9120/llm-inspector/pulls?q=head%3Acodex%2Fgoal-007-validation). Repo public, ADMIN, rulesets пусты / main protection 404; project check windows-go обязателен независимо от enforcement. Exact IDs/results — terminal comment после delivery |
+| PR / CI | PR #42 MERGED / exact-head CI SUCCESS; main CI ещё IN_PROGRESS на checkpoint. Build-identity PR ещё нет; [поиск новой ветки](https://github.com/Just9120/llm-inspector/pulls?q=head%3Acodex%2Fgoal-007-build-identity). Project check windows-go обязателен независимо от enforcement. Exact terminal IDs/results — comment соответствующего PR |
 | Deployment / LIVE | CD disabled / DEPLOY N/A; B02 LIVE отсутствует, не считать local fixture подтверждением |
 | Blockers / unverified | Windows Home, second host/Tailscale, exact other backend/client versions, B04 decision, controlled resource/wakeup source и stable candidate identity |
 
