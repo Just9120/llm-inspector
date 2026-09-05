@@ -1,4 +1,16 @@
-# Source formatting is LF regardless of the caller's core.autocrlf setting.
+* text=auto
+
+# Preserve shared repository text policies; remove only obsolete C# rules.
+.go-version text eol=lf
+.node-version text eol=lf
+.npm-version text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf
+
+# Go/frontend and embedded source bytes must not depend on core.autocrlf.
 *.go text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
