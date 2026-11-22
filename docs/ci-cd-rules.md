@@ -1,353 +1,162 @@
-# CI/CD Rules
+# Настройка и исправление CI/CD
 
-> Universal safety contract: `goal-driven-v1`
+Читай этот документ при первоначальной настройке CI/CD, изменении pipeline и исправлении его проблем. Он задаёт требования к workflows, triggers, checks, runners, permissions, artifacts, CD и связанным настройкам. Повседневный flow агента и Goal определяет корневой [AGENTS.md](../AGENTS.md); команды и процедуры проекта находятся по его routing.
 
-## 1. Назначение
+Адаптируй правила к фактическому стеку и согласованному scope. Перечень возможностей не требует внедрять все инструменты. Workflows/scripts/runbooks можно исправлять внутри разрешённой Goal; изменение общей политики, модели доступа и safety exceptions требует соответствующего решения пользователя. Обновлённые инструкции не изменяют CI/CD автоматически: в порученной адаптации сначала сверь actual workflows/settings/scripts, используй уже работающие selection/reuse/full profiles и сохрани согласованные проектные исключения.
 
-Этот документ — universal safety contract для CI, build/artifact pipelines, CD/deployment и связанных production operations.
+## 1. Границы CI, CD и окружений
 
-Он задаёт обязательные boundaries, но не является готовым pipeline recipe и не авторизует изменения сам по себе. Scope задаётся current explicit user instruction или approved Current Goal; каждый adopted project должен заполнить **Project CI/CD profile** в конце документа либо вынести его в один явно указанный canonical file.
+- Базовый flow: CI → merge → CD на целевую платформу проекта (VPS, Cloudflare, Google Cloud или другую). CI подтверждает готовность актуальной revision PR к merge через обязательные checks/tests. После каждого merge, требующего deployment, CD доставляет нужную merge revision/artifact и подтверждает работающую версию обязательными post-checks. Настроенные review/protections также обязательны.
+- Разделяй проверку кода и изменение окружения по jobs, triggers, credentials и permissions. Отдельные workflow-файлы необязательны. Проверка PR не должна незаметно запускать production deploy.
+- Различай runtime environment, GitHub Environment, вариант продукта и операцию delivery. Для каждого GitHub Environment установи назначение, jobs, targets, configuration и access/protection rules; укажи связь с runtime environment, если она есть. Не вводи обязательный набор dev/staging/production. Вариант продукта требует отдельного окружения только при самостоятельной цели deployment.
+- Для каждого изменения определи применимость deployment. Изменение документации без влияния на runtime не требует искусственного CD. Неизвестный target или отсутствующий доступ не означают N/A.
+- Для переносимых jobs используй Linux по умолчанию. Если сборка или проверка требует конкретной ОС, запускай её на целевой ОС. Выделяй платформенно-зависимую проверку в отдельный job, когда это сохраняет охват без несоразмерного повторного setup. Основание выбора другой ОС фиксируй в проектной процедуре.
 
-Читать документ нужно при изменении workflows, runners, artifacts, secrets, environments, deploy, migrations, rollback, runtime configuration или post-deploy automation. Изменять contract — только по explicit CI/CD policy task.
+## 2. Validation и merge gates
 
----
+Минимальный CI входит в первую implementation Goal нового проекта: настрой его в первом PR с кодом, до merge обеспечь успешные применимые build/static checks и необходимые tests реализованного поведения. Развивай проверки вместе с функциональностью. Отсутствие pipeline не разрешает merge первого PR с кодом без CI. Аудит/bootstrap сами по себе не поручают его настройку; CD на целевую платформу проекта внедряй в согласованном delivery scope.
 
-## 2. Universal invariants
+Используй Validation Plan проекта и canonical scripts без второй копии команд/AC. Для локального preflight укажи в Validation Plan применимые проверки, канонические команды и нужное окружение. Используй общие с CI команды для локально выполнимых проверок. При несовместимой ОС выполни переносимую часть и используй доступное совместимое окружение для остальных обязательных локальных проверок. Недоступная или упавшая REQUIRED проверка до push блокирует push. Проверки, заранее отнесённые в Validation Plan к CI-only из-за требований платформы или среды CI, выполняются в обязательном CI до merge. Сначала используй существующие tests; новые нужны для существенного непокрытого поведения, важных рисков и содержательных регрессий. Один сценарий может подтверждать несколько AC; test на каждый AC/метод и обязательный TDD не требуются. Выбирай unit/integration/E2E по затронутым требованиям и риску. Coverage выявляет gaps, но не доказывает AC; CI обнаруживает только проверяемые нарушения.
 
-1. **CI и CD разделены.** Standard CI проверяет revision и не deploy-ит; CD запускается только от trusted trigger.
-2. **Least privilege.** Tokens, Actions permissions, credentials, runner access и environment access минимальны по scope/time.
-3. **Untrusted code не получает trusted capability.** PR/fork content не исполняется с production secrets, write token или privileged runner.
-4. **Exact identity.** Build/deploy всегда связывается с exact repository, revision/artifact, target и deployment unit.
-5. **Fail closed.** Unknown input, identity mismatch, unresolved secret и failed/skipped required gate останавливают flow.
-6. **Build once where applicable.** Deploy использует идентифицированный artifact, прошедший required validation.
-7. **Stateful work is explicit.** Destructive migration, backup/restore, cleanup и persistent-data operation не скрываются в standard CD.
-8. **No secret disclosure.** Secret values не попадают в code, docs, logs, artifacts, caches или generated context.
-9. **Auditable outcome.** Run IDs, revision/artifact identity, target environment и post-check result восстанавливаются без raw secret values.
-10. **Success after verification.** Deployment success не объявляется до required health/LIVE check.
+Выбирай проверки по назначению, риску и стоимости, а не только по метке `non-PG`, `postgres` или `E2E`. Простое изменение текста требует применимой проверки документации, а не искусственной E2E suite.
 
----
+Разделяй полноту поддерживаемого test inventory и частоту запусков. Профили используют одни suites/команды, без второй реализации:
 
-## 3. Required project inputs
+| Профиль | Состав и запуск |
+| --- | --- |
+| Обычный CI PR | Применимые static/build, unit/component/API/DB/integration и критичное общее ядро по зависимостям и риску; действующие проектные исключения сохраняются. |
+| Полная регрессия main | По отдельной команде на exact main SHA: весь поддерживаемый применимый набор, включая browser/native/recovery по проекту. Не запускает CD, полный аудит или пересчёт готовности; не обязателен после каждой Goal/аудита. |
+| Специализированные | Load/stress/soak, large-data/resource qualification, fault/backup/restore и другие проверки по требованиям и выбранному scope в подходящей изолированной среде. |
 
-До создания или изменения pipeline установи по repository/settings или safe diagnostics:
+Property-based/stateful tests рассматривай для инвариантов, комбинаций входов и последовательностей действий; mutation testing — для силы существующих assertions; fuzzing — для парсеров, импортов, протоколов и другого недоверенного ввода. Выбирай по риску и стоимости, без обязательного инструмента или целевого mutation score. Небольшие полезные проверки могут входить в обычный CI; дорогие кампании относятся к специализированному scope и автоматически не запускаются. Для кампаний определи scope, лимиты времени/ресурсов и условия остановки; сохраняй seed/минимальный контрпример либо другой способ воспроизведения failure вместе с revision. Mutation score не подтверждает READY. Новый тестовый профиль и обязательный workflow этим не вводятся.
 
-### CI
+Команды, inventory, prerequisites, target revision и условия запуска держи в canonical scripts/README/процедурах проекта. Должны быть доступны полный профиль без deployment и результаты по фактически выполненным suites, включая skips/ограничения. Отсутствующий профиль или сценарий — gap; присутствие config не доказывает запуск. Actions-версия полного профиля тоже расходует ресурсы. Обязательные автоматические расписания не вводи.
 
-- repository и production/default branch;
-- supported events и trust model;
-- stack, package manager, lockfiles;
-- install, lint, typecheck, test и build commands;
-- required checks и runner model;
-- build outputs/artifacts, если есть.
+Дополнительные некритичные tests можно отложить. Проверки текущих AC, безопасного merge и существенных рисков (права, деньги, миграции, целостность данных) не откладывай; сохраняй обязательные tests/assertions/gates и согласованные исключения по разделу 9. Полная suite не компенсирует отсутствующие сценарии.
 
-### CD
+Playwright внедряй лишь для небольшой обоснованной browser гарантии сверх unit/component/API; наличие frontend/PWA само по себе не требует framework или широкой device/browser matrix. Обычный запуск — headless, без UI/debug/watch, открытия окон/HTML-отчёта; диагностика по failure. Визуальный аудит и воспроизводимые assertions не заменяют друг друга; существующие обязательные browser gates сохраняются.
 
-- trusted trigger и deploy branch/tag;
-- target environment/account/host/cluster;
-- target directory/namespace и expected remote/registry, когда применимо;
-- expected branch/tag/release и deploy model;
-- intended deployment unit;
-- exact commit/artifact identity model;
-- credential и runtime-config owner;
-- environment protection/approval rules;
-- health/LIVE checks;
-- concurrency/cancellation policy;
-- stateful services и migration class;
-- rollback/forward-fix policy;
-- post-deploy metadata mechanism.
+Для существенных рисков проверяй настоящий entrypoint и execution model: user/group/permissions, isolated child process, версии зависимостей, concurrency, размер данных и CPU/RAM/IO по применимости. Wrapper/mock или маленький fixture не доказывают результат production профиля. Дорогую qualification запускай отдельно по scope; не используй production как тестовый стенд.
 
-Неизвестные значения не придумывай. Используй `UNSET`, safe diagnostic или blocker.
+Для affected selection начни с понятных групп по компонентам и зависимостям; усложняй selector только при измеримой пользе. Учитывай общие config/lockfiles, migrations, test infrastructure и динамические связи. Неизвестный impact, ошибка selector или неполный diff требуют более широкого подходящего набора; пустая выборка должна иметь объяснимое основание.
 
----
+Настрой точную проверяемую revision, изолированный workspace и воспроизводимую установку dependencies с lockfiles, когда применимо. Required command должна завершаться ошибкой при failure; test discovery должен находить ожидаемые tests. Silent fallback, безусловный success и `continue-on-error` не должны скрывать обязательную ошибку.
 
-## 4. Trust boundaries и GitHub Actions security
+Required checks и их источник устанавливай по фактическим rulesets/branch protection. Уточни revision model: PR head, test merge commit или merge group. После изменения revision требуется соответствующая validation; reuse после merge допустим только по условиям раздела 3. При merge queue настрой `merge_group` trigger. Self-review не заменяет обязательное approval, а зелёный YAML job не доказывает выполнение repository gate.
 
-### 4.1. Untrusted pull requests
+Required workflow не должен зависать в ожидании из-за path/branch filters. Для выборочных jobs настрой итоговый required gate, который запускается после dependencies и проверяет результат каждого применимого required job, в том числе при failures/cancellations зависимостей.
 
-Workflow, исполняющий untrusted PR/fork code, не получает:
+GitHub допускает успешное завершение отдельных checks со статусом `skipped` или `neutral`. По этому контракту skip допустим при заранее определённой неприменимости либо подтверждённом reuse по разделу 3. Reuse оформляй отдельным основанием с исходным run, не как неприменимость самих tests. Ошибочный filter, dependency failure или недоступность сервиса не являются N/A. Разбирай `failure`, `cancelled`, `timed_out`, отсутствие результата и неожиданный `action_required`, сохраняя обязательные gates.
 
-- production secrets/credentials;
-- write-capable repository token без narrowly justified job;
-- production environment access;
-- privileged persistent self-hosted runner;
-- право публиковать production-trusted artifact без отдельной trusted validation.
+## 3. Время CI и GitHub Actions minutes
 
-`pull_request_target` и аналогичный privileged context запрещено сочетать с checkout/execute/build untrusted PR code. Для labels/comments/metadata обрабатывай PR values как untrusted data.
+Избегай дублирующих запусков одной suite по `push` и `pull_request` без отдельной цели. Используй безопасные caches и обоснованную параллельность; не дроби быстрые команды на отдельные jobs без пользы. Отменяй устаревшие CI runs в пределах того же PR/workflow, сохраняя stateful операции и независимые проверки. Timeouts задавай по реальным операциям и поведению зависаний.
 
-### 4.2. Permissions и dependencies
+Определи selection/reuse до дорогого setup. Поднимай PostgreSQL, браузеры и другие сервисы и устанавливай специальные dependencies только в jobs, которым они нужны для оставшихся checks/build. Пропуск test step после безусловного setup не устраняет его стоимость.
 
-- Задавай `permissions` явно на workflow/job уровне; default — read-only или none.
-- Write permissions и `id-token: write` выдавай только нужному job.
-- Не передавай write token в steps, которым он не нужен.
-- External actions/reusable workflows фиксируй по полному immutable commit SHA; tag допустим только как комментарий.
-- Оцени owner, source, permissions, maintenance и supply-chain risk новой dependency.
-- Inputs/secrets reusable workflow объявляются явно; broad secret inheritance не используется без необходимости.
+После merge допускается reuse успешной PR validation вместо повторной suite, если автоматически подтверждены merged PR, связь head/base/tested revision с текущим main, совпадение проверенного Git tree и влияющих inputs: dependencies, test/workflow/config и environment. Учитывай фактический способ интеграции PR: merge commit, squash/rebase или merge queue; не навязывай два parent commit там, где их нет. Одинаковый tree сам по себе недостаточен: temporal/runtime и изменившиеся inputs требуют своих проверок. Проверь trusted repository/workflow и результаты всех required jobs последнего релевантного run/attempt для этой PR revision. Старый PASS не перекрывает более новый неуспешный, отменённый или незавершённый релевантный запуск.
 
-### 4.3. Script injection
+Неизвестные или изменившиеся inputs, недоступные records либо неподтверждённые условия reuse требуют выполнения необходимых checks; не подменяй их success. Для текущей revision сохраняй проверяемое решение reuse и ID исходного run. Reuse tests не отменяет проверку нового artifact и применимый CD; cache не заменяет эту процедуру.
 
-Не вставляй untrusted GitHub expression напрямую в shell/program source. Передавай значение через quoted environment variable/structured input и валидируй формат. `eval` и dynamic command construction из untrusted data запрещены.
+Измеряй длительность CI и суммарный runner time отдельно от billing. Сравнивай сопоставимые изменения до/после оптимизации: выбранные tests, причины fallback, setup/build и повторы. Параллельность сама по себе не означает экономии minutes. Проектные бюджеты и цели устанавливай по измерениям; универсальный лимит времени или coverage target не вводи. Стоимость не разрешает ослаблять обязательные проверки.
 
-### 4.4. Runners
+При оптимизации используй доступную историю PR/runs/jobs за заданный период, сверяя pagination, attempts и отменённые jobs. Раздели PR validation, main validation, build, CD и manual; manual workflow-ref SHA сам по себе не доказывает поставленного candidate. Измеряй setup, tests, build, ожидание и CD раздельно, насколько позволяют records. Runner sum по jobs, elapsed до результата и billable usage — разные величины; billing требует runner type, visibility и доступных billing records. Ранжируй предложения по подтверждённому baseline, цене/риску и сохраняемым гарантиям; численные затраты/экономию давай только с расчётом, недостаток данных обозначай. Новые speculative runs ради измерения не нужны.
 
-- Для untrusted PR предпочитай ephemeral GitHub-hosted runner.
-- Self-hosted runner должен иметь isolation, patching, cleanup и ограниченный repository/network access.
-- Untrusted public-fork code не запускается на runner с internal network, production credentials или persistent sensitive state.
-- Deploy runner не используется как общий PR runner.
+Цепочки hotfix связывай с основной работой через PR descriptions, project records, commits и diff, не по соседству номеров/слову fix. Различай регрессию, окружение, ошибку проверки, новый scope и плановое продолжение. При разборе выбранной Goal учитывай число CI/CD runs и суммарный runner time основных PR и подтверждённо связанных исправлений до завершения applicable delivery либо указанного момента проверки. Одни и те же jobs/attempts не считай повторно; период, неполную историю и неизвестные затраты обозначай. Подбери минимальный test реальной причины и проверь совокупный результат Goal; известные связанные CI failures исправляй batch в текущем PR по AGENTS.md, срочный safety hotfix не задерживай ради пакета. Исправленные исторические дефекты не выдавай за текущие.
 
-### 4.5. Credentials, environments и logs
+Flaky tests отличай от воспроизводимой регрессии и сбоев окружения по доступным logs/attempts. Исправляй подтверждённую причину; повторный зелёный run сам по себе не доказывает исправления. Не заменяй исправление ослаблением assertions, отключением tests или бесконтрольным увеличением retries; обязательные gates сохраняются.
 
-- Предпочитай short-lived/OIDC credentials long-lived static secrets, если provider это поддерживает.
-- Production jobs используют protected Environment или эквивалентный gate.
-- Allowed branches/tags, required reviewers и approvals не обходятся.
-- Не печатай `.env`, resolved secret-bearing config, tokens, private keys или authorization headers.
-- Persistent debug, раскрывающий environment/credentials, запрещён.
+Длительный monitoring/observation и speculative reruns на GitHub-hosted Actions требуют отдельного owner approval и предварительной проверки остатка included minutes. Неизвестный остаток сообщи. Ограниченные обязательные post-checks и обоснованный retry подтверждённой transient ошибки отличаются от наблюдения без конкретной проверяемой причины.
 
-### 4.6. Concurrency, timeout и retry
+Обычный CI проверяет repository. Auto-fix commits/push и self-modifying workflows допускаются только как отдельно согласованная узкая automation с trusted trigger, минимальными permissions, allowlist изменений и защитой от циклов.
 
-- CI может отменять stale runs, если это безопасно.
-- Production deploy сериализуется по target environment.
-- Cancellation in-progress production deploy задаётся явно; unsafe cancellation запрещена.
-- Jobs имеют разумный timeout.
-- Retry допустим только для idempotent/transient operations и не скрывает deterministic failure.
+## 4. Trust boundaries и supply chain
 
----
+Задавай `permissions` явно: read-only/none по умолчанию, повышение только для нужного job/target. Используй short-lived credentials/OIDC, когда доступны, с ограниченной identity. Reusable workflows передавай только необходимые inputs/secrets.
 
-## 5. CI contract
+Untrusted PR/fork code не должен получать production secrets, write-capable token, privileged persistent runner или доступ к внутренним ресурсам. Для PR используй подходящую изоляцию; deploy runners отделяй от общего PR execution. На self-hosted runners учитывай очистку и возможность сохранения чужого состояния.
 
-CI должен:
+`pull_request_target` и privileged `workflow_run` не должны исполнять untrusted PR code или без проверки принимать его artifacts. PR metadata обрабатывай как данные. Не вставляй untrusted expressions в shell source; безопасно передавай аргументы/environment variables и проверяй формат.
 
-- запускаться на project-approved events;
-- использовать intended revision и clean isolated workspace;
-- устанавливать dependencies reproducibly с lockfile при наличии;
-- выполнять existing relevant checks;
-- валидировать build/configuration, если это часть current Goal или project Definition of Done;
-- иметь однозначные required check names;
-- завершаться non-zero при required failure;
-- сохранять только необходимые artifacts/results.
+Внешние Actions/reusable workflows фиксируй полным commit SHA из проверенного repository. Проверяй источник и требуемые полномочия зависимости, lock integrity, registries и install scripts. Vulnerability/license scans, SBOM, signing и attestations применяй по требованиям и риску, без автоматического внедрения всей инфраструктуры.
 
-CI не должен:
+Cache — оптимизация, а не доверенный artifact. Учитывай OS/runtime/lockfile и trust context в ключах; privileged job не должен потреблять cache, который может отравить untrusted job. Не помещай secrets в repository, artifacts/cache/logs. При изменении runner, trigger или credential model перепроверь trust boundaries.
 
-- deploy-ить;
-- использовать production credentials без отдельного narrowly scoped security job;
-- менять protected branch или создавать auto-fix commits по умолчанию;
-- ослаблять tests/lint/type gates ради green status;
-- считать skipped/cancelled/timed-out required job успешным;
-- выполнять unrelated cleanup, migrations или infrastructure operations.
+## 5. Build и identity поставки
 
-Если конкретный check отсутствует, используй smallest available useful validation и зафиксируй gap. Не добавляй heavy infrastructure только ради формального соответствия.
+Свяжи image/package/archive с source revision, build run и immutable digest/version. `latest` или branch tag без неизменяемой identity недостаточны. Для передачи между workflows проверяй repository, источник и provenance artifact по модели проекта.
 
----
+Production artifact должен пройти required validation в допустимом trust context. Успешный untrusted PR run сам по себе не делает artifact доверенным. Для release build после merge свяжи фактический merge SHA, применимую validation и созданный artifact. CD не должен зависеть от существования удаляемой feature/fix branch.
 
-## 6. Build и artifact contract
+По возможности строй один раз и продвигай тот же artifact. Если модель проекта требует пересборки, зафиксируй её, обеспечь точную source revision, воспроизводимость inputs и проверку нового artifact; не выдавай его за ранее проверенный бинарный результат. Publishing — явный разрешённый этап, а не побочный эффект tests.
 
-Если проект deploy-ит package/image/archive:
+### Версии и release notes
 
-- artifact создаётся в trusted build context;
-- связывается с source SHA и build run ID;
-- получает immutable digest/checksum, когда формат это поддерживает;
-- не пересобирается молча при promotion между environments;
-- не содержит secrets, runtime state или unintended source files;
-- имеет подходящие retention и access controls;
-- provenance/attestation применяется, когда этого требует risk/profile.
+Сохраняй принятую схему версий; при её отсутствии в порученном внедрении выбери простую схему по контексту проекта, без единого обязательного формата. Свяжи версию с точным SHA/artifact; опубликованный тег не переноси на другой код. Принятую схему и порядок выпуска отражай в существующей проектной процедуре.
 
-Mutable tag (`latest`, branch tag) не является достаточной identity без immutable digest/version. Artifact untrusted PR не становится production-trusted только из-за успешного workflow.
+При ведении releases обычно оформляй release после завершения applicable delivery Goal. Два основных PR не требуют двух releases; каждая промежуточная поставка сохраняет SHA/artifact независимо от наличия release notes. Отдельно поставляемое исправление опубликованной версии получает новую версию.
 
----
+Храни короткие release notes в GitHub Releases: существенные изменения, исправления, несовместимость и действия при обновлении — по применимости. Основу получай из PR/commits между выбранными revisions, проверяя содержание по diff. Отдельный CHANGELOG.md не обязателен. Release не подтверждает READY, успешный deployment или безопасность rollback.
 
-## 7. CD contract
+Не создавай отдельный PR и не повторяй CI/build/CD ради release notes. Не вводи обязательный workflow выпуска; учитывай существующие tag/release triggers, чтобы публикация не запускала лишние checks или повторную поставку. Если номер нужен в manifest приложения, обновляй его в соответствующем implementation PR.
 
-CD запускается только от trusted event/revision согласно Project CI/CD profile.
+Ретроспективно оформляй только значимые версии по отдельному поручению, без переписывания истории и переноса опубликованных тегов. Помечай описание как восстановленное, различай историческую revision и время оформления; неизвестную прошлую поставку не выдавай за подтверждённую.
 
-До изменения target state deployment проверяет:
+## 6. CD и recovery
 
-- expected repository и exact source revision/artifact;
-- intended branch/tag/release;
-- target environment/account/host/cluster;
-- target directory/namespace и expected remote/registry, когда применимо;
-- deployment unit/service;
-- credentials и runtime configuration presence;
-- отсутствие unsafe local tracked changes для git-based deploy;
-- migration/stateful preconditions.
+Проверь trusted trigger, expected repository/ref, exact revision/artifact, target host/account, directory, service/deployment unit и config/credential owners. Настрой обязательные preconditions, environment protections, allowed branches/tags, approvals и stop criteria. Не выбирай неизвестный target по догадке и не обходи protections.
 
-CD должен:
+Сериализуй поставки в один target. Перед изменением окружения повторно проверяй допустимость candidate по release policy: отложенный job не должен затереть более новую поставленную версию. Одна очередь не гарантирует правильный порядок версий. Намеренный rollback выполняй по recovery procedure. Не отменяй migration/deploy, если это может оставить неконсистентный state; retry требует известной idempotency или безопасной точки продолжения.
 
-- использовать minimal permissions;
-- изменять только intended deployment unit;
-- быть idempotent или иметь documented safe retry boundary;
-- сериализовать production deploy;
-- сохранять existing runtime secrets;
-- выполнять required post-deploy health/LIVE check;
-- публиковать deployment Evidence;
-- сообщать success только после required post-check.
+До переключения версии проверь config и stateful preconditions, изменяй только intended deployment unit. Успех CD должен зависеть от проверки фактически запущенной версии, health/readiness и необходимых прикладных smoke checks. Статус процесса или доступный endpoint не доказывают успешный бизнес-сценарий. Failed post-check останавливает дальнейшее продвижение; сохраняй Evidence и применяй согласованную recovery strategy.
 
-CD не должен:
+Для критичного риска с предусмотренным эксплуатационным сигналом укажи в существующей процедуре поставки связь проверки и сигнала с revision/artifact, владельца реакции и действие по runbook. При поэтапной поставке используй согласованные критерии продолжения, паузы и восстановления. При canary сравнивай candidate и контроль по сопоставимым условиям. Учитывай согласованное окно наблюдения, объём и состав трафика. При недостатке данных укажи ограничение Evidence и следуй проектной процедуре паузы или эскалации. Используй имеющиеся источники сигналов и предусмотренные прогоны.
 
-- deploy-ить unreviewed/unverified revision;
-- автоматически выбирать неизвестный target;
-- выполнять broad cleanup, hardening или bootstrap;
-- менять firewall/users/SSH policy без отдельной task;
-- удалять persistent data/volumes;
-- запускать uncontrolled migration;
-- маскировать failed post-check;
-- импровизировать destructive rollback.
+Для managed/serverless-платформ установи account/project, service/worker и регион по применимости, deployment version/artifact, bindings/config/secrets и способ проверки активной версии/маршрутизации. Адаптируй поставку и recovery к фактической платформе, сохраняя общие trust, stateful и post-check gates.
 
----
+### VPS, Docker Compose и IaC по применимости
 
-## 8. Runtime configuration и secrets
+Проверь SSH host identity, deploy directory, remote/ref/exact commit, worktree, Compose project, allowlisted services и persistent volumes. Не отключай host verification ради исправления доступа. Git-based deploy использует безопасный fast-forward либо exact revision в чистой release directory, сохраняя неизвестные изменения на host.
 
-Canonical runtime-config owner указывается в profile: Environment secrets, secret manager, platform config, target-host file или иной mechanism.
+`reset --hard`, broad `clean`, `docker compose down`, volume removal и system-wide prune не являются стандартной стратегией CD. Bootstrap host, users/SSH/firewall, массовые permission changes и перенос данных требуют согласованного setup/maintenance scope. Разделяй credential чтения repository/artifact с VPS и credential подключения CI к VPS.
 
-Rules:
+Для IaC apply подтверди target account/workspace, plan diff, revision, полномочия и изменения persistent resources. Нужны state locking и recovery procedure; защити state/plan artifacts, которые могут содержать secrets. Пересоздание или удаление ресурсов не маскируй под routine deploy.
 
-- real secret values не коммитятся и не копируются в docs/tests/prompts/bundles;
-- `.env.example`, `.env.sample`, `.env.template` содержат только safe schema/examples;
-- production `.env` не перезаписывается template-файлом целиком;
-- missing non-secret keys можно добавлять только documented idempotent mechanism без изменения existing values;
-- unresolved required placeholder блокирует deploy;
-- validation проверяет presence/shape без раскрытия value;
-- long-lived credentials имеют rotation/revocation procedure.
+## 7. Runtime configuration и stateful changes
 
-Не используй команды, способные вывести resolved secrets, только ради validation.
+Установи canonical config owner: platform settings, secret manager, environment secrets или host files. Schema/examples содержат безопасные значения. CD сохраняет existing runtime values и не заменяет production `.env` шаблоном. Missing required value блокирует соответствующий deploy.
 
----
+Проверяй наличие и формат config без печати secret values, resolved secret-bearing config и authorization headers. Rotation и recovery выполняются в разрешённом scope, без скрытой смены секретов при обычной поставке.
 
-## 9. Stateful services и migrations
+Для DB, очередей, object/file storage, volumes и других persistent systems определи класс изменения:
 
-Stateful services включают databases, queues, Redis, vector/object/file storage, persistent volumes и другие owners невосстанавливаемых данных.
+- `NONE` — persistent schema/data не меняются.
+- `BACKWARD_COMPATIBLE_AUTOMATED` — versioned migration совместима в rollout window; известны retry, locking, duration/failure behavior, необходимые backup/recovery preconditions и post-check.
+- `EXPLICITLY_GATED` — destructive, несовместимое, необратимое или privileged изменение; нужны явные scope/authorization, target, preconditions, recovery/forward-fix и stop criteria.
 
-Migration class:
+Обязательный operation gate оставляет соответствующий delivery stage незавершённым до выполнения. Его не подменяет отложенное Ad-hoc тестирование. Если migration требует backup, проверь пригодность восстановления по принятой процедуре: наличия файла недостаточно. Restore, удаление volumes, перенос данных и broad cleanup не становятся разрешёнными автоматически.
 
-```text
-NONE
-BACKWARD_COMPATIBLE_AUTOMATED
-MANUAL_GATED
-```
+Automatic rollback допустим только при проверенной совместимости artifact, config и уже изменённой schema/state. Откат приложения не равен откату данных. Если безопасный rollback не определён, используй согласованный forward-fix или внешний gate; destructive recovery не импровизируй.
 
-`BACKWARD_COMPATIBLE_AUTOMATED` допустима в CD только если migration versioned/reviewable, совместима на rollout window, safe on retry, имеет известные timeout/locking/failure behavior, выполненные backup/recovery preconditions и post-check.
+## 8. Records и проверка конфигурации
 
-`MANUAL_GATED` требует отдельной explicit task со scope/owner, preconditions, backup/recovery plan, downtime/compatibility expectation, validation и stop/rollback/forward-fix criteria.
+Сохраняй первичные records независимо от сессии агента: CI run/check ID и проверяемую revision с результатами required jobs; build run и artifact identity; CD run/deployment ID, target environment, фактически запущенную revision/artifact, время, migration result и обязательные post-checks. Настрой retention/access по потребностям восстановления контекста и recovery, без secrets в artifacts. Для оптимизации отражай selection/reuse/fallback reason и существенные phase timings в существующем job summary/records, без нового monitoring workflow; сравнивай сопоставимые scopes/inputs до и после изменения.
 
-Standard CD не выполняет backup/restore, volume recreation, destructive cleanup, data move, reindex или irreversible migration без такого contract.
+Успешный CD подтверждает выполненные проверки на момент поставки. Наличие конфигурации не доказывает запуск; raw log без target/revision не заменяет Evidence. Недоступный результат остаётся неподтверждённым. Pre-merge CI не подтверждает будущую поставку.
 
----
+Отдельные статусы DEPLOY/LIVE, обязательная post-merge запись delivery metadata в main и metadata-only follow-up PR не требуются. Источник результата поставки — первичные records. Не вводи automation для переписывания metadata без отдельного поручения.
 
-## 10. Rollback и forward-fix
+После настройки проверь синтаксис и затронутые trigger/revision/selection/reuse/trust/failure paths, required checks и protections доступным безопасным способом. Для selector/reuse проверь неизвестный impact, неполные records, изменённые inputs и более новый неуспешный run; они не должны давать ложный green. Сохрани результат и ограничения. Непроверенная гарантия не становится PASS из-за наличия YAML; production/destructive сценарий не запускай только ради проверки конфигурации.
 
-Automatic rollback разрешён только когда documented strategy безопасна для deployed artifact, schema и persistent state.
+## 9. Проектная адаптация
 
-Если rollback safety не доказана:
+Фактические workflows/settings/scripts и runbooks — canonical источники команд и процедур; реальные пути и навигацию держи в README. Репозиторный AGENTS.md остаётся универсальным контрактом, без проектных сведений. Согласованные исключения из этих CI/CD правил фиксируй в соответствующей проектной процедуре с основанием и scope по разделу 9. Обеспечь восстановление обычного delivery/recovery по проектным процедурам без повторного чтения универсальных правил настройки.
 
-- останови flow после failed post-check;
-- сохрани Evidence;
-- не выполняй destructive recovery;
-- используй approved forward-fix или manual gated procedure.
+Указывай источники и время/revision проверки; неизвестное — UNSET, неприменимое — N/A с основанием. При изменении stack, settings или окружений обновляй затронутые процедуры. Сохраняй доступную версию шаблона и основания проектных отличий, не выдумывая provenance.
 
-Rollback не удаляет/recreate persistent data и не разворачивает application version, несовместимую с уже применённой migration.
+Исключение из safety contract требует решения пользователя/уполномоченного владельца: правило, причина, scope/срок, риск, compensating checks и stop/recovery criteria. Уже разрешённое исключение действует в своих границах и не меняет универсальный шаблон. Стоимость, flaky test или ожидание доступа не разрешают обходить обязательный gate.
 
----
-
-## 11. Git-based VPS / Docker Compose profile
-
-Этот раздел применяется только к mutable Git checkout + Docker Compose на VPS/server.
-
-До deploy проверь deploy directory, remote URL, branch, target commit, worktree, runtime config, intended Compose project/services и stateful volumes. Для SSH access используй явную host-key verification policy; отключение проверки host identity запрещено.
-
-Code update должен быть fast-forward/checkout exact reviewed revision или эквивалентной безопасной операцией. Broad `reset --hard`/`clean` не является normal deploy strategy.
-
-Deployment изменяет только allowlisted application services. `docker compose down`, volume removal и system-wide prune не входят в standard CD.
-
-Initial bootstrap, deploy-user/SSH setup, directory migration, firewall/hardening и repository access model требуют отдельной setup/maintenance task.
-
-Не путай:
-
-```text
-Deploy Key / target credential = target получает repository/artifact
-DEPLOY_* workflow secret = GitHub Actions получает доступ к target/provider
-```
-
----
-
-## 12. Forbidden by default
-
-Без отдельной explicit task и safety plan запрещены:
-
-- deploy из обычного CI job;
-- production credentials в untrusted workflow;
-- direct/force push в protected production branch;
-- workflow self-modification или auto-fix commits;
-- broad variable-path delete/reset/clean;
-- Compose down, volume prune/removal, system-wide prune;
-- recursive broad ownership/permission changes;
-- printing `.env` или resolved secret-bearing config;
-- uncontrolled migration, backup/restore или reindex;
-- hidden bootstrap, hardening, cleanup или access-model change;
-- destructive rollback без verified recovery path.
-
-Команда оценивается по effect и scope, а не только по имени. Narrow reviewed operation может быть допустима в отдельной maintenance task; broad mutable path остаётся blocker.
-
----
-
-## 13. Post-deploy metadata mechanism
-
-Автоматическая synchronization status/Evidence после LIVE допустима только если mechanism:
-
-- запускается от trusted deployment result exact revision;
-- пишет только allowlisted metadata paths/fields;
-- использует minimal write permission;
-- не изменяет durable requirements/acceptance criteria;
-- защищён от recursive runs;
-- создаёт auditable commit/status record;
-- не используется для произвольных code changes.
-
-При отсутствии mechanism deployment может быть `LIVE_VERIFIED`, но Current Goal не может быть `DONE`, если metadata synchronization обязательна по её DoD или project contract. Если synchronization явно неприменима, используй `N/A`. Direct push в обход protection rules запрещён.
-
----
-
-## 14. Evidence contract
-
-### CI Evidence
-
-- workflow/check name и run ID/URL;
-- event и exact head SHA;
-- required jobs и terminal statuses.
-
-### Build Evidence
-
-- source SHA и build run;
-- artifact name/version;
-- digest/checksum и provenance reference, если применимо.
-
-### Deployment/LIVE Evidence
-
-- deployment/run ID и target environment;
-- deployed commit/artifact identity;
-- migration class/result;
-- terminal status и post-check result;
-- endpoint/service, timestamp и limitations проверки.
-
-Raw logs без exact identity не заменяют Evidence.
-
----
-
-## 15. Exceptions
-
-Исключение допустимо только по explicit owner/user decision и содержит:
-
-```text
-Rule being overridden
-Reason
-Scope and duration
-Risk
-Compensating controls
-Authorization source
-Validation and rollback/stop criteria
-```
-
-Исключение narrow и временное, если иное не утверждено явно; оно не становится universal precedent автоматически.
-
----
-
-## 16. Project CI/CD profile
+## 10. Project CI/CD profile
 
 Профиль ниже заполнен подтверждёнными repository facts и explicit user decisions от `2026-09-02`–`2026-09-04`: LLM Inspector — Windows desktop application без runtime deployment target, поэтому server/runtime CD отключён; `GOAL-002` утвердила design stack, `GOAL-003` реализовала reproducible repository/CI foundation, а `GOAL-005` реализовала portable GitHub Releases flow. После исторических immutable `v1.0.0-rc.*` пользователь отменил отдельную maintenance line: development и release source имеют одну trusted line `main`, prerelease больше не публикуются, а первый следующий public version должен быть финальным `v1.0.0` только после обязательной validation. Фактический PR/run/artifact Evidence фиксируется в `docs/delivery-plan.md`.
 
@@ -455,27 +264,15 @@ Profile может быть вынесен в отдельный canonical file,
 
 ---
 
-## 17. Completion gates для Current Goal
+### Применимость и сохранённые гарантии LLM Inspector
 
-### CI
+Сверка шаблонов: 2026-11-22; Drive file IDs `1mq36WrP2tWNjDt7pint76S_mF--JAUUf` (modified 12:41:14.682Z, 30 478 bytes) и `17x73acxyIs4TTdLe1BiZWj6wVItmEw3B` (modified 12:40:46.063Z, 39 493 bytes). Содержимое сравнивается после нормализации CRLF/LF. База сверки проекта: `8afe04440ad91213fcd2fa73a42d42cb91159c75`. Это docs-only синхронизация, не изменение workflows/settings или свидетельство нового runtime PASS.
 
-- trust boundary, permissions и intended events явны;
-- exact checks воспроизводимы настолько, насколько позволяет проект;
-- production secrets/deploy отсутствуют;
-- required failures не маскируются.
-
-### CD
-
-- trusted trigger, target и exact revision/artifact подтверждены;
-- credentials/runtime config обрабатываются безопасно;
-- stateful/migration, concurrency и failure policy соблюдены;
-- post-check и Evidence присутствуют;
-- success объявлен только после required validation.
-
-### Maintenance/migration
-
-- есть отдельный scope/owner, preconditions, backup/recovery и stop criteria;
-- destructive surface минимальна;
-- result и residual risk подтверждены Evidence.
-
-Current Goal может быть `DONE` только после выполнения всех применимых gates этого contract; неприменимые gates должны быть явно отмечены `N/A`, а не пропущены молча.
+- Canonical продуктовый контракт — [project-spec.md](project-spec.md); execution state — [delivery-plan.md](delivery-plan.md), первичные PR/CI records и решения владельца. Upstream/архив не расширяют scope и не авторизуют реализацию. Задача синхронизации правил не меняет продуктовые AC, readiness или обязательное Evidence.
+- Обязательные exact-artifact Windows Home/Pro release проверки, E12 measurements и B02 encrypted two-host LIVE из product contract не являются необязательным Ad-hoc. Их отсутствие нельзя превратить в PASS, READY или N/A обновлением общих правил. Release gates и ограничения [Windows release](runbooks/windows-release.md), [Windows validation](runbooks/windows-validation.md), [secure remote access](runbooks/secure-remote-access.md) сохраняются.
+- Новое правило Linux-default относится к переносимым jobs. Текущий `windows-go` выполняет native Windows/Wails/WebView2 smoke, Windows process/DPAPI/tray проверки и сборку `windows/amd64`; ему требуется Windows. Существующие release jobs не меняются этим документом. Возможное выделение переносимых частей — отдельная pipeline task, не разрешение пропустить Windows gates.
+- Фактические workflows: [CI](../.github/workflows/ci.yml), [release](../.github/workflows/release.yml). На 2026-11-22 GitHub API: main protected=false, rulesets=[]; проектный `windows-go` всё равно REQUIRED перед merge. Reuse/affected selection из общего шаблона не реализованы в текущем workflow и не могут служить основанием пропуска.
+- Canonical команды и prerequisites — [README](../README.md), [build script](../scripts/build-windows.ps1), [release checks](../eng/release/Test-ReleaseTools.ps1). Сохраняются exact pins, `GOTOOLCHAIN=local`, `GOFLAGS=-mod=readonly`, locked npm install, локальный pinned Wails CLI, `CGO_ENABLED=0` и installed WebView2 без автоматической загрузки.
+- Для docs-only scope, ограниченного этими двумя Markdown-файлами без runtime/workflow/dependency изменений, local REQUIRED перед push: `git diff --check`, self-review всего diff, проверка allowlist изменённых путей, целостности Markdown/relative links, нормализованного template diff и UTF-8 размера универсального AGENTS ≤30 KiB. Выполняется в PowerShell 7 без build/runtime. Полный локальный регресс N/A для этого scope; штатный PR CI остаётся REQUIRED, включая hosted execution/revision/permissions, проверяемые только в CI. Это заранее определённый план, не перенос упавшего local gate в CI. Для code/runtime scope профиль определяется заново по риску и canonical процедурам.
+- Серверный CD отключён, final release/WinGet требуют отдельного разрешения и всех обязательных release gates. Docs-only PR не требует deployment или ручного запуска Actions. Никаких новых tokens, permissions, protections, runners или metadata writers.
+- Существующий профиль выше сохранён как проектная адаптация в пределах двухфайлового scope; его исторические поля не означают свежую runtime/billing проверку. Primary CI/PR records подтверждают поставку; pre-merge checkpoint допустим, metadata-only follow-up PR не нужен. Датированный checkpoint GOAL-007 не возобновляет остановленную владельцем работу автоматически.
