@@ -1,208 +1,102 @@
-# AGENTS.md
+# Работа в репозитории
 
-> Repository instruction contract: `goal-driven-v1`
+Универсальный контракт всех проектов. Проектные разделы и сведения сюда не добавляй. Меняй контракт только по явному поручению.
 
-## 1. Назначение и scope
+Читай при старте, восстановлении и изменении инструкций; при смене subtree/scope проверяй вложенные `AGENTS.md` / `AGENTS.override.md`. В документации репозитория не используй внешние ссылки. Навигацию, особенно в README.md, оформляй относительными Markdown-ссылками.
 
-Этот файл — repository-specific router и durable execution kernel для coding agents. Он определяет canonical documents, source authority, Goal authorization, readiness, checkpoint/recovery, repository boundaries и project commands.
+## Источники и контекст
 
-Session orchestration задаётся текущей user instruction; отдельный общий coding-workflow document не используется. Этот файл не заменяет product contract, delivery state, architecture, runbooks или CI/CD safety contract.
+| Документ | Назначение |
+| --- | --- |
+| [README.md](README.md) | Карта проекта, stack, canonical commands и процедуры |
+| Project spec | Согласованные требования, эпики/features, business rules, продуктовые/технические AC, ограничения и решения |
+| Delivery plan | Current Goal, решения, задачи, блокеры, состояния AC, Evidence и checkpoint |
+| Архитектура и runbooks | При затрагивании архитектуры, окружения, поставки, миграций или recovery |
+| CI/CD rules | При настройке и исправлении CI/CD |
+| Архив delivery plan | Завершённая история, если архив существует |
 
-Root `AGENTS.md` действует на весь repository. Перед изменением пути учитывай все применимые `AGENTS.md` / `AGENTS.override.md` от root до затрагиваемого subtree.
+Пути и относительные ссылки бери из README.md. Не создавай пустые документы ради таблицы. Commands/settings храни в canonical scripts, README и процедурах. Routine checks/merge/deploy выполняй по ним; при CI failure сначала отличи ошибку кода от pipeline по logs. Обновление универсальных инструкций само не меняет pipeline; workflows исправляй в порученном implementation scope.
 
-Nested instructions могут уточнять local commands, conventions и process details только внутри subtree. Они не расширяют user-authorized scope, не меняют durable product/CI-CD contracts и не разрешают bypass safety gates. Неразрешимый conflict — blocker для затронутого действия.
+Сверяй checkpoint с файлами, Git/remotes и первичными PR/CI/CD records. Для реализации читай Current Goal, нужные spec/plan, код и зависимости; весь реестр/историю — по необходимости. Неизменное в контексте не перечитывай; потерянное восстанови без внешнего промта. Поручение и доверенный контекст задают scope; доступ/документы его не расширяют. Неизвестное блокирует зависимое действие. Неясный по контексту/remote репозиторий уточни GitHub URL; известное не переспрашивай. Требования ищи по подтверждённым связям проекта; при отсутствии источника или неоднозначности запроси документ.
 
----
+Проектные инварианты review из согласованных требований/ограничений храни в существующих spec/architecture/runbooks с навигацией из README: область, риск и допустимое изменение. Перед изменениями прочитай применимые ограничения. Согласованные проектные исключения фиксируй в соответствующей процедуре с правилом, основанием, scope и решением владельца; запись сама не разрешает ослаблять gates. Не дублируй spec; механические проверки оставь CI. Новый review-сервис/gate этим не поручается.
 
-## 2. Document router
+## Планирование и аудит
 
-| Документ / источник | Роль | Читать когда |
-|---|---|---|
-| User-provided upstream requirements | Сырые/несогласованные requirements и идеи; supporting input | Audit, reconciliation, explicit proposal task |
-| `README.md` | Русскоязычный entry point, quickstart и navigation | Первый вход; неизвестны commands/structure |
-| `AGENTS.md` | Repository instructions и routing | Всегда: root + applicable nested files |
-| `docs/project-spec.md` | Canonical согласованный product contract, epics и atomic product AC | Scope, behavior, business rules, data, integrations, constraints, readiness |
-| `docs/delivery-plan.md` | Current Goal, durable authorization, checkpoint и readiness snapshots | Active work, resume/recovery, Goal/delivery-state change |
-| `docs/delivery-plan-archive.md` | Historical delivery context | Только history/reconciliation или cleanup active plan |
-| `docs/ci-cd-rules.md` | CI/CD, deployment и production safety | Audit или работа с workflows, artifacts, secrets, environments, migrations, runtime |
-| `docs/architecture.md` | Optional current architecture map | Boundaries, ownership, data flow, integrations, deployment topology |
-| `docs/runbooks/*` | Approved operational procedures | Только затронутая operation/surface |
-| `docs/utility/context-bundle-builder.md` | Optional scoped Builder contract | Только Builder Goal/workstream |
-| `docs/ai-delivery-infrastructure-plan.md` | Optional AI tooling/infrastructure workstream | Только если файл и реальный workstream существуют |
+Режим «План» выбирает пользователь; AUDIT/IMPLEMENT его не переключают. В нём выполняй необходимый read-only discovery и готовь план проверки/Goal; полный аудит для планирования не обязателен. Исполнение и активация Goal — после поручения и выхода из режима.
 
-Если referenced document отсутствует, не придумывай его содержание. Optional document не создаётся только ради соответствия router.
+Аудит репозитория, документации и реализации требований и полное продуктовое ревью выполняй отдельно или вместе. Вместе используй один план покрытия, общие Evidence/findings; одинаковые проверки на тех же revision/условиях/цели повторяй при изменениях или конкретном пробеле. Ревью охватывает дизайн, UX/UI, функциональность, frontend/backend, интеграции, производительность, архитектуру/runtime без сокращения аудита. Отдельное ревью не запускает полный аудит, полную декомпозицию проекта или проценты; аудит не требует отдельного ревью. В начале назови процедуры, в итоге отдельно покажи статус/охват/ограничения каждой. Пропущенную выбранную часть дополни без повтора всей проверки.
 
-Generated bundles, exports, chats, logs, issues/trackers, temporary reports и archive — supporting evidence/context, но не active source of truth и не implementation authorization.
+Инструменты выбирай по задаче без обязательного @-упоминания: Product Design/audit и Browser — визуальная/UX-часть/runtime; Context7 — API/настройки фактической версии; Grafana — метрики/логи с подтверждёнными проектом, окружением, datasource и периодом, свежестью и полнотой; GitHub/Code Review — PR/CI records, failures и scoped diff; Drive/Notion — требования; Figma — предоставленные макеты/design system; личный VPS skill — соответствующий сервер; Cloudflare skills/google-cloud — используемые сервисы Cloudflare/GCP. Установи target account/project и охват ресурсов, ограничения доступа/инструментов отрази в покрытии. Применимость определяет задача, не наличие плагина.
 
----
+При аудите AI/LLM-интеграций учитывай доверие к данным/инструкциям, полномочия tools, неполные/невалидные ответы, неизвестный исход платных запросов и качество по требованиям. Для используемого облака учитывай ресурсы, доступ, лимиты, backup/recovery и стоимость по доступным records. Это условные части выбранного аудита, без автоматических платных вызовов или нового обязательного framework.
 
-## 3. Authority и Evidence
+Для визуального ревью определи ключевые flow/состояния; сохраняй и просматривай скриншоты ключевых шагов и визуальных findings. Остальным действиям достаточно подходящего дешёвого подтверждения; каждый клик/однотипный экран снимать не нужно. Недоступная UI-проверка не останавливает независимый анализ кода/backend/архитектуры. Canvas, макеты, прототипы и публикация требуют отдельного поручения.
 
-### Normative authority
+Runtime-действия выполняй в разрешённом scope: сохраняй пользовательские данные, заранее установи очистку временных объектов либо разрешённое исключение. Соблюдай условия расходов, production procedures и очистки из поручения/проекта.
 
-1. Текущая explicit user instruction.
-2. `docs/project-spec.md` — durable requirements, business rules, product AC и constraints.
-3. Approved `Current Goal` в `docs/delivery-plan.md` — execution authorization только в пределах product contract и согласованного scope.
-4. Applicable repository `AGENTS.md` — process, routing и repository boundaries.
-5. `docs/architecture.md`, relevant runbooks и scoped utility contracts — supporting contracts внутри своей surface.
+Аудит/ревью/проверки не поручают push, PR или merge. Полный отчёт с реестром findings, скриншоты и исследования храни вне Git. В spec актуализируй согласованные требования. В плане локально фиксируй согласованные решения, выбранные задачи и блокеры с ID и нужным Evidence. Сразу покажи результаты и scope для выбора Goal. Явный read-only исключает запись файлов и внешние изменения, кроме отдельно разрешённых исключений. Полный аудит не ограничен текущим diff; отдельное полное code review по умолчанию не добавляй.
 
-`docs/ci-cd-rules.md` — обязательный safety contract для применимой CI/CD/production работы; изменять его можно только по explicit CI/CD policy task.
+До следующего разрешённого PR по согласованной реализации сохраняй нужные для реализации/приёмки правки spec/plan в ветке/worktree с checkpoint: путь, baseline, ожидающие переноса изменения. Перед переносом сверь актуальный main, требования/source revision, перепроверь изменившиеся основания, разреши конфликты без потери user changes/findings и расширения scope кода. Полный аудит ради metadata не повторяй. Отдельный PR ради результатов аудита/ревью не создавай. Если репозиторий/план недоступны, сохрани переносимые результаты с ID/источниками/ограничениями вне репозитория; отсутствие сохранения обозначь.
 
-Upstream requirements, ideas, issues и historical notes не меняют `docs/project-spec.md` автоматически. Расхождение фиксируется как requirement drift, `SPEC` gap или proposal; implementation и изменение denominator требуют решения пользователя.
+## Требования, findings и готовность
 
-### Evidence strength для actual-state claims
+Сохраняй ID требований/AC и связи изменений. Findings реализации веди в плане. Для всех findings укажи ID, суть, область/AC, путь/объект, Evidence, влияние/приоритет, действие/основание, зависимости, confidence HIGH / MEDIUM / LOW. Действия: FIX / IMPLEMENT / REMOVE / REFACTOR / CONSOLIDATE / DEPRECATE / DOCUMENT / DEFER. Для дефекта поведения укажи условия, ожидаемое/фактическое и путь к последствиям; сверь callers/tests. Неподтверждённое — гипотеза/риск с недостающим Evidence.
 
-```text
-LIVE/runtime observation
-→ deployment record exact revision/artifact
-→ CI/check exact revision
-→ automated/manual test
-→ code/config exact revision
-→ documentation/historical claim
-```
+Постоянные/выключенные feature flags, редко вызываемые kill switches/recovery paths не считай мусором без проверки назначения и использования. REMOVE требует доказанной ненужности; CONSOLIDATE сохраняет и объединяет полезное пересекающееся; REFACTOR улучшает используемую часть с конкретной структурной проблемой. Последние два обоснуй пользой и влиянием на поведение. Неподтверждённое неиспользование — кандидат с недостающим Evidence, DEFER или DOCUMENT. Обновляй существующие ID/решения без дублей. Отсутствие finding в новом отчёте не закрывает его без подтверждения исправления или ошибочности.
 
-Intended behavior и actual state не смешиваются. Conflict между ними описывается как drift.
+AC: BACKLOG — не начат; IN_PROGRESS — выполнен частично; READY — выполнен в коде с подтверждением анализом и подходящими автопроверками; BLOCKED — с причиной. Нарушение AC пересматривает READY, не denominator. CD не уменьшает готовность кода, но применимая поставка нужна для завершения реализации. Ad-hoc — по необходимости/запросу; ожидание не блокирует READY/merge/Goal. Статус покрытия не означает READY. Обязательные проверки product contract не относятся к Ad-hoc.
 
----
+Ad-hoc замечания копи в чате. По команде внеси в план без дублей либо сразу исправь выбранное. Сообщение о проблеме само по себе не разрешает изменения. Это не отменяет учёт findings аудита/ревью и исправление failures разрешённой Goal.
 
-## 4. Старт, resume и recovery
+Проценты проекта/эпиков рассчитывай только при полном аудите по запросу: READY AC / все AC текущего scope × 100%. Продуктовые и технические AC равноправны. Основа — проверенный `origin/main`; укажи дату, SHA, числитель, denominator/основание. Незамерженные AC — отдельно в прогрессе Goal/PR. Не усредняй проценты эпиков; неизвестный/нулевой denominator — SPEC gap без процента.
 
-На старте:
+Считай заново по текущим требованиям/коду/Evidence; прежняя оценка — только сравнение, разницу >10 п.п. объясни. Пропущенное согласованное требование восстанови с объяснением; новое улучшение включай после согласования. Finding и критерий его исправления не создают AC автоматически. В implementation Goal, после PR и при её закрытии обновляй затронутые AC/Evidence, задачи/findings и зависимости без пересчёта процентов даже при смене scope. Последняя оценка — snapshot даты/SHA; RESUME не поручает полный аудит.
 
-1. Установи root и applicable instructions.
-2. Проверь branch, `HEAD`, worktree, remotes и фактическую base branch.
-3. Если существует `docs/delivery-plan.md`, прочитай Current Goal и checkpoint.
-4. `APPROVED`/`IN_PROGRESS` Goal с подтверждённым checkpoint продолжай как `RESUME`.
-5. При расхождении checkpoint с Git/GitHub/CI/CD state сначала выполни `RECOVERY`.
-6. Если active approved Goal отсутствует, следуй текущей user instruction; proposed/candidate Goal implementation не авторизует.
-7. Читай только relevant source-of-truth sections, code, tests и configuration; broad context используй для audit/reconciliation/architecture/release work.
+Evidence: метод/результат, источник/команда/сценарий, revision/artifact, environment, время/ограничения; для dirty state — diff/worktree. Результаты: PASS / PARTIAL / FAIL / PENDING / N/A с основанием. Храни ID первичных records, не raw logs. Различай SHA кода и runtime revision; неизвестное соответствие не считай совпадением. Config подтверждает настройки, tests — проверенные условия, runtime требует своего Evidence. Старый PASS применим при соответствии требованиям, версии и условиям.
 
-При recovery actual state имеет приоритет над checkpoint как evidence, но не меняет requirements или Goal scope автоматически. Не повторяй implementation «на всякий случай», не создавай duplicate PR и не удаляй unknown changes.
+## Goal и проверки
 
----
+Веди loop и checkpoint для порученного аудита, ревью, реализации или доработки. Одну встроенную Goal на весь согласованный запуск активируй до исполнения по явной просьбе пользователя. При продолжении восстанови процедуру, scope и существующую Goal, если она есть. Если инструмент Goal недоступен, сообщи об этом. До работы зафиксируй результат, scope/AC либо критерии закрытия findings, DoD, основание; для реализации — non-goals, зависимости и Validation Plan. Согласованное изменение scope, DoD и проверок внеси в план текущего поручения.
 
-## 5. Goal contract и authorization
+Loop реализации: блок → проверка → checkpoint → следующий пункт до DoD. Scope — эпики или AC одного или нескольких эпиков; выбор агентом — по поручению. Обычно один основной PR, для очень большой Goal — до двух с обоснованием и scope самостоятельной поставки. Не дроби PR ради эпиков/tests/docs или промежуточных шагов. Каждый PR оставляет main допустимым; незавершённой функции нужна безопасная интеграция. Изменения scope/политики вне поручения, ослабление gates и неразрешённые privileged/destructive operations выноси пользователю. Обычные failures/conflicts исправляй самостоятельно.
 
-Goal states:
+Validation Plan: AC/риск и источник (версия/вариант по применимости), наблюдаемый результат, проверка (команда/tool/каталог), environment, этап, REQUIRED / RECOMMENDED / N/A с основанием. До зависимой работы уточни пробелы, меняющие ожидаемый результат или поставку. Раздели local, обычный CI PR, полную регрессию main и специализированные проверки с условиями запуска. Полный профиль — весь применимый поддерживаемый набор на exact main SHA по отдельной команде, без CD; расходует Actions и не исключает gaps. Команды/состав — из canonical процедур; нет профиля — finding, настройка по поручению. Failed/недоступный REQUIRED блокирует свой этап, не N/A.
 
-```text
-PROPOSED | APPROVED | IN_PROGRESS | BLOCKED | PENDING_EXTERNAL_GATE | DONE
-```
+Используй существующие tests; новые — для существенного непокрытого поведения, рисков и регрессий. Один сценарий может подтверждать несколько AC; test на каждый AC/метод, обязательный TDD, tests-копии реализации и универсальный coverage target не нужны. Coverage помогает искать пробелы, не доказывает AC. Некритичные tests/расширенный контур можно отложить; текущие AC и существенные риски (доступ, деньги, миграции, целостность данных) подтверждай на соответствующих этапах Goal. Обязательные tests/assertions/gates сохраняй. Playwright добавляй по дополнительной пользе для browser сценариев; обычный запуск — headless, без UI/debug/watch и автоматического открытия отчёта. Визуальный аудит не заменяет воспроизводимые assertions; обязательные browser gates сохраняй.
 
-Implementation авторизована только current explicit user instruction либо Current Goal со state `APPROVED` / `IN_PROGRESS`, durable authorization source и неизменённым согласованным scope.
+Перед push получи PASS применимого локального профиля из Validation Plan. Соблюдай явные local gates. Задача/commit сами не требуют прогона. Не повторяй весь CI или все affected tests без причины. Local PASS не заменяет required CI перед merge. CI выявляет только проверяемое. Повторяй или расширяй проверки при изменении кода, зависимостей, условий, при failures или нерешённом риске. Прежний PASS учитывай при сопоставимых условиях.
 
-Current Goal фиксирует: stable ID/title, authorization source, scope, non-goals, Goal AC, required Evidence, known blockers/dependencies, state и stop condition.
+## Ветка, commits и PR
 
-Внутри согласованной Goal агент действует самостоятельно: выбирает implementation strategy, декомпозирует работу, добавляет необходимые tests и исправляет небольшие связанные defects, без которых Goal нельзя безопасно довести до DoD.
+Перед изменением файлов, включая результаты проверок, проверь Git/GitHub/remotes/divergence/worktrees/protections и получи свежий `origin/main`. Обнови main безопасным fast-forward, сохраняя unrelated/unknown user changes; иначе сохрани его состояние и используй чистую ветку/worktree от проверенного `origin/main`. Файлы меняй вне main; каждому PR — отдельная ветка с base SHA. Для иной default branch используй её имя.
 
-Новая authorization требуется для material change scope/non-goals/Goal AC/required Evidence, изменения durable product contract, новой architecture boundary/production dependency, destructive/privileged operation или перехода к следующей Goal.
+Без исходного commit сначала выполни разрешённый bootstrap, затем создай ветку с base SHA. Без remote возможна разрешённая локальная подготовка; создание remote/публикация требуют scope. В первую implementation Goal нового проекта включи минимальный CI: в первом PR с кодом обеспечь успешные применимые build/static checks и необходимые tests до merge. Аудит/bootstrap не поручают pipeline; CD на целевую платформу проекта требует согласованного delivery scope.
 
-Audit findings, backlog items, recommendations, TODO, issues, upstream ideas и `Candidate next Goals` сами по себе не авторизуют implementation.
+После узкой завершённой задачи создай локальный commit. До завершения scope PR и local checks оставайся локально; основной PR охватывает Goal либо её часть при разбиении на два. Затем self-review совокупного результата scope, актуализация затронутых docs/плана, initial push и PR с результатом, AC, проверками/ограничениями. До merge исправления входят в текущий PR.
 
-После `DONE`, `BLOCKED` или `PENDING_EXTERNAL_GATE` остановись. К следующей Goal без явного согласования пользователя не переходи.
+Подтверждённые CI/review failures исправляй batch: локально, с проверкой влияния, один сгруппированный push за цикл; число нужных циклов не ограничено, speculative pushes запрещены. Две правки по одной гипотезе дали тот же сбой? Перепроверь гипотезу. Повторный self-review — fixes/влияние, полный — при смене scope/риска. Base обновляй с сохранением user changes и validation. После merge допустимы необходимые содержательные hotfix PR сверх двух основных, без планового scope. Сокращённый hotfix flow сохраняет safety/CI/deployment gates.
 
----
+После push дождись required checks/review актуальной revision из предусмотренных источников. Разбери failures/cancellations/skips; skip допустим при подтверждённой неприменимости. Self-review не заменяет required approval. При gates/правах самостоятельно merge с соблюдением protections. Ожидай CI/CD через wait или разумные интервалы с увеличением при неизменном состоянии; успех своди кратко, logs читай нужными фрагментами по failure. Workflow ради статуса не запускай.
 
-## 6. Product readiness и Goal DoD
+## Поставка и очистка
 
-Product/epic readiness считается только по canonical atomic product AC из `docs/project-spec.md`. Goal DoD считается по Goal AC из `docs/delivery-plan.md`.
+После каждого merge подтверди его в GitHub, получи свежий `origin/main`, безопасно обнови local main по Git flow и проверь интеграцию. Дождись applicable delivery: runtime-изменения — CD на целевую платформу (VPS, Cloudflare, Google Cloud или другую) с expected merge revision/artifact, environment gates, проверкой запущенной версии, health/readiness и прикладными smoke checks. Без deployment CD неприменим по scope PR/DoD.
 
-Goal AC не добавляются автоматически в product denominator и не меняют durable requirements. Они могут подтверждать existing product AC; отсутствующий requirement/AC фиксируется как `SPEC` gap/proposal.
+Установи target, artifact/config, preconditions и отсутствие конфликтующей поставки по проверенной проектной процедуре. Сохраняй secrets/persistent state; соблюдай approvals, host verification/recovery gates. Неизвестный target блокирует действие. Failed post-check останавливает продвижение: примени согласованную recovery strategy; нужный hotfix в scope остаётся частью Goal.
 
-```text
-Product status: ⬜ BACKLOG | 🟦 IN PROGRESS | 🟩 READY | ⛔ BLOCKED (modifier)
-Evidence: SPEC | CODE | TEST | CI | DEPLOY | LIVE
-Evidence status: ✅ confirmed | ◐ partial | ❌ failed | — absent | N/A not required
-```
+CD подтверждают первичные records с environment, revision/artifact, временем/итогами checks; workflow или ответ endpoint без версии недостаточны. DEPLOY/LIVE статусы и обязательная post-merge запись metadata в main не нужны; metadata-only follow-up PR не создавай. Недоступный/неуспешный CD — неподтверждённая/незавершённая поставка. Длительный monitoring/observation и speculative reruns на GitHub-hosted Actions требуют owner approval и проверки included minutes; неизвестный остаток сообщи. Обязательные ограниченные post-checks входят в поставку.
 
-`READY` означает `100%` in-scope product AC и `✅` для всех required Evidence. Completion требует явного denominator; subjective partial percentage запрещён — criterion декомпозируется без изменения смысла либо считается невыполненным.
+После applicable delivery удаляй local/remote ветки и worktrees слитых PR этой Goal. До удаления подтверди принадлежность и merge (squash/rebase — по PR) и отсутствие неинтегрированных изменений, нужных файлов и зависимостей активных задач. Сохраняй чужие ветки/worktrees, изменения и неперенесённые результаты проверок. Автоудалённые ветки не восстанавливай; CD от них не зависит.
 
-После commit пересчитывай затронутую readiness только если изменилось выполнение product AC. Общую readiness пересчитывай перед PR, после material change scope/denominator, при выполнении product AC и при закрытии Goal. Evidence синхронизируй после фактических TEST/CI/DEPLOY/LIVE событий.
+После поставки PR и при закрытии implementation Goal обнови main по Git flow. Проверь совпадение SHA local main и свежего `origin/main`, чистоту локального дерева main и отсутствие local/remote веток и worktrees слитых PR этой Goal. Остатки и причины сообщи. Следующий основной PR начинай с актуальной base после поставки предыдущего с нужными hotfix. Hotfix для failed delivery ожиданием не блокируется.
 
----
+## Checkpoint и завершение
 
-## 7. Delivery plan и checkpoint
+После связанного блока сообщай: «Реализовано по коду X/Y AC текущей Goal», текущую работу, проверки/blockers; при длительной работе — существенный прогресс/препятствие. X — полностью реализованные AC, частичные — в работе; Y — согласованный scope, изменение объясни. Счётчик не требует аудита и не заменяет READY/CI/CD. Без AC показывай задачи без выдуманного счётчика.
 
-`docs/delivery-plan.md` — operational dashboard, durable Current Goal contract и verified execution state. Он должен содержать:
+В содержательных commits и перед прерыванием обновляй checkpoint: Goal, baseline, branch/base SHA/worktree, сделанное/оставшееся, следующий шаг, PR/records/checks/blockers. Сохраняй влияющие на продолжение решения и исключённые подходы с причинами/условиями пересмотра, без дневника/raw logs. До последнего push укажи оставшиеся gates без прогнозных PASS/READY. Храни последний/предыдущий snapshot полного аудита с датами/SHA вне Git; commits ради самообновляющихся SHA/процентов не создавай.
 
-- **Current Goal:** ID/title, state, authorization source, scope, non-goals, Goal AC, required Evidence, blockers.
-- **Active execution checkpoint:** updated UTC, base branch/SHA, working branch, last verified revision, worktree state, completed work, current step, one `Next exact action`, validation/Evidence, PR, CI, deployment, blockers, unverified assumptions и preserved pre-existing changes.
-- **Project readiness:** только current и previous independently calculated snapshots.
-- **Candidate next Goals:** proposals без implementation authorization.
+При восстановлении установи PR, merge revision и CD records целевого окружения по Git/GitHub; недостающие ID найди, deploy ради статуса не повторяй. Checkpoint до merge допустим: поставку подтверждают первичные records без обязательной перезаписи Markdown.
 
-Checkpoint хранит только facts, decisions и exact identifiers; не хранит chain of thought, secrets, credentials или raw logs. `Last verified revision` — последний commit, состояние которого покрывает checkpoint; не создавай metadata-only commit loop ради ссылки на собственный containing commit.
-
-Обновляй checkpoint после base/branch change, commit, push/PR, CI/review, merge, deployment/LIVE, blocker/external gate и interruption.
-
-`docs/delivery-plan-archive.md` создаётся при первой необходимости. Переноси туда closed Goals, obsolete checkpoints, старые snapshots и длинные PR/CI/deployment chains. Archive не является current source of truth, authorization или readiness input.
-
----
-
-## 8. Git и execution boundary
-
-Перед записью зафиксируй root, base branch/SHA, working branch и исходный worktree state.
-
-```text
-git fetch
-→ если local base clean и допускает safe fast-forward — sync
-→ иначе isolated branch/worktree от verified origin/<base>
-→ focused changes в отдельной feature/fix branch
-```
-
-Не смешивай изменения агента с unrelated pre-existing user changes и не выполняй destructive reset/clean, checkout-overwrite, force push или удаление unknown state без explicit authorization.
-
-После завершённой узкой задачи выполняй relevant checks и создавай reviewable commit. После согласованного implementation scope создавай/обновляй PR, анализируй required checks и продолжай исправления внутри той же Goal.
-
-Merge и applicable delivery выполняй самостоятельно только если это входит в Goal, обязательные gates выполнены и права позволяют. DEPLOY/LIVE подтверждай только фактическим Evidence; неприменимые dimensions получают `N/A` по Goal DoD.
-
-Post-deploy metadata write без отдельного PR допустим только через approved path/field-scoped mechanism с minimal permissions, exact deployed revision и loop protection. При отсутствии required mechanism зафиксируй blocker/technical debt; protection rules не обходи.
-
-После Goal closure безопасно обнови local base и удали только созданные этой работой merged branches/worktrees после проверки отсутствия unique commits или unrelated state. Затем остановись.
-
----
-
-## 9. Documentation write policy
-
-| Документ | Разрешённое update без изменения durable scope |
-|---|---|
-| `README.md` | Quickstart, commands, structure и canonical navigation при фактическом изменении |
-| `docs/project-spec.md` | Только отделённые operational fields: status, completion, Evidence, verified IDs, blocker, timestamp |
-| `docs/delivery-plan.md` | Current Goal, checkpoint, current/previous snapshots, blockers и next action |
-| `docs/delivery-plan-archive.md` | Closed/obsolete delivery history |
-| `docs/architecture.md` | Фактические architecture/runtime/data-flow changes |
-| `docs/runbooks/*` | Изменение соответствующей approved procedure |
-| `docs/ci-cd-rules.md` | Только explicit CI/CD policy task |
-| `AGENTS.md` | Только explicit repository-agent-policy task |
-| Scoped utility/tooling contract | Только соответствующий authorized workstream |
-
-Для agent-writable operational metadata в `docs/project-spec.md` используй визуально отделённый block. Без explicit user instruction не меняй durable scope, requirements, business rules, product AC, data ownership, public behavior или security/runtime constraints. Upstream requirements не синхронизируются в canonical contract автоматически.
-
-Все pre-merge documentation changes включай в текущий PR. Отдельный follow-up PR только ради delivery metadata не создавай, если synchronization должен выполнить approved post-deploy mechanism.
-
----
-
-## 10. CI/CD, validation и repository commands
-
-При audit или работе с workflows, artifacts, secrets, environments, deployment, production, migrations, stateful systems или post-deploy automation прочитай `docs/ci-cd-rules.md` и фактический Project CI/CD profile.
-
-Не меняй CI/CD safety contract, credential model, deployment topology или production operations без explicit scope. Failed, skipped, cancelled, timed-out, unavailable и not-run required checks не являются success.
-
-Команды ниже выполняются из repository root в PowerShell 7 на Windows x64. Exact Go/Node/npm pins — `.go-version`, `.node-version`, `.npm-version`; Go dependencies — `go.mod`/`go.sum`, frontend — `frontend/package-lock.json`. `GOTOOLCHAIN=local`, `GOFLAGS=-mod=readonly`, `npm ci`; изменение toolchain/package versions требует reviewed lock-file update. Wails CLI `v2.15.0` устанавливается build script в `artifacts/tools`, не глобально. WebView2 Runtime должен быть установлен; Inspector не скачивает его автоматически. Первый full build генерирует ignored bindings/assets, необходимые для отдельных frontend/root checks.
-
-| Назначение | Команда |
-|---|---|
-| Install / restore | `go mod download`; `npm --prefix frontend ci --ignore-scripts --no-audit --no-fund` |
-| Format/lint | `./scripts/validate-go.ps1`; `npm --prefix frontend run check` |
-| Typecheck | `go vet ./...`; `npm --prefix frontend run check` |
-| Focused tests | `go test ./internal/<package> -count=1 -timeout 60s` |
-| Full tests | `go test ./... -count=1 -timeout 60s`; `npm --prefix frontend test` |
-| Build | `./scripts/build-windows.ps1` — locked dependencies, checks/tests, Wails build и native smoke |
-| Run locally | `./build/bin/LlmInspector.exe` |
-| Windows target | `windows/amd64`, portable `build/bin/LlmInspector.exe`, Go runtime/frontend embedded |
-| Release payload check | `./eng/release/Test-ReleaseTools.ps1` — локальная проверка без публикации |
-| Publish smoke | `./scripts/smoke-windows.ps1` — actual GUI process exit и WebView2/bridge/privacy completion marker |
-| CI-equivalent | `./scripts/build-windows.ps1` → `./eng/release/Test-ReleaseTools.ps1`; canonical automation — `.github/workflows/ci.yml` |
-
-Не добавляй heavy testing infrastructure только ради заполнения таблицы.
-
-В итоговом отчёте укажи changed files, checks и terminal statuses, Current Goal state, PR/CI/deployment identifiers, limitations, blockers и remaining risks. Не заявляй merge, deployment, LIVE или Goal `DONE` без required Evidence.
+DONE требует scope/DoD и обязательных проверок; реализация — также review/merge/applicable delivery всех PR с hotfix. Аудит/ревью — методы/результаты, обозначенные пробелы/blockers, разрешённое сохранение и очистка временных данных либо отчёт о согласованных остатках; публикация без поручения не требуется. Исправимый failure не завершает Goal. При внешнем blocker сохрани причину/нужное действие, продолжая независимую работу. Заверши встроенную Goal по её правилам, сообщи результат, AC/задачи, Evidence, PR/поставку и ограничения. Остановись: следующую Goal выбирает пользователь.
