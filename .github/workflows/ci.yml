@@ -14,8 +14,132 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    name: Select and validate profile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      profile: ${{ steps.profile.outputs.profile }}
+    steps:
+      - name: Checkout exact revision and complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select profile and validate instructions
+        id: profile
+        shell: python3 {0}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # BEGIN LOCAL PREFLIGHT
+          import os, pathlib, re, subprocess, json, contextlib, io, textwrap
+
+          def git(*args):
+              return subprocess.check_output(["git", *args], stderr=subprocess.DEVNULL).decode("utf-8")
+
+          def choose(paths, complete):
+              if not complete or not paths:
+                  return "windows"
+              instructions = {"AGENTS.md", "docs/ci-cd-rules.md"}
+              if set(paths) <= instructions:
+                  return "instructions"
+              if set(paths) <= instructions | {".github/workflows/ci.yml"}:
+                  return "pipeline"
+              return "windows"
+
+          # Fail-closed selection and gate regressions run locally and in every CI profile.
+          for paths, complete, expected in [
+              (["AGENTS.md", "docs/ci-cd-rules.md"], True, "instructions"),
+              ([".github/workflows/ci.yml", "AGENTS.md"], True, "pipeline"),
+              (["internal/history/store.go"], True, "windows"),
+              (["scripts/build-windows.ps1"], True, "windows"),
+              (["frontend/package-lock.json"], True, "windows"),
+              ([".github/workflows/release.yml"], True, "windows"),
+              (["README.md"], True, "windows"),
+              (["AGENTS.md", "internal/domain/model.go"], True, "windows"),
+              (["AGENTS.md"], False, "windows"),
+              ([], True, "windows"),
+          ]:
+              assert choose(paths, complete) == expected, (paths, complete)
+          workflow = pathlib.Path('.github/workflows/ci.yml').read_text(encoding='utf-8')
+          gate = re.search(r'(?ms)^          # BEGIN REQUIRED GATE\n(.*?)^          # END REQUIRED GATE', workflow)
+          if not gate:
+              raise ValueError('Required gate code missing')
+          gate_code = compile(textwrap.dedent(gate.group(1)), '<required-gate>', 'exec')
+          successes = {('instructions', 'success', 'skipped'), ('pipeline', 'success', 'skipped'), ('windows', 'success', 'success')}
+          for profile in ("instructions", "pipeline", "windows", ""):
+              for preflight in ("success", "failure", "cancelled", "skipped"):
+                  for windows in ("success", "failure", "cancelled", "skipped"):
+                      os.environ.update(PROFILE=profile, PREFLIGHT_RESULT=preflight, WINDOWS_RESULT=windows)
+                      passed = True
+                      try:
+                          with contextlib.redirect_stdout(io.StringIO()):
+                              exec(gate_code, {})
+                      except SystemExit:
+                          passed = False
+                      assert passed == ((profile, preflight, windows) in successes)
+
+          base, head = os.environ.get("BASE_SHA", ""), os.environ.get("HEAD_SHA", "")
+          paths, complete = [], False
+          try:
+              if not all(re.fullmatch(r"[0-9a-f]{40}", x) and x != "0" * 40 for x in (base, head)):
+                  raise ValueError("missing or invalid base/head")
+              git("cat-file", "-e", base + "^{commit}")
+              git("cat-file", "-e", head + "^{commit}")
+              actual = git("rev-parse", "HEAD").strip()
+              parents = git("rev-list", "--parents", "-n", "1", actual).split()[1:]
+              if actual != head and parents != [base, head]:
+                  raise ValueError("checkout does not match candidate or exact PR merge")
+              paths = [p for p in git("diff", "--no-renames", "--name-only", "-z", base, head, "--").split("\0") if p]
+              complete = True
+          except (ValueError, subprocess.CalledProcessError, UnicodeError):
+              print("Incomplete/unverified diff: selecting Windows profile.")
+          profile = choose(paths, complete)
+
+          for name in ("AGENTS.md", "docs/ci-cd-rules.md"):
+              path = pathlib.Path(name)
+              raw = path.read_bytes()
+              body = raw.decode("utf-8-sig")
+              if name == "AGENTS.md" and len(raw) > 30 * 1024:
+                  raise ValueError("AGENTS.md exceeds 30 KiB")
+              if len(re.findall(r"^\s*```", body, re.M)) % 2:
+                  raise ValueError("Unbalanced Markdown fences: " + name)
+              for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", body):
+                  target = target.split("#", 1)[0]
+                  if re.match(r"https?://", target):
+                      raise ValueError("External navigation link: " + target)
+                  if target and not (path.parent / target).exists():
+                      raise ValueError("Broken link: " + name + " -> " + target)
+          if complete:
+              subprocess.run(["git", "diff", "--check", base, head, "--"], check=True)
+          print(json.dumps({"profile": profile, "complete": complete, "base": base, "head": head, "paths": paths}))
+          if os.environ.get("GITHUB_OUTPUT"):
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("profile=" + profile + "\n")
+          print("Document checks and selector/gate regressions: PASS")
+          # END LOCAL PREFLIGHT
+
+      - name: Install pinned Go for pipeline contract tests
+        if: steps.profile.outputs.profile == 'pipeline'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: .go-version
+          cache: false
+
+      - name: Validate pipeline and release contracts
+        if: steps.profile.outputs.profile == 'pipeline'
+        env:
+          GOTOOLCHAIN: local
+          GOFLAGS: -mod=readonly
+        run: go test ./internal/domain -count=1 -timeout 60s
+
   go-validation:
-    name: windows-go
+    name: Windows build and executable validation
+    needs: preflight
+    if: needs.preflight.outputs.profile == 'windows'
     runs-on: windows-2025
     timeout-minutes: 20
     env:
@@ -55,3 +179,30 @@ jobs:
       - name: Validate local release packaging without publishing
         shell: pwsh
         run: ./eng/release/Test-ReleaseTools.ps1
+
+  required:
+    name: windows-go
+    if: always()
+    needs: [preflight, go-validation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Enforce selected profile result
+        shell: python3 {0}
+        env:
+          PROFILE: ${{ needs.preflight.outputs.profile }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
+          WINDOWS_RESULT: ${{ needs.go-validation.result }}
+        run: |
+          # BEGIN REQUIRED GATE
+          import os
+          profile = os.environ["PROFILE"]
+          preflight = os.environ["PREFLIGHT_RESULT"]
+          windows = os.environ["WINDOWS_RESULT"]
+          valid = preflight == "success" and (
+              (profile == "windows" and windows == "success") or
+              (profile in ("instructions", "pipeline") and windows == "skipped"))
+          print(f"profile={profile}; preflight={preflight}; windows={windows}")
+          if not valid:
+              raise SystemExit("Required CI profile did not pass.")
+          # END REQUIRED GATE
