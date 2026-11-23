@@ -6,7 +6,7 @@
 
 ## 1. Границы CI, CD и окружений
 
-- Базовый flow: CI → merge → CD на целевую платформу проекта (VPS, Cloudflare, Google Cloud или другую). CI подтверждает готовность актуальной revision PR к merge через обязательные checks/tests. После каждого merge, требующего deployment, CD доставляет нужную merge revision/artifact и подтверждает работающую версию обязательными post-checks. Настроенные review/protections также обязательны.
+- Базовый flow — локальный preflight → CI и применимое review актуальной revision PR/MR → merge → применимый CD → проверка работающей версии. До merge соблюдай обязательные checks, review и repository protections. После каждого merge, требующего deployment, поставь точную merge revision/artifact на целевую платформу проекта (VPS, Cloudflare, Google Cloud или другую) и подтверди работающую версию обязательными post-checks.
 - Разделяй проверку кода и изменение окружения по jobs, triggers, credentials и permissions. Отдельные workflow-файлы необязательны. Проверка PR не должна незаметно запускать production deploy.
 - Различай runtime environment, GitHub Environment, вариант продукта и операцию delivery. Для каждого GitHub Environment установи назначение, jobs, targets, configuration и access/protection rules; укажи связь с runtime environment, если она есть. Не вводи обязательный набор dev/staging/production. Вариант продукта требует отдельного окружения только при самостоятельной цели deployment.
 - Для каждого изменения определи применимость deployment. Изменение документации без влияния на runtime не требует искусственного CD. Неизвестный target или отсутствующий доступ не означают N/A.
@@ -16,21 +16,23 @@
 
 Минимальный CI входит в первую implementation Goal нового проекта: настрой его в первом PR с кодом, до merge обеспечь успешные применимые build/static checks и необходимые tests реализованного поведения. Развивай проверки вместе с функциональностью. Отсутствие pipeline не разрешает merge первого PR с кодом без CI. Аудит/bootstrap сами по себе не поручают его настройку; CD на целевую платформу проекта внедряй в согласованном delivery scope.
 
-Используй Validation Plan проекта и canonical scripts без второй копии команд/AC. Для локального preflight укажи в Validation Plan применимые проверки, канонические команды и нужное окружение. Используй общие с CI команды для локально выполнимых проверок. При несовместимой ОС выполни переносимую часть и используй доступное совместимое окружение для остальных обязательных локальных проверок. Недоступная или упавшая REQUIRED проверка до push блокирует push. Проверки, заранее отнесённые в Validation Plan к CI-only из-за требований платформы или среды CI, выполняются в обязательном CI до merge. Сначала используй существующие tests; новые нужны для существенного непокрытого поведения, важных рисков и содержательных регрессий. Один сценарий может подтверждать несколько AC; test на каждый AC/метод и обязательный TDD не требуются. Выбирай unit/integration/E2E по затронутым требованиям и риску. Coverage выявляет gaps, но не доказывает AC; CI обнаруживает только проверяемые нарушения.
+Используй Validation Plan проекта и canonical scripts без второй копии команд/AC. Перед push воспроизведи весь локально выполнимый профиль штатного PR CI на актуальном кандидате. Используй тот же selector или правила выбора CI для точных base/head и проверяемой ревизии. В Validation Plan укажи состав, общие с CI команды и нужное окружение. Полный регресс запускай отдельно. При несовместимой ОС выполни переносимую часть и используй доступное совместимое окружение для остальных обязательных локальных проверок. Недоступная или упавшая REQUIRED проверка до push блокирует push. Проверки, заранее отнесённые в Validation Plan к CI-only из-за требований платформы или среды CI, выполняются в обязательном CI до merge. Сначала используй существующие tests; новые нужны для существенного непокрытого поведения, важных рисков и содержательных регрессий. Один сценарий может подтверждать несколько AC; test на каждый AC/метод и обязательный TDD не требуются. Выбирай unit/integration/E2E по затронутым требованиям и риску. Coverage выявляет gaps, но не доказывает AC; CI обнаруживает только проверяемые нарушения.
 
 Выбирай проверки по назначению, риску и стоимости, а не только по метке `non-PG`, `postgres` или `E2E`. Простое изменение текста требует применимой проверки документации, а не искусственной E2E suite.
+
+Пример лёгкого профиля — изменение только `AGENTS.md` и `ci-cd-rules.md`, когда полный diff подтверждает отсутствие влияния на runtime, сборку и входы выпуска. До дорогого setup выбери проверки документов, ссылок и затронутых контрактов с сохранением применимого required gate. Если документы влияют на launcher, генерацию, выпуск или поставку самих документов, проверь затронутых потребителей и выполни нужные шаги. При неполном diff или неизвестном влиянии используй более широкий применимый набор по правилам affected selection.
 
 Разделяй полноту поддерживаемого test inventory и частоту запусков. Профили используют одни suites/команды, без второй реализации:
 
 | Профиль | Состав и запуск |
 | --- | --- |
 | Обычный CI PR | Применимые static/build, unit/component/API/DB/integration и критичное общее ядро по зависимостям и риску; действующие проектные исключения сохраняются. |
-| Полная регрессия main | По отдельной команде на exact main SHA: весь поддерживаемый применимый набор, включая browser/native/recovery по проекту. Не запускает CD, полный аудит или пересчёт готовности; не обязателен после каждой Goal/аудита. |
+| Полная регрессия main | По отдельному поручению на exact main SHA запускай весь поддерживаемый применимый набор, включая browser/native/recovery по проекту. По умолчанию локально. На CI-провайдере запускай по выбору владельца или по отдельному согласованию, если нужная проверка недоступна локально. Не запускает CD, полный аудит или пересчёт готовности. Не запускается автоматически после Goal или аудита. |
 | Специализированные | Load/stress/soak, large-data/resource qualification, fault/backup/restore и другие проверки по требованиям и выбранному scope в подходящей изолированной среде. |
 
 Property-based/stateful tests рассматривай для инвариантов, комбинаций входов и последовательностей действий; mutation testing — для силы существующих assertions; fuzzing — для парсеров, импортов, протоколов и другого недоверенного ввода. Выбирай по риску и стоимости, без обязательного инструмента или целевого mutation score. Небольшие полезные проверки могут входить в обычный CI; дорогие кампании относятся к специализированному scope и автоматически не запускаются. Для кампаний определи scope, лимиты времени/ресурсов и условия остановки; сохраняй seed/минимальный контрпример либо другой способ воспроизведения failure вместе с revision. Mutation score не подтверждает READY. Новый тестовый профиль и обязательный workflow этим не вводятся.
 
-Команды, inventory, prerequisites, target revision и условия запуска держи в canonical scripts/README/процедурах проекта. Должны быть доступны полный профиль без deployment и результаты по фактически выполненным suites, включая skips/ограничения. Отсутствующий профиль или сценарий — gap; присутствие config не доказывает запуск. Actions-версия полного профиля тоже расходует ресурсы. Обязательные автоматические расписания не вводи.
+Команды, inventory, prerequisites, target revision и условия запуска держи в canonical scripts/README/процедурах проекта. Предоставь preflight PR и полную регрессию как отдельные команды или режимы общего скрипта без deployment. Сохраняй результаты по фактически выполненным suites, включая skips/ограничения. Отсутствующий профиль или сценарий — gap; присутствие config не доказывает запуск. Actions-версия полного профиля тоже расходует ресурсы. Обязательные автоматические расписания не вводи.
 
 Дополнительные некритичные tests можно отложить. Проверки текущих AC, безопасного merge и существенных рисков (права, деньги, миграции, целостность данных) не откладывай; сохраняй обязательные tests/assertions/gates и согласованные исключения по разделу 9. Полная suite не компенсирует отсутствующие сценарии.
 
@@ -150,7 +152,13 @@ Automatic rollback допустим только при проверенной �
 
 ## 9. Проектная адаптация
 
-Фактические workflows/settings/scripts и runbooks — canonical источники команд и процедур; реальные пути и навигацию держи в README. Репозиторный AGENTS.md остаётся универсальным контрактом, без проектных сведений. Согласованные исключения из этих CI/CD правил фиксируй в соответствующей проектной процедуре с основанием и scope по разделу 9. Обеспечь восстановление обычного delivery/recovery по проектным процедурам без повторного чтения универсальных правил настройки.
+Применяй общий flow к новым и существующим репозиториям. Адаптируй команды, окружение, выбор проверок и условия поставки к проекту в рамках этих правил. Фактические workflows/settings/scripts и runbooks — canonical источники команд и процедур. Реальные пути и навигацию держи в README. Репозиторный AGENTS.md остаётся универсальным контрактом, без проектных сведений. Согласованные исключения фиксируй в соответствующей проектной процедуре с основанием и scope.
+
+В существующем README или runbook укажи команду локального preflight, обязательные проверки перед merge, основание отдельной проверки `main` или reuse и условия выпуска и выкладки. Ссылайся на canonical команды и процедуры, чтобы обычный delivery/recovery можно было восстановить по проекту.
+
+При внедрении сначала сверь действующие workflows, защиты и доступные CI/CD records. Если схема уже соблюдается, обнови копию правил в ближайшем согласованном PR. Если синхронизация сама запускает лишние тяжёлые проверки, сборку или CD, включи её в тот же PR, что и необходимую настройку workflow. Если кандидат уже проверен и готов к merge, перенеси обновление только копии правил на следующую согласованную поставку.
+
+До push используй существующие records и локально сверь выбор профиля для правки только инструкций, затронутого кода и неполного diff. Сохраняй действующие merge gates и требуемое проектом подтверждение exact main SHA. После подготовленного push пройди штатный CI актуальной revision. Для приёмки укажи выбранный профиль, причину выбора, обязательный результат и фактический исход после merge. Отдельные прогоны Actions только ради сверки правил не запускай.
 
 Указывай источники и время/revision проверки; неизвестное — UNSET, неприменимое — N/A с основанием. При изменении stack, settings или окружений обновляй затронутые процедуры. Сохраняй доступную версию шаблона и основания проектных отличий, не выдумывая provenance.
 
@@ -182,13 +190,13 @@ repository:
 ci:
   workflow: .github/workflows/ci.yml
   events: [pull_request, push:main]
-  runner: GitHub-hosted windows-2025 x64 ephemeral standard runner
+  runner: GitHub-hosted ubuntu-24.04 for selection/docs/policy/gate; windows-2025 x64 for native build/test/smoke
   install_command: go mod download + npm --prefix frontend ci --ignore-scripts --no-audit --no-fund
   lint_command: ./scripts/validate-go.ps1 + npm --prefix frontend run check
   typecheck_command: go vet ./... + npm --prefix frontend run check (after initial binding generation)
   test_command: go test ./... -count=1 -timeout 60s + npm --prefix frontend test
   build_command: ./scripts/build-windows.ps1 + ./eng/release/Test-ReleaseTools.ps1
-  workflow_check: CI / windows-go
+  workflow_check: CI / windows-go # always-running aggregate; requires selected profile success
   required_checks: NONE_ENFORCED # no branch protection/rulesets at 2026-09-02 checkpoint
   lockfile: go.mod/go.sum + frontend/package-lock.json; exact toolchain files .go-version/.node-version/.npm-version
   package_source: Go module proxy/checksum database + registry.npmjs.org locked package integrity
@@ -266,13 +274,50 @@ Profile может быть вынесен в отдельный canonical file,
 
 ### Применимость и сохранённые гарантии LLM Inspector
 
-Сверка шаблонов: 2026-11-22; Drive file IDs `1mq36WrP2tWNjDt7pint76S_mF--JAUUf` (modified 12:41:14.682Z, 30 478 bytes) и `17x73acxyIs4TTdLe1BiZWj6wVItmEw3B` (modified 12:40:46.063Z, 39 493 bytes). Содержимое сравнивается после нормализации CRLF/LF. База сверки проекта: `8afe04440ad91213fcd2fa73a42d42cb91159c75`. Это docs-only синхронизация, не изменение workflows/settings или свидетельство нового runtime PASS.
+Сверка шаблонов: 2026-11-23; Drive file IDs `1mq36WrP2tWNjDt7pint76S_mF--JAUUf` (редакция 19:21 МСК, raw 30 175 bytes, SHA-256 `956f4f8d1e097c6dccf2295376eeb52fcd7268e64888e8033aac15d8dfd80e5f`) и `17x73acxyIs4TTdLe1BiZWj6wVItmEw3B` (modified 20:15:55Z, raw 43 046 bytes). CRLF/LF нормализованы. База проекта: `77a30342b182fa63686d09d327ed708c232b49ce`. Владелец разрешил в PR #45 синхронизацию инструкций и внедрение выбора профиля CI; это не изменение продукта, release gates или CD.
 
 - Canonical продуктовый контракт — [project-spec.md](project-spec.md); execution state — [delivery-plan.md](delivery-plan.md), первичные PR/CI records и решения владельца. Upstream/архив не расширяют scope и не авторизуют реализацию. Задача синхронизации правил не меняет продуктовые AC, readiness или обязательное Evidence.
 - Обязательные exact-artifact Windows Home/Pro release проверки, E12 measurements и B02 encrypted two-host LIVE из product contract не являются необязательным Ad-hoc. Их отсутствие нельзя превратить в PASS, READY или N/A обновлением общих правил. Release gates и ограничения [Windows release](runbooks/windows-release.md), [Windows validation](runbooks/windows-validation.md), [secure remote access](runbooks/secure-remote-access.md) сохраняются.
-- Новое правило Linux-default относится к переносимым jobs. Текущий `windows-go` выполняет native Windows/Wails/WebView2 smoke, Windows process/DPAPI/tray проверки и сборку `windows/amd64`; ему требуется Windows. Существующие release jobs не меняются этим документом. Возможное выделение переносимых частей — отдельная pipeline task, не разрешение пропустить Windows gates.
-- Фактические workflows: [CI](../.github/workflows/ci.yml), [release](../.github/workflows/release.yml). На 2026-11-22 GitHub API: main protected=false, rulesets=[]; проектный `windows-go` всё равно REQUIRED перед merge. Reuse/affected selection из общего шаблона не реализованы в текущем workflow и не могут служить основанием пропуска.
+- Переносимые selection/docs/policy/aggregate jobs используют Linux. Native Windows/Wails/WebView2 smoke, process/DPAPI/tray и сборка `windows/amd64` остаются на Windows в job `go-validation`. Его команды, toolchain pins и проверки не сокращены.
+- Фактические workflows: [CI](../.github/workflows/ci.yml), [release](../.github/workflows/release.yml). На 2026-11-23 main protected=false, rulesets=[]; `windows-go` всё равно REQUIRED перед merge. Теперь это always-running aggregate: требует успешного preflight и успешного Windows job для профиля `windows`; skip Windows допустим только при успешном `instructions` или `pipeline`. Failure/cancelled/skipped preflight и неизвестный профиль не дают green.
 - Canonical команды и prerequisites — [README](../README.md), [build script](../scripts/build-windows.ps1), [release checks](../eng/release/Test-ReleaseTools.ps1). Сохраняются exact pins, `GOTOOLCHAIN=local`, `GOFLAGS=-mod=readonly`, locked npm install, локальный pinned Wails CLI, `CGO_ENABLED=0` и installed WebView2 без автоматической загрузки.
-- Для docs-only scope, ограниченного этими двумя Markdown-файлами без runtime/workflow/dependency изменений, local REQUIRED перед push: `git diff --check`, self-review всего diff, проверка allowlist изменённых путей, целостности Markdown/relative links, нормализованного template diff и UTF-8 размера универсального AGENTS ≤30 KiB. Выполняется в PowerShell 7 без build/runtime. Полный локальный регресс N/A для этого scope; штатный PR CI остаётся REQUIRED, включая hosted execution/revision/permissions, проверяемые только в CI. Это заранее определённый план, не перенос упавшего local gate в CI. Для code/runtime scope профиль определяется заново по риску и canonical процедурам.
-- Серверный CD отключён, final release/WinGet требуют отдельного разрешения и всех обязательных release gates. Docs-only PR не требует deployment или ручного запуска Actions. Никаких новых tokens, permissions, protections, runners или metadata writers.
-- Существующий профиль выше сохранён как проектная адаптация в пределах двухфайлового scope; его исторические поля не означают свежую runtime/billing проверку. Primary CI/PR records подтверждают поставку; pre-merge checkpoint допустим, metadata-only follow-up PR не нужен. Датированный checkpoint GOAL-007 не возобновляет остановленную владельцем работу автоматически.
+- Перед push REQUIRED весь локально воспроизводимый выбранный профиль на точных base/head и чистом кандидате. Общий selector/проверки находятся в отмеченном блоке `LOCAL PREFLIGHT` workflow; локальная команда ниже исполняет тот же код. Полный проверенный diff только `AGENTS.md`/`docs/ci-cd-rules.md` выбирает `instructions`: UTF-8, размер AGENTS ≤30 KiB, fences, относительные ссылки, diff whitespace и регрессии selector/gate. Эти файлы не потребляются launcher/build/release, что проверено поиском callers. Изменения самого `.github/workflows/ci.yml` вместе с этими инструкциями выбирают `pipeline`: те же проверки плюс существующие `go test ./internal/domain -count=1 -timeout 60s` (CI/release/build trust contracts) и self-review workflow. Другие paths, включая scripts, pins, frontend, release workflow, README и код, выбирают `windows`: исходные `./scripts/build-windows.ps1` → `./eng/release/Test-ReleaseTools.ps1` на Windows x64 с pinned Go/Node/npm и installed WebView2. Неполный/пустой diff, неизвестные SHA или несоответствие checkout выбирают `windows`, не лёгкий профиль. Rename учитывает оба пути через `--no-renames`; удаления обязательных документов завершаются ошибкой. Перед merge нужен CI актуального SHA, прежний green его не заменяет.
+- Полная регрессия main — только по отдельному поручению на exact main SHA, по умолчанию локально. Запуск у CI-провайдера требует отдельного выбора/согласования; автоматический PR CI не является таким отдельным запуском. Самостоятельный полный профиль/режим регрессии сейчас не выделен: это gap, не разрешение запускать полный регресс в задаче синхронизации.
+- Серверный CD отключён, final release/WinGet требуют отдельного разрешения и всех обязательных release gates. Изменения инструкций/selection CI не требуют build artifact, deployment или ручного запуска Actions. Никаких новых tokens, permissions, protections, runners или metadata writers.
+- Существующий профиль выше сохранён как проектная адаптация с сохранением обязательных гарантий; его исторические поля не означают свежую runtime/billing проверку. Primary CI/PR records подтверждают поставку; pre-merge checkpoint допустим, metadata-only follow-up PR не нужен. Датированный checkpoint GOAL-007 не возобновляет остановленную владельцем работу автоматически.
+
+### Локальный preflight текущего CI
+
+Из чистого checkout точного кандидата задайте проверенный base SHA (для PR — актуальный base, для main push — previous SHA), затем выполните общий блок selector. Python 3 — prerequisite переносимой проверки; для `pipeline` нужен pinned Go, для `windows` — Windows prerequisites из [README](../README.md). CI проверяет PR merge checkout или exact main SHA; неизвестный/недоступный diff расширяет профиль. Hosted orchestration, triggers/permissions и GitHub review/protections — CI-only.
+
+```powershell
+$env:BASE_SHA = '<verified-base-sha>'
+$env:HEAD_SHA = (git rev-parse HEAD).Trim()
+$workflow = Get-Content .github/workflows/ci.yml -Raw
+$block = [regex]::Match($workflow, '(?ms)^          # BEGIN LOCAL PREFLIGHT\r?\n(.*?)^          # END LOCAL PREFLIGHT').Groups[1].Value
+if (-not $block) { throw 'Shared preflight block missing' }
+$script = [regex]::Replace($block, '(?m)^          ', '')
+$env:GITHUB_OUTPUT = Join-Path $env:TEMP ('llmi-profile-' + [guid]::NewGuid() + '.txt')
+try {
+    python -c $script
+    if ($LASTEXITCODE -ne 0) { throw 'Preflight failed' }
+    $profile = (Get-Content $env:GITHUB_OUTPUT | Where-Object { $_ -like 'profile=*' }) -replace '^profile=', ''
+    $env:GOTOOLCHAIN = 'local'
+    $env:GOFLAGS = '-mod=readonly'
+    if ($profile -eq 'pipeline') {
+        if ((go env GOVERSION) -ne ('go' + (Get-Content .go-version -Raw).Trim())) { throw 'Go pin mismatch' }
+        go test ./internal/domain -count=1 -timeout 60s
+        if ($LASTEXITCODE -ne 0) { throw 'Pipeline contracts failed' }
+    } elseif ($profile -eq 'windows') {
+        ./scripts/build-windows.ps1
+        ./eng/release/Test-ReleaseTools.ps1
+    } elseif ($profile -ne 'instructions') { throw 'Unknown profile' }
+} finally {
+    Remove-Item -LiteralPath $env:GITHUB_OUTPUT -ErrorAction SilentlyContinue
+    Remove-Item Env:GITHUB_OUTPUT
+}
+```
+
+До push дополнительно обязательны scoped self-review, сверка YAML/профилей с diff и неизменности Windows build/smoke/release commands. До merge — `windows-go` на актуальной revision; main push выполняет тот же selector на фактическом merge SHA. Отдельный полный main regression и release/CD не запускаются автоматически.
+
+Checkpoint PR #45: исходный широкий локальный профиль на `f76c03b` останавливался на Go `TempDir RemoveAll cleanup: directory is not empty`; причина не установлена, исправление не заявлено. Сохранённое Evidence: два прогона, повтор пяти затронутых tests (count=3), synthetic file cleanup 100/100 PASS. Для текущих изменений инструкций/workflow consumer analysis выбирает `pipeline`, поэтому native DB/runtime tests неприменимы. При следующем изменении кода/сборки Windows профиль остаётся обязательным; повторный сбой нужно диагностировать, а не обходить. Финальный результат поставки подтверждают primary records PR #45.
